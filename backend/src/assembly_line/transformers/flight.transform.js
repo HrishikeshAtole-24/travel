@@ -1,67 +1,88 @@
-// Flight Transformer - Normalize & Enhance Data
+/**
+ * Flight Transformer - Enhance and Normalize Flight Offers
+ * Adds computed fields, formatting, and enrichments
+ */
 const logger = require('../../config/winstonLogger');
 
-// Airline code to name mapping (sample)
-const AIRLINE_NAMES = {
-  'AA': 'American Airlines',
-  'UA': 'United Airlines',
-  'DL': 'Delta Air Lines',
-  'BA': 'British Airways',
-  'LH': 'Lufthansa',
-  'AF': 'Air France',
-  'KL': 'KLM Royal Dutch Airlines',
-  'EK': 'Emirates',
-  'QR': 'Qatar Airways',
-  '6E': 'IndiGo',
-  'AI': 'Air India',
-};
-
 /**
- * Transform and enhance flight data
+ * Transform and enhance flight offers
+ * Adds computed fields, human-readable formats, etc.
+ * @param {Array} offers - Array of flight offers
+ * @returns {Array} Enhanced flight offers
  */
-const transformFlightData = (flights) => {
+const transformFlightData = (offers) => {
   try {
-    const transformedFlights = flights.map((flight) => {
-      // Enhance airline name
-      if (AIRLINE_NAMES[flight.airline.code]) {
-        flight.airline.name = AIRLINE_NAMES[flight.airline.code];
-      }
+    const transformedOffers = offers.map((offer) => {
+      // Calculate total stops
+      const totalStops = offer.itinerary.slices.reduce((sum, slice) => {
+        return sum + (slice.segments.length - 1);
+      }, 0);
 
-      // Calculate duration in readable format
-      flight.durationFormatted = formatDuration(flight.duration);
+      // Format durations
+      offer.itinerary.slices.forEach(slice => {
+        slice.durationFormatted = formatDuration(slice.durationMinutes);
+        
+        // Add layover information
+        if (slice.segments.length > 1) {
+          slice.layovers = calculateLayovers(slice.segments);
+        }
+      });
 
-      // Add trip type
-      flight.tripType = flight.stops === 0 ? 'Non-stop' : `${flight.stops} stop(s)`;
-
-      // Calculate departure/arrival dates
-      const depDate = new Date(flight.departure.time);
-      const arrDate = new Date(flight.arrival.time);
+      // Calculate total trip duration
+      const totalDuration = offer.itinerary.slices.reduce((sum, slice) => sum + slice.durationMinutes, 0);
       
-      flight.departure.date = depDate.toLocaleDateString();
-      flight.departure.timeOnly = depDate.toLocaleTimeString('en-US', { 
-        hour: '2-digit', 
-        minute: '2-digit',
-        hour12: false 
+      // Add computed fields at offer level
+      offer.computed = {
+        totalStops,
+        totalDurationMinutes: totalDuration,
+        totalDurationFormatted: formatDuration(totalDuration),
+        isNonStop: totalStops === 0,
+        isOvernight: checkIfOvernight(offer.itinerary.slices[0]),
+        pricePerTraveler: calculatePricePerTraveler(offer)
+      };
+
+      // Format times for UI
+      offer.itinerary.slices.forEach(slice => {
+        slice.segments.forEach(segment => {
+          const depDate = new Date(segment.departure.time);
+          const arrDate = new Date(segment.arrival.time);
+
+          segment.departure.formatted = {
+            date: depDate.toLocaleDateString('en-US', { 
+              month: 'short', 
+              day: 'numeric',
+              year: 'numeric'
+            }),
+            time: depDate.toLocaleTimeString('en-US', { 
+              hour: '2-digit', 
+              minute: '2-digit',
+              hour12: false 
+            }),
+            dayOfWeek: depDate.toLocaleDateString('en-US', { weekday: 'short' })
+          };
+
+          segment.arrival.formatted = {
+            date: arrDate.toLocaleDateString('en-US', { 
+              month: 'short', 
+              day: 'numeric',
+              year: 'numeric'
+            }),
+            time: arrDate.toLocaleTimeString('en-US', { 
+              hour: '2-digit', 
+              minute: '2-digit',
+              hour12: false 
+            }),
+            dayOfWeek: arrDate.toLocaleDateString('en-US', { weekday: 'short' }),
+            nextDay: checkNextDay(depDate, arrDate)
+          };
+        });
       });
 
-      flight.arrival.date = arrDate.toLocaleDateString();
-      flight.arrival.timeOnly = arrDate.toLocaleTimeString('en-US', { 
-        hour: '2-digit', 
-        minute: '2-digit',
-        hour12: false 
-      });
-
-      // Remove raw data for cleaner response
-      delete flight.rawData;
-
-      return flight;
+      return offer;
     });
 
-    // Sort by price (cheapest first)
-    transformedFlights.sort((a, b) => a.price.total - b.price.total);
-
-    logger.info(`✅ Transformed ${transformedFlights.length} flights`);
-    return transformedFlights;
+    logger.info(`✅ Transformed ${transformedOffers.length} flight offers`);
+    return transformedOffers;
 
   } catch (error) {
     logger.error('Flight transformation error:', error);
@@ -70,19 +91,105 @@ const transformFlightData = (flights) => {
 };
 
 /**
- * Convert ISO 8601 duration to readable format
- * Example: PT2H30M → "2h 30m"
+ * Format duration in minutes to readable format
+ * @param {number} minutes - Duration in minutes
+ * @returns {string} Formatted duration (e.g., "2h 30m")
  */
-const formatDuration = (duration) => {
-  if (!duration) return 'N/A';
+const formatDuration = (minutes) => {
+  if (!minutes || minutes === 0) return '0m';
+  
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
 
-  const match = duration.match(/PT(\d+H)?(\d+M)?/);
-  if (!match) return duration;
+  if (hours === 0) {
+    return `${mins}m`;
+  }
 
-  const hours = match[1] ? match[1].replace('H', 'h') : '';
-  const minutes = match[2] ? ` ${match[2].replace('M', 'm')}` : '';
+  if (mins === 0) {
+    return `${hours}h`;
+  }
 
-  return `${hours}${minutes}`.trim();
+  return `${hours}h ${mins}m`;
 };
 
-module.exports = { transformFlightData };
+/**
+ * Calculate layovers between segments
+ * @param {Array} segments - Flight segments
+ * @returns {Array} Layover information
+ */
+const calculateLayovers = (segments) => {
+  const layovers = [];
+
+  for (let i = 0; i < segments.length - 1; i++) {
+    const currentSegment = segments[i];
+    const nextSegment = segments[i + 1];
+
+    const arrivalTime = new Date(currentSegment.arrival.time);
+    const departureTime = new Date(nextSegment.departure.time);
+
+    const layoverMinutes = Math.round((departureTime - arrivalTime) / (1000 * 60));
+
+    layovers.push({
+      airport: currentSegment.arrival.airportCode,
+      durationMinutes: layoverMinutes,
+      durationFormatted: formatDuration(layoverMinutes)
+    });
+  }
+
+  return layovers;
+};
+
+/**
+ * Check if flight is overnight
+ * @param {Object} slice - Flight slice
+ * @returns {boolean}
+ */
+const checkIfOvernight = (slice) => {
+  if (!slice || !slice.segments || slice.segments.length === 0) return false;
+
+  const firstSegment = slice.segments[0];
+  const lastSegment = slice.segments[slice.segments.length - 1];
+
+  const depDate = new Date(firstSegment.departure.time);
+  const arrDate = new Date(lastSegment.arrival.time);
+
+  return depDate.getDate() !== arrDate.getDate() || 
+         depDate.getMonth() !== arrDate.getMonth() ||
+         depDate.getFullYear() !== arrDate.getFullYear();
+};
+
+/**
+ * Check if arrival is next day
+ * @param {Date} depDate - Departure date
+ * @param {Date} arrDate - Arrival date
+ * @returns {boolean}
+ */
+const checkNextDay = (depDate, arrDate) => {
+  return arrDate.getDate() !== depDate.getDate() || 
+         arrDate.getMonth() !== depDate.getMonth() ||
+         arrDate.getFullYear() !== depDate.getFullYear();
+};
+
+/**
+ * Calculate price per traveler
+ * @param {Object} offer - Flight offer
+ * @returns {Object} Price breakdown per traveler type
+ */
+const calculatePricePerTraveler = (offer) => {
+  if (!offer.travelerPricing || offer.travelerPricing.length === 0) {
+    return { ADULT: offer.pricing.totalAmount };
+  }
+
+  const priceByType = {};
+  offer.travelerPricing.forEach(tp => {
+    priceByType[tp.travelerType] = tp.price.totalAmount;
+  });
+
+  return priceByType;
+};
+
+module.exports = { 
+  transformFlightData,
+  formatDuration,
+  calculateLayovers
+};
