@@ -29,6 +29,13 @@ module.exports = {
     amadeusFlightAPI.getFlightPrice(flightOffer, payments),
   
   /**
+   * Alias for getFlightPrice (for compatibility)
+   * @param {Object} flightOffer - Flight offer to price
+   */
+  priceFlights: (flightOffer) => 
+    amadeusFlightAPI.getFlightPrice(flightOffer),
+  
+  /**
    * Create flight booking order
    * @param {Object} flightOffer - Priced flight offer
    * @param {Array} travelers - Traveler details

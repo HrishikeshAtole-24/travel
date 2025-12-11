@@ -1,26 +1,46 @@
-// Traveler Model (MySQL Schema)
+/**
+ * Traveler Model (PostgreSQL Schema)
+ * Handles travelers table creation and operations
+ */
 const { getPool } = require('../config/database');
+const logger = require('../config/winstonLogger');
 
 const createTravelerTable = async () => {
   const pool = getPool();
   const query = `
+    -- Create gender enum type
+    DO $$ BEGIN
+      CREATE TYPE gender_type AS ENUM ('male', 'female', 'other');
+    EXCEPTION
+      WHEN duplicate_object THEN null;
+    END $$;
+
     CREATE TABLE IF NOT EXISTS travelers (
-      id INT AUTO_INCREMENT PRIMARY KEY,
-      booking_id INT NOT NULL,
+      id SERIAL PRIMARY KEY,
+      booking_id INTEGER NOT NULL,
       first_name VARCHAR(100) NOT NULL,
       last_name VARCHAR(100) NOT NULL,
       date_of_birth DATE,
-      gender ENUM('male', 'female', 'other'),
+      gender gender_type,
       passport_number VARCHAR(50),
       passport_expiry DATE,
       nationality VARCHAR(3),
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE CASCADE,
-      INDEX idx_booking_id (booking_id)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+      CONSTRAINT fk_booking FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE CASCADE
+    );
+
+    -- Create index for faster booking lookups
+    CREATE INDEX IF NOT EXISTS idx_travelers_booking_id ON travelers(booking_id);
+    CREATE INDEX IF NOT EXISTS idx_travelers_passport ON travelers(passport_number);
   `;
   
-  await pool.execute(query);
+  try {
+    await pool.query(query);
+    logger.info('✅ Travelers table created/verified successfully');
+  } catch (error) {
+    logger.error('❌ Error creating travelers table:', error.message);
+    throw error;
+  }
 };
 
 module.exports = { createTravelerTable };

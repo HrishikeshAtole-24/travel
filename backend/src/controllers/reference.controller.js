@@ -121,21 +121,25 @@ class ReferenceDataController {
 
     const result = await amadeus.getAirportsByCity(cityCode.toUpperCase());
 
-    const city = result.data;
-    const airports = result.included || [];
+    // Filter results to separate city and airports
+    const locations = result.data || [];
+    const cityInfo = locations.find(loc => loc.subType === 'CITY');
+    const airports = locations.filter(loc => loc.subType === 'AIRPORT');
 
     const response = {
-      city: {
-        code: city.iataCode,
-        name: city.name,
-        country: city.address?.countryCode
+      city: cityInfo ? {
+        code: cityInfo.iataCode,
+        name: cityInfo.name,
+        country: cityInfo.address?.countryCode
+      } : {
+        code: cityCode,
+        name: cityCode
       },
       airports: airports.map(airport => ({
         code: airport.iataCode,
         name: airport.name,
         type: airport.subType,
-        distance: airport.distance?.value,
-        distanceUnit: airport.distance?.unit
+        detailedName: airport.detailedName
       }))
     };
 

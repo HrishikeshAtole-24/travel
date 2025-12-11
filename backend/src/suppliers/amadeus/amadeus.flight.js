@@ -227,11 +227,12 @@ class AmadeusFlightAPI {
       const params = {
         keyword: iataCode,
         subType: 'AIRPORT',
+        'page[limit]': 10
       };
 
       logger.info(`🛫 Getting airport info: ${iataCode}`);
 
-      const response = await amadeusClient.get('/v1/reference-data/locations/airports', params);
+      const response = await amadeusClient.get('/v1/reference-data/locations', params);
 
       logger.info('✅ Airport info retrieved');
       return response;
@@ -244,7 +245,7 @@ class AmadeusFlightAPI {
 
   /**
    * Get Airports by City
-   * API: GET /v1/reference-data/locations/cities/{cityCode}
+   * API: GET /v1/reference-data/locations (search by city keyword)
    * Purpose: Get all airports in a city
    * 
    * @param {String} cityCode - City IATA code
@@ -254,7 +255,14 @@ class AmadeusFlightAPI {
     try {
       logger.info(`🏙️ Getting airports for city: ${cityCode}`);
 
-      const response = await amadeusClient.get(`/v1/reference-data/locations/cities/${cityCode}`);
+      // Use locations search with city code as keyword
+      const params = {
+        keyword: cityCode,
+        subType: 'AIRPORT,CITY',
+        'page[limit]': 20
+      };
+
+      const response = await amadeusClient.get('/v1/reference-data/locations', params);
 
       logger.info('✅ City airports retrieved');
       return response;
@@ -379,7 +387,8 @@ class AmadeusFlightAPI {
         airlineCode,
       };
 
-      if (departureDate) params.departureDate = departureDate;
+      // Note: departureDate is NOT supported by this endpoint
+      // Remove if provided to avoid 400 error
 
       logger.info(`🛫 Getting routes for airline: ${airlineCode}`);
 

@@ -1,26 +1,53 @@
-// Booking Model (MySQL Schema)
+/**
+ * Booking Model (PostgreSQL Schema)
+ * Handles bookings table creation and operations
+ */
 const { getPool } = require('../config/database');
+const logger = require('../config/winstonLogger');
 
 const createBookingTable = async () => {
   const pool = getPool();
   const query = `
+    -- Create booking status enum type
+    DO $$ BEGIN
+      CREATE TYPE booking_status AS ENUM ('pending', 'confirmed', 'cancelled');
+    EXCEPTION
+      WHEN duplicate_object THEN null;
+    END $$;
+
     CREATE TABLE IF NOT EXISTS bookings (
-      id INT AUTO_INCREMENT PRIMARY KEY,
-      user_id INT NOT NULL,
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER NOT NULL,
       flight_id VARCHAR(100) NOT NULL,
       booking_reference VARCHAR(50) UNIQUE NOT NULL,
       total_price DECIMAL(10, 2) NOT NULL,
       currency VARCHAR(3) DEFAULT 'USD',
-      status ENUM('pending', 'confirmed', 'cancelled') DEFAULT 'pending',
+      status booking_status DEFAULT 'pending',
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-      FOREIGN KEY (user_id) REFERENCES users(id),
-      INDEX idx_user_id (user_id),
-      INDEX idx_booking_ref (booking_reference)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+
+    -- Create indexes for faster lookups
+    CREATE INDEX IF NOT EXISTS idx_bookings_user_id ON bookings(user_id);
+    CREATE INDEX IF NOT EXISTS idx_bookings_reference ON bookings(booking_reference);
+    CREATE INDEX IF NOT EXISTS idx_bookings_status ON bookings(status);
+
+    -- Create trigger for updated_at timestamp
+    DROP TRIGGER IF EXISTS update_bookings_updated_at ON bookings;
+    CREATE TRIGGER update_bookings_updated_at
+      BEFORE UPDATE ON bookings
+      FOR EACH ROW
+      EXECUTE FUNCTION update_updated_at_column();
   `;
   
-  await pool.execute(query);
+  try {
+    await pool.query(query);
+    logger.info('✅ Bookings table created/verified successfully');
+  } catch (error) {
+    logger.error('❌ Error creating bookings table:', error.message);
+    throw error;
+  }
 };
 
 module.exports = { createBookingTable };

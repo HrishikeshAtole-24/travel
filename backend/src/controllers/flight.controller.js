@@ -77,6 +77,26 @@ class FlightController {
       ApiResponse.success(flightDetails, StatusCodes.OK, 'Flight details retrieved')
     );
   }
+
+  /**
+   * Validate flight price
+   * POST /api/flights/price
+   */
+  async priceFlights(req, res) {
+    const { flightOffer } = req.body;
+
+    if (!flightOffer) {
+      return res.status(StatusCodes.BAD_REQUEST).json(
+        ApiResponse.error('Flight offer is required', StatusCodes.BAD_REQUEST)
+      );
+    }
+
+    const result = await flightService.priceFlights(flightOffer);
+
+    res.status(StatusCodes.OK).json(
+      ApiResponse.success(result, StatusCodes.OK, 'Flight price validated')
+    );
+  }
 }
 
 module.exports = new FlightController();

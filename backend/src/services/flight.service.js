@@ -206,6 +206,30 @@ class FlightService {
       throw ApiError.internal('Failed to get flight details');
     }
   }
+
+  /**
+   * Validate flight price (Price Confirmation)
+   * @param {Object} flightOffer - Flight offer to validate
+   * @returns {Object} Validated flight price
+   */
+  async priceFlights(flightOffer) {
+    try {
+      logger.info('💰 Validating flight price');
+
+      // Get supplier instance (default: amadeus)
+      const supplier = supplierFactory('amadeus');
+
+      // Call pricing API
+      const pricedOffer = await supplier.priceFlights(flightOffer);
+
+      logger.info('✅ Flight price validated');
+      return pricedOffer;
+
+    } catch (error) {
+      logger.error('❌ Price validation error:', error);
+      throw ApiError.internal('Failed to validate flight price');
+    }
+  }
 }
 
 module.exports = new FlightService();

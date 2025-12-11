@@ -7,6 +7,9 @@ const asyncHandler = require('../core/AsyncHandler');
 // Flight search
 router.get('/search', asyncHandler(flightController.searchFlights));
 
+// Flight price validation
+router.post('/price', asyncHandler(flightController.priceFlights));
+
 // Flight details
 router.get('/:flightId', asyncHandler(flightController.getFlightDetails));
 
