@@ -40,6 +40,7 @@ const PORT = process.env.PORT || 5000;
   } catch (error) {
     logger.error('❌ Failed to start server:', error.message);
     logger.error('Stack:', error.stack);
+    console.error('❌ Server startup failed:', error.message);
     process.exit(1);
   }
 })();

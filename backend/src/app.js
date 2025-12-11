@@ -2,6 +2,10 @@
 const express = require('express');
 const app = express();
 
+// Initialize Payment Acquirers
+const { registerAcquirers } = require('./payments/acquirers/RegisterAcquirers');
+registerAcquirers();
+
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
