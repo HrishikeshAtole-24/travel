@@ -1,6 +1,11 @@
 // Main Express App Configuration
 const express = require('express');
+const path = require('path');
 const app = express();
+
+// Set view engine for EJS templates
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, '../views'));
 
 // Initialize Payment Acquirers
 const { registerAcquirers } = require('./payments/acquirers/RegisterAcquirers');

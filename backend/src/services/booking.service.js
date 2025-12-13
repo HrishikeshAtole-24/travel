@@ -88,13 +88,13 @@ const createBooking = async (bookingData, userId = null) => {
         [
           booking.id,
           traveler.type || 'ADULT',
-          traveler.title,
+          traveler.title || null,
           traveler.firstName,
           traveler.lastName,
           traveler.dateOfBirth,
-          traveler.gender,
-          traveler.passportNumber || null,
-          traveler.passportExpiry || null,
+          traveler.gender ? traveler.gender.toLowerCase() : null,
+          traveler.documentNumber || traveler.passportNumber || null,
+          traveler.documentExpiry || traveler.passportExpiry || null,
           traveler.nationality,
           traveler.email || contactEmail,
           traveler.phone || contactPhone

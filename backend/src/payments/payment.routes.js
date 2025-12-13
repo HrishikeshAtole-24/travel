@@ -24,6 +24,14 @@ router.post('/create', paymentController.createPayment);
 router.post('/callback', paymentController.verifyPayment);
 
 /**
+ * @route   GET /api/payments/callback
+ * @desc    Handle payment callback redirect (from Razorpay/payment gateways)
+ * @access  Public (called by payment gateway after payment completion)
+ * @query   payment_id, order_id, signature, status, reason
+ */
+router.get('/callback', paymentController.handlePaymentCallback);
+
+/**
  * @route   GET /api/payments/:paymentReference
  * @desc    Get payment details by reference
  * @access  Public (should be protected with auth in production)

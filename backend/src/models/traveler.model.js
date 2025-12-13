@@ -15,9 +15,18 @@ const createTravelerTable = async () => {
       WHEN duplicate_object THEN null;
     END $$;
 
+    -- Create traveler type enum
+    DO $$ BEGIN
+      CREATE TYPE traveler_type_enum AS ENUM ('ADULT', 'CHILD', 'INFANT');
+    EXCEPTION
+      WHEN duplicate_object THEN null;
+    END $$;
+
     CREATE TABLE IF NOT EXISTS travelers (
       id SERIAL PRIMARY KEY,
       booking_id INTEGER NOT NULL,
+      traveler_type traveler_type_enum DEFAULT 'ADULT',
+      title VARCHAR(10),
       first_name VARCHAR(100) NOT NULL,
       last_name VARCHAR(100) NOT NULL,
       date_of_birth DATE,
@@ -25,6 +34,8 @@ const createTravelerTable = async () => {
       passport_number VARCHAR(50),
       passport_expiry DATE,
       nationality VARCHAR(3),
+      email VARCHAR(255),
+      phone VARCHAR(20),
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       CONSTRAINT fk_booking FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE CASCADE
     );

@@ -4,7 +4,8 @@
  */
 const flightService = require('../services/flight.service');
 const ApiResponse = require('../core/ApiResponse');
-const StatusCodes = require('../core/StatusCodes');
+const { StatusCodes } = require('../core/StatusCodes');
+const AsyncHandler = require('../core/AsyncHandler');
 
 class FlightController {
   /**
@@ -82,21 +83,16 @@ class FlightController {
    * Validate flight price
    * POST /api/flights/price
    */
-  async priceFlights(req, res) {
+  priceFlights = AsyncHandler(async (req, res) => {
     const { flightOffer } = req.body;
 
     if (!flightOffer) {
-      return res.status(StatusCodes.BAD_REQUEST).json(
-        ApiResponse.error('Flight offer is required', StatusCodes.BAD_REQUEST)
-      );
+      return ApiResponse.error(res, 'Flight offer is required', StatusCodes.BAD_REQUEST);
     }
 
     const result = await flightService.priceFlights(flightOffer);
-
-    res.status(StatusCodes.OK).json(
-      ApiResponse.success(result, StatusCodes.OK, 'Flight price validated')
-    );
-  }
+    return ApiResponse.success(res, result, 'Flight price validated', StatusCodes.OK);
+  });
 }
 
 module.exports = new FlightController();

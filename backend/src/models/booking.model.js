@@ -10,19 +10,23 @@ const createBookingTable = async () => {
   const query = `
     -- Create booking status enum type
     DO $$ BEGIN
-      CREATE TYPE booking_status AS ENUM ('pending', 'confirmed', 'cancelled');
+      CREATE TYPE booking_status AS ENUM ('pending', 'confirmed', 'cancelled', 'payment_initiated');
     EXCEPTION
       WHEN duplicate_object THEN null;
     END $$;
 
     CREATE TABLE IF NOT EXISTS bookings (
       id SERIAL PRIMARY KEY,
-      user_id INTEGER NOT NULL,
-      flight_id VARCHAR(100) NOT NULL,
+      user_id INTEGER,
+      flight_id VARCHAR(100),
       booking_reference VARCHAR(50) UNIQUE NOT NULL,
+      flight_data JSONB,
       total_price DECIMAL(10, 2) NOT NULL,
       currency VARCHAR(3) DEFAULT 'USD',
       status booking_status DEFAULT 'pending',
+      contact_email VARCHAR(255),
+      contact_phone VARCHAR(20),
+      special_requests TEXT,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE

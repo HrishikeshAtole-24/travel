@@ -2,14 +2,267 @@
 	"info": {
 		"_postman_id": "ac05ce3b-10ae-4d73-b845-7c22ab17d5e7",
 		"name": "Travel Booking API - Complete Collection",
-		"description": "All 13 Amadeus APIs + Health Check",
+		"description": "Complete Travel Booking API - Auth, Flights, Bookings, Payments, Reference Data & Analytics",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
 		"_exporter_id": "50661170",
 		"_collection_link": "https://rishiatole4545-9889810.postman.co/workspace/Hrishikesh-Atole's-Workspace~2a77a9b7-aeb9-456d-8466-d9e3266d0bf0/collection/50661170-ac05ce3b-10ae-4d73-b845-7c22ab17d5e7?action=share&source=collection_link&creator=50661170"
 	},
 	"item": [
 		{
-			"name": "Health Check",
+			"name": "1. Authentication",
+			"item": [
+				{
+					"name": "Sign Up",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"john.doe@example.com\",\n  \"phone\": \"+919876543210\",\n  \"password\": \"SecurePass123!\",\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/signup",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"signup"
+							]
+						},
+						"description": "Create a new user account. Returns userId and OTPs sent for email/phone verification."
+					},
+					"response": []
+				},
+				{
+					"name": "Login",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"john.doe@example.com\",\n  \"password\": \"SecurePass123!\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/login",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"login"
+							]
+						},
+						"description": "Login with email and password. Returns JWT token and user details."
+					},
+					"response": []
+				},
+				{
+					"name": "Verify Email",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"john.doe@example.com\",\n  \"otp\": \"123456\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/verify-email",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"verify-email"
+							]
+						},
+						"description": "Verify email with OTP sent during signup."
+					},
+					"response": []
+				},
+				{
+					"name": "Verify Phone",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"phone\": \"+919876543210\",\n  \"otp\": \"123456\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/verify-phone",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"verify-phone"
+							]
+						},
+						"description": "Verify phone number with OTP sent during signup."
+					},
+					"response": []
+				},
+				{
+					"name": "Resend Email OTP",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"john.doe@example.com\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/resend-email-otp",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"resend-email-otp"
+							]
+						},
+						"description": "Resend OTP to email for verification."
+					},
+					"response": []
+				},
+				{
+					"name": "Resend Phone OTP",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"phone\": \"+919876543210\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/resend-phone-otp",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"resend-phone-otp"
+							]
+						},
+						"description": "Resend OTP to phone for verification."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Profile",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/auth/profile",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"profile"
+							]
+						},
+						"description": "Get current user profile (requires authentication)."
+					},
+					"response": []
+				},
+				{
+					"name": "Logout",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/auth/logout",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"logout"
+							]
+						},
+						"description": "Logout user (client-side token removal)."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "2. Health Check",
 			"item": [
 				{
 					"name": "API Health",
@@ -49,7 +302,7 @@
 			]
 		},
 		{
-			"name": "Flight Search & Booking",
+			"name": "3. Flight Search & Booking",
 			"item": [
 				{
 					"name": "1. Search Flights - Basic",
@@ -293,7 +546,491 @@
 			]
 		},
 		{
-			"name": "Reference Data APIs",
+			"name": "4. Booking Management",
+			"item": [
+				{
+					"name": "Create Booking",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}",
+								"type": "text",
+								"disabled": true
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"flightData\": {\n    \"flightId\": \"flight-123\",\n    \"origin\": \"BOM\",\n    \"destination\": \"DXB\",\n    \"departureDate\": \"2025-12-25\",\n    \"departureTime\": \"20:45\",\n    \"arrivalDate\": \"2025-12-26\",\n    \"arrivalTime\": \"17:10\",\n    \"airline\": \"UL\",\n    \"flightNumber\": \"144\",\n    \"cabin\": \"ECONOMY\",\n    \"stops\": 1\n  },\n  \"travelers\": [\n    {\n      \"firstName\": \"John\",\n      \"lastName\": \"Doe\",\n      \"dateOfBirth\": \"1990-05-15\",\n      \"gender\": \"MALE\",\n      \"nationality\": \"IN\",\n      \"documentType\": \"PASSPORT\",\n      \"documentNumber\": \"P1234567\",\n      \"documentExpiry\": \"2030-12-31\",\n      \"email\": \"john.doe@example.com\",\n      \"phone\": \"+919876543210\"\n    }\n  ],\n  \"contactEmail\": \"john.doe@example.com\",\n  \"contactPhone\": \"+919876543210\",\n  \"totalPrice\": 12000,\n  \"currency\": \"INR\",\n  \"specialRequests\": \"Vegetarian meal\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/bookings/create",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"bookings",
+								"create"
+							]
+						},
+						"description": "Create a new flight booking. Can be used with or without authentication (guest booking)."
+					},
+					"response": []
+				},
+				{
+					"name": "Create Booking and Pay (Combined)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}",
+								"type": "text",
+								"disabled": true
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"flightData\": {\n    \"flightId\": \"flight-123\",\n    \"origin\": \"BOM\",\n    \"destination\": \"DXB\",\n    \"departureDate\": \"2025-12-25\",\n    \"departureTime\": \"20:45\",\n    \"arrivalDate\": \"2025-12-26\",\n    \"arrivalTime\": \"17:10\",\n    \"airline\": \"UL\",\n    \"flightNumber\": \"144\",\n    \"cabin\": \"ECONOMY\",\n    \"stops\": 1\n  },\n  \"travelers\": [\n    {\n      \"firstName\": \"John\",\n      \"lastName\": \"Doe\",\n      \"dateOfBirth\": \"1990-05-15\",\n      \"gender\": \"MALE\",\n      \"nationality\": \"IN\",\n      \"documentType\": \"PASSPORT\",\n      \"documentNumber\": \"P1234567\",\n      \"documentExpiry\": \"2030-12-31\",\n      \"email\": \"john.doe@example.com\",\n      \"phone\": \"+919876543210\"\n    }\n  ],\n  \"contactEmail\": \"john.doe@example.com\",\n  \"contactPhone\": \"+919876543210\",\n  \"totalPrice\": 12000,\n  \"currency\": \"INR\",\n  \"specialRequests\": \"Vegetarian meal\",\n  \"paymentAcquirer\": \"RAZORPAY\",\n  \"successUrl\": \"http://localhost:3000/payment-success\",\n  \"failureUrl\": \"http://localhost:3000/payment-failed\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/bookings/create-and-pay",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"bookings",
+								"create-and-pay"
+							]
+						},
+						"description": "Create booking and initiate payment in one step. Returns booking details and payment URL."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Booking by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}",
+								"type": "text",
+								"disabled": true
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/bookings/:bookingId",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"bookings",
+								":bookingId"
+							],
+							"variable": [
+								{
+									"key": "bookingId",
+									"value": "1"
+								}
+							]
+						},
+						"description": "Get booking details by booking ID."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Booking by Reference",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/bookings/reference/:bookingReference?email=john.doe@example.com",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"bookings",
+								"reference",
+								":bookingReference"
+							],
+							"query": [
+								{
+									"key": "email",
+									"value": "john.doe@example.com"
+								}
+							],
+							"variable": [
+								{
+									"key": "bookingReference",
+									"value": "BK123456"
+								}
+							]
+						},
+						"description": "Get booking by reference number (requires email verification for guest bookings)."
+					},
+					"response": []
+				},
+				{
+					"name": "Get My Bookings",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/bookings/my-bookings",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"bookings",
+								"my-bookings"
+							]
+						},
+						"description": "Get all bookings for the logged-in user (requires authentication)."
+					},
+					"response": []
+				},
+				{
+					"name": "Cancel Booking",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}",
+								"type": "text",
+								"disabled": true
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"reason\": \"Change of plans\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/bookings/:bookingId/cancel",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"bookings",
+								":bookingId",
+								"cancel"
+							],
+							"variable": [
+								{
+									"key": "bookingId",
+									"value": "1"
+								}
+							]
+						},
+						"description": "Cancel a booking. Refund will be processed if applicable."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "5. Payment Management",
+			"item": [
+				{
+					"name": "Create Payment",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"bookingId\": 1,\n  \"acquirer\": \"RAZORPAY\",\n  \"customerEmail\": \"john.doe@example.com\",\n  \"customerName\": \"John Doe\",\n  \"customerPhone\": \"+919876543210\",\n  \"successUrl\": \"http://localhost:3000/payment-success\",\n  \"failureUrl\": \"http://localhost:3000/payment-failed\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/payments/create",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"payments",
+								"create"
+							]
+						},
+						"description": "Create/initiate a new payment for a booking. Returns payment URL for redirect."
+					},
+					"response": []
+				},
+				{
+					"name": "Payment Callback",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"paymentReference\": \"PAY123456\",\n  \"status\": \"success\",\n  \"transactionId\": \"txn_abc123\",\n  \"acquirerResponse\": {}\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/payments/callback",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"payments",
+								"callback"
+							]
+						},
+						"description": "Handle payment callback/verification from payment gateway."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Payment Details",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/payments/:paymentReference",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"payments",
+								":paymentReference"
+							],
+							"variable": [
+								{
+									"key": "paymentReference",
+									"value": "PAY123456"
+								}
+							]
+						},
+						"description": "Get payment details by payment reference."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Payment Status",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/payments/:paymentReference/status",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"payments",
+								":paymentReference",
+								"status"
+							],
+							"variable": [
+								{
+									"key": "paymentReference",
+									"value": "PAY123456"
+								}
+							]
+						},
+						"description": "Check payment status by payment reference."
+					},
+					"response": []
+				},
+				{
+					"name": "Process Refund",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"amount\": 12000,\n  \"reason\": \"Customer requested cancellation\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/payments/:paymentReference/refund",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"payments",
+								":paymentReference",
+								"refund"
+							],
+							"variable": [
+								{
+									"key": "paymentReference",
+									"value": "PAY123456"
+								}
+							]
+						},
+						"description": "Process refund for a payment."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Payments by Booking",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/payments/booking/:bookingId",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"payments",
+								"booking",
+								":bookingId"
+							],
+							"variable": [
+								{
+									"key": "bookingId",
+									"value": "1"
+								}
+							]
+						},
+						"description": "Get all payments for a specific booking."
+					},
+					"response": []
+				},
+				{
+					"name": "Razorpay Webhook",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "X-Razorpay-Signature",
+								"value": "signature_here",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/payments/webhook/razorpay",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"payments",
+								"webhook",
+								"razorpay"
+							]
+						},
+						"description": "Razorpay webhook endpoint (called by Razorpay)."
+					},
+					"response": []
+				},
+				{
+					"name": "Stripe Webhook",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Stripe-Signature",
+								"value": "signature_here",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/payments/webhook/stripe",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"payments",
+								"webhook",
+								"stripe"
+							]
+						},
+						"description": "Stripe webhook endpoint (called by Stripe)."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "6. Reference Data APIs",
 			"item": [
 				{
 					"name": "7. Location Search - Mumbai",
@@ -498,7 +1235,7 @@
 			]
 		},
 		{
-			"name": "Analytics APIs",
+			"name": "7. Analytics APIs",
 			"item": [
 				{
 					"name": "16. Cheapest Dates - BOM to DXB",

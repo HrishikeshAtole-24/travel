@@ -91,13 +91,17 @@ class RazorpayNonSeamlessClient extends IAcquirerClient {
 
       logger.info(`[Razorpay] Order created successfully: ${order.id}`);
 
+      // Return hosted payment page URL instead of checkout.js
+      const baseUrl = process.env.BASE_URL || 'http://localhost:5000';
+      const hostedPageUrl = `${baseUrl}/api/payment-page/${paymentReference}`;
+
       return {
         success: true,
         acquirerOrderId: order.id,
         amount: order.amount / 100,
         currency: order.currency,
         status: PaymentStatus.CREATED,
-        checkoutUrl: 'https://checkout.razorpay.com/v1/checkout.js',
+        checkoutUrl: hostedPageUrl,
         checkoutData: {
           key: credentials.key_id,
           order_id: order.id,
@@ -407,6 +411,7 @@ class RazorpayNonSeamlessClient extends IAcquirerClient {
         `/payments/${paymentId}/capture`,
         capturePayload
       );
+      console.log('Razorpay capture response:', response.data);
 
       const payment = response.data;
 

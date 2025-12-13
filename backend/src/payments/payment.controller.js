@@ -209,6 +209,92 @@ const getPaymentsByBooking = AsyncHandler(async (req, res) => {
   return ApiResponse.success(res, sanitizedPayments, 'Payments retrieved successfully', StatusCodes.OK);
 });
 
+/**
+ * Handle Payment Callback (GET from Razorpay)
+ * GET /api/payments/callback?payment_id=xxx&order_id=xxx&signature=xxx&status=xxx
+ * Redirects to merchant success_url or failure_url
+ */
+const handlePaymentCallback = AsyncHandler(async (req, res) => {
+  const { payment_id, order_id, signature, status, reason } = req.query;
+
+  logger.info(`[PaymentCallback] Received: ${JSON.stringify(req.query)}`);
+
+  // Find payment by order_id
+  const { getPool } = require('../config/database');
+  const { mapAcquirerStatusFromDB } = require('../models/acquirer-status-mapping.model');
+  const { StandardPaymentStatus } = require('../core/StandardPaymentStatus');
+  
+  const pool = getPool();
+  
+  try {
+    // Find payment by acquirer order ID
+    const result = await pool.query(
+      `SELECT p.*, b.booking_reference 
+       FROM payments p
+       JOIN bookings b ON p.booking_id = b.id
+       WHERE p.acquirer_order_id = $1`,
+      [order_id]
+    );
+
+    if (result.rows.length === 0) {
+      // No payment found - redirect to generic failure
+      logger.error(`[PaymentCallback] Payment not found for order_id: ${order_id}`);
+      return res.redirect('/payment-error?reason=Payment not found');
+    }
+
+    const payment = result.rows[0];
+    const acquirer = payment.acquirer || 'RAZORPAY';
+    
+    // Determine status from query params
+    let acquirerStatus = status === 'failed' ? 'failed' : (payment_id ? 'captured' : 'failed');
+    
+    // Map to standard status
+    const standardStatus = await mapAcquirerStatusFromDB(acquirer, acquirerStatus);
+    
+    // Update payment in database
+    await pool.query(
+      `UPDATE payments 
+       SET status = $1, 
+           acquirer_transaction_id = $2,
+           updated_at = CURRENT_TIMESTAMP
+       WHERE id = $3`,
+      [standardStatus, payment_id || null, payment.id]
+    );
+
+    // Update booking status
+    if (standardStatus === StandardPaymentStatus.CAPTURED) {
+      await pool.query(
+        `UPDATE bookings SET status = 'confirmed' WHERE id = $1`,
+        [payment.booking_id]
+      );
+    }
+
+    // Parse redirect URLs from metadata
+    const metadata = payment.metadata || {};
+    const successUrl = metadata.success_url || 'https://www.google.com';
+    const failureUrl = metadata.failure_url || 'https://www.youtube.com';
+
+    logger.info(`[PaymentCallback] Payment ${payment.payment_reference}: ${standardStatus}`);
+
+    // Redirect based on status
+    if (standardStatus === StandardPaymentStatus.CAPTURED || standardStatus === StandardPaymentStatus.AUTHORIZED) {
+      // Success - redirect to success URL
+      const redirectUrl = `${successUrl}?payment_reference=${payment.payment_reference}&status=success&booking_reference=${payment.booking_reference}`;
+      logger.info(`[PaymentCallback] Redirecting to success URL: ${redirectUrl}`);
+      return res.redirect(redirectUrl);
+    } else {
+      // Failure - redirect to failure URL
+      const redirectUrl = `${failureUrl}?payment_reference=${payment.payment_reference}&status=failed&reason=${encodeURIComponent(reason || 'Payment failed')}`;
+      logger.info(`[PaymentCallback] Redirecting to failure URL: ${redirectUrl}`);
+      return res.redirect(redirectUrl);
+    }
+  } catch (error) {
+    logger.error('[PaymentCallback] Error:', error);
+    // Redirect to generic error page
+    return res.redirect('/payment-error?reason=Internal server error');
+  }
+});
+
 module.exports = {
   createPayment,
   verifyPayment,
@@ -217,5 +303,6 @@ module.exports = {
   razorpayWebhook,
   stripeWebhook,
   getPaymentDetails,
-  getPaymentsByBooking
+  getPaymentsByBooking,
+  handlePaymentCallback
 };

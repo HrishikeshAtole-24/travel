@@ -10,6 +10,7 @@ const { getPool } = require('../config/database');
 const ApiError = require('../core/ApiError');
 const { StatusCodes } = require('../core/StatusCodes');
 const logger = require('../config/winstonLogger');
+const { sendOTPEmail, sendWelcomeEmail } = require('../utils/emailService');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
@@ -49,20 +50,27 @@ async function comparePassword(password, hashedPassword) {
 }
 
 /**
- * Send OTP via Email (mock - integrate with SendGrid/SES)
+ * Send OTP via Email using Nodemailer
  */
 async function sendEmailOTP(email, otp) {
-  // TODO: Integrate with email service (SendGrid, AWS SES, etc.)
-  logger.info(`[OTP] Email OTP for ${email}: ${otp}`);
-  
-  // For now, just log. In production, send actual email:
-  // await sendEmail({
-  //   to: email,
-  //   subject: 'Your Verification Code',
-  //   html: `Your OTP is: <strong>${otp}</strong>. Valid for ${OTP_EXPIRY_MINUTES} minutes.`
-  // });
-  
-  return { success: true };
+  try {
+    const result = await sendOTPEmail(email, otp, OTP_EXPIRY_MINUTES);
+    
+    if (result.success) {
+      logger.info(`✅ Email OTP sent to ${email}`);
+    } else {
+      logger.warn(`⚠️  Failed to send email OTP to ${email}: ${result.error || result.message}`);
+      // Still log for development
+      logger.info(`[OTP] Email OTP for ${email}: ${otp}`);
+    }
+    
+    return result;
+  } catch (error) {
+    logger.error(`❌ Error sending email OTP to ${email}:`, error.message);
+    // Fallback: log OTP for development
+    logger.info(`[OTP] Email OTP for ${email}: ${otp}`);
+    return { success: false, error: error.message };
+  }
 }
 
 /**
@@ -138,7 +146,7 @@ const signUp = async (userData) => {
     // Create user (unverified)
     const result = await pool.query(
       `INSERT INTO users (
-        email, phone, password_hash, first_name, last_name,
+        email, phone, password, first_name, last_name,
         email_otp, phone_otp, otp_expires_at,
         email_verified, phone_verified, created_at
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, false, false, CURRENT_TIMESTAMP)
@@ -185,7 +193,7 @@ const login = async (credentials) => {
 
     // Find user
     const result = await pool.query(
-      `SELECT id, email, phone, password_hash, first_name, last_name, 
+      `SELECT id, email, phone, password, first_name, last_name, 
               email_verified, phone_verified, status
        FROM users WHERE email = $1`,
       [email]
@@ -203,7 +211,7 @@ const login = async (credentials) => {
     }
 
     // Verify password
-    const isValidPassword = await comparePassword(password, user.password_hash);
+    const isValidPassword = await comparePassword(password, user.password);
     if (!isValidPassword) {
       throw ApiError.unauthorized('Invalid email or password');
     }
@@ -288,6 +296,19 @@ const verifyEmailOTP = async (email, otp) => {
     );
 
     logger.info(`[Auth] Email verified: ${email}`);
+
+    // Get user details for welcome email
+    const userDetails = await pool.query(
+      'SELECT first_name FROM users WHERE id = $1',
+      [user.id]
+    );
+    
+    // Send welcome email (non-blocking)
+    if (userDetails.rows.length > 0) {
+      sendWelcomeEmail(email, userDetails.rows[0].first_name).catch(err => {
+        logger.warn('Failed to send welcome email:', err.message);
+      });
+    }
 
     return {
       success: true,

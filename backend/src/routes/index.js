@@ -10,6 +10,7 @@ const flightRoutes = require('./flight.routes');
 const referenceRoutes = require('./reference.routes');
 const analyticsRoutes = require('./analytics.routes');
 const paymentRoutes = require('../payments/payment.routes');
+const paymentPageRoutes = require('./payment-page.routes');
 const authRoutes = require('./auth.routes');
 const bookingRoutes = require('./booking.routes');
 
@@ -48,6 +49,9 @@ router.use('/bookings', bookingRoutes);
 
 // Payment processing (Stripe, Razorpay)
 router.use('/payments', paymentRoutes);
+
+// Payment hosted pages (EJS views)
+router.use('/', paymentPageRoutes);
 
 // Reference data (airports, cities, airlines)
 router.use('/reference', referenceRoutes);

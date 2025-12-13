@@ -1,0 +1,333 @@
+curl --location 'http://localhost:5000/api/flights/price' \
+--header 'Content-Type: application/json' \
+--data '{
+    "flightOffer": {
+        "type": "flight-offer",
+        "id": "1",
+        "source": "GDS",
+        "instantTicketingRequired": false,
+        "nonHomogeneous": false,
+        "oneWay": true,
+        "lastTicketingDate": "2025-12-24",
+        "numberOfBookableSeats": 9,
+        "itineraries": [
+            {
+                "duration": "PT21H55M",
+                "segments": [
+                    {
+                        "departure": {
+                            "iataCode": "BOM",
+                            "terminal": "2",
+                            "at": "2025-12-25T20:45:00"
+                        },
+                        "arrival": {
+                            "iataCode": "CMB",
+                            "at": "2025-12-25T23:15:00"
+                        },
+                        "carrierCode": "UL",
+                        "number": "144",
+                        "aircraft": {
+                            "code": "32A"
+                        },
+                        "operating": {
+                            "carrierCode": "UL"
+                        },
+                        "duration": "PT2H30M",
+                        "id": "1",
+                        "numberOfStops": 0,
+                        "blacklistedInEU": false
+                    },
+                    {
+                        "departure": {
+                            "iataCode": "CMB",
+                            "at": "2025-12-26T14:00:00"
+                        },
+                        "arrival": {
+                            "iataCode": "DXB",
+                            "terminal": "1",
+                            "at": "2025-12-26T17:10:00"
+                        },
+                        "carrierCode": "UL",
+                        "number": "231",
+                        "aircraft": {
+                            "code": "320"
+                        },
+                        "operating": {
+                            "carrierCode": "UL"
+                        },
+                        "duration": "PT4H40M",
+                        "id": "2",
+                        "numberOfStops": 0,
+                        "blacklistedInEU": false
+                    }
+                ]
+            }
+        ],
+        "price": {
+            "currency": "INR",
+            "total": "11500.00",
+            "base": "3500.00",
+            "fees": [
+                {
+                    "amount": "0.00",
+                    "type": "SUPPLIER"
+                }
+            ],
+            "grandTotal": "11500.00"
+        },
+        "pricingOptions": {
+            "fareType": [
+                "PUBLISHED"
+            ],
+            "includedCheckedBagsOnly": true
+        },
+        "validatingAirlineCodes": [
+            "UL"
+        ],
+        "travelerPricings": [
+            {
+                "travelerId": "1",
+                "fareOption": "STANDARD",
+                "travelerType": "ADULT",
+                "price": {
+                    "currency": "INR",
+                    "total": "11500.00",
+                    "base": "3500.00"
+                },
+                "fareDetailsBySegment": [
+                    {
+                        "segmentId": "1",
+                        "cabin": "ECONOMY",
+                        "fareBasis": "VOWIZ",
+                        "class": "V",
+                        "includedCheckedBags": {
+                            "weight": 30,
+                            "weightUnit": "KG"
+                        }
+                    },
+                    {
+                        "segmentId": "2",
+                        "cabin": "ECONOMY",
+                        "fareBasis": "VOWIZ",
+                        "class": "V",
+                        "includedCheckedBags": {
+                            "weight": 30,
+                            "weightUnit": "KG"
+                        }
+                    }
+                ]
+            }
+        ]
+    }
+}'
+
+res:-
+
+{
+    "success": true,
+    "statusCode": 200,
+    "message": "Flight price validated",
+    "data": {
+        "warnings": [
+            {
+                "code": 0,
+                "title": "PricingOrFareBasisDiscrepancyWarning",
+                "detail": "Actual price and/or fare basis for some passengers is different from requested ones",
+                "status": 200
+            }
+        ],
+        "data": {
+            "type": "flight-offers-pricing",
+            "flightOffers": [
+                {
+                    "type": "flight-offer",
+                    "id": "1",
+                    "source": "GDS",
+                    "instantTicketingRequired": false,
+                    "nonHomogeneous": false,
+                    "paymentCardRequired": false,
+                    "lastTicketingDate": "2025-12-25",
+                    "itineraries": [
+                        {
+                            "segments": [
+                                {
+                                    "departure": {
+                                        "iataCode": "BOM",
+                                        "terminal": "2",
+                                        "at": "2025-12-25T20:45:00"
+                                    },
+                                    "arrival": {
+                                        "iataCode": "CMB",
+                                        "at": "2025-12-25T23:15:00"
+                                    },
+                                    "carrierCode": "UL",
+                                    "number": "144",
+                                    "aircraft": {
+                                        "code": "32A"
+                                    },
+                                    "operating": {
+                                        "carrierCode": "UL"
+                                    },
+                                    "duration": "PT2H30M",
+                                    "id": "1",
+                                    "numberOfStops": 0,
+                                    "co2Emissions": [
+                                        {
+                                            "weight": 122,
+                                            "weightUnit": "KG",
+                                            "cabin": "ECONOMY"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "departure": {
+                                        "iataCode": "CMB",
+                                        "at": "2025-12-26T14:00:00"
+                                    },
+                                    "arrival": {
+                                        "iataCode": "DXB",
+                                        "terminal": "1",
+                                        "at": "2025-12-26T17:10:00"
+                                    },
+                                    "carrierCode": "UL",
+                                    "number": "231",
+                                    "aircraft": {
+                                        "code": "320"
+                                    },
+                                    "operating": {
+                                        "carrierCode": "UL"
+                                    },
+                                    "duration": "PT4H40M",
+                                    "id": "2",
+                                    "numberOfStops": 0,
+                                    "co2Emissions": [
+                                        {
+                                            "weight": 194,
+                                            "weightUnit": "KG",
+                                            "cabin": "ECONOMY"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ],
+                    "price": {
+                        "currency": "INR",
+                        "total": "13621.00",
+                        "base": "4180.00",
+                        "fees": [
+                            {
+                                "amount": "0.00",
+                                "type": "SUPPLIER"
+                            },
+                            {
+                                "amount": "0.00",
+                                "type": "TICKETING"
+                            },
+                            {
+                                "amount": "0.00",
+                                "type": "FORM_OF_PAYMENT"
+                            }
+                        ],
+                        "grandTotal": "13621.00",
+                        "billingCurrency": "INR"
+                    },
+                    "pricingOptions": {
+                        "fareType": [
+                            "PUBLISHED"
+                        ],
+                        "includedCheckedBagsOnly": true
+                    },
+                    "validatingAirlineCodes": [
+                        "UL"
+                    ],
+                    "travelerPricings": [
+                        {
+                            "travelerId": "1",
+                            "fareOption": "STANDARD",
+                            "travelerType": "ADULT",
+                            "price": {
+                                "currency": "INR",
+                                "total": "13621",
+                                "base": "4180",
+                                "taxes": [
+                                    {
+                                        "amount": "1278.00",
+                                        "code": "P2"
+                                    },
+                                    {
+                                        "amount": "726.00",
+                                        "code": "IN"
+                                    },
+                                    {
+                                        "amount": "6766.00",
+                                        "code": "YQ"
+                                    },
+                                    {
+                                        "amount": "548.00",
+                                        "code": "K3"
+                                    },
+                                    {
+                                        "amount": "123.00",
+                                        "code": "ZR"
+                                    }
+                                ],
+                                "refundableTaxes": "2127"
+                            },
+                            "fareDetailsBySegment": [
+                                {
+                                    "segmentId": "1",
+                                    "cabin": "ECONOMY",
+                                    "fareBasis": "VOWIZ",
+                                    "class": "V",
+                                    "includedCheckedBags": {
+                                        "weight": 30,
+                                        "weightUnit": "KG"
+                                    }
+                                },
+                                {
+                                    "segmentId": "2",
+                                    "cabin": "ECONOMY",
+                                    "fareBasis": "VOWIZ",
+                                    "class": "V",
+                                    "includedCheckedBags": {
+                                        "weight": 30,
+                                        "weightUnit": "KG"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ],
+            "bookingRequirements": {
+                "emailAddressRequired": true,
+                "mobilePhoneNumberRequired": true,
+                "travelerRequirements": [
+                    {
+                        "travelerId": "1",
+                        "documentRequired": true
+                    }
+                ]
+            }
+        },
+        "dictionaries": {
+            "locations": {
+                "BOM": {
+                    "cityCode": "BOM",
+                    "countryCode": "IN"
+                },
+                "CMB": {
+                    "cityCode": "CMB",
+                    "countryCode": "LK"
+                },
+                "DXB": {
+                    "cityCode": "DXB",
+                    "countryCode": "AE"
+                }
+            }
+        }
+    },
+    "timestamp": "2025-12-13T15:15:37.450Z"
+}
+

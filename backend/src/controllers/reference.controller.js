@@ -8,7 +8,7 @@
 const amadeus = require('../suppliers/amadeus');
 const ApiResponse = require('../core/ApiResponse');
 const AsyncHandler = require('../core/AsyncHandler');
-const StatusCodes = require('../core/StatusCodes');
+const { StatusCodes } = require('../core/StatusCodes');
 const logger = require('../config/winstonLogger');
 
 class ReferenceDataController {

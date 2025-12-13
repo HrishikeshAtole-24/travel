@@ -41,9 +41,9 @@ const createUserTable = async () => {
             ALTER TABLE users ADD COLUMN phone VARCHAR(20);
           END IF;
           
-          -- Add password_hash column
-          IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='password_hash') THEN
-            ALTER TABLE users ADD COLUMN password_hash VARCHAR(255);
+          -- Add password column
+          IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='password') THEN
+            ALTER TABLE users ADD COLUMN password VARCHAR(255) NOT NULL;
           END IF;
           
           -- Add verification columns
@@ -113,7 +113,7 @@ const createUserTable = async () => {
       -- Authentication
       email VARCHAR(255) UNIQUE NOT NULL,
       phone VARCHAR(20) UNIQUE NOT NULL,
-      password_hash VARCHAR(255) NOT NULL,
+      password VARCHAR(255) NOT NULL,
       
       -- Profile
       first_name VARCHAR(100) NOT NULL,

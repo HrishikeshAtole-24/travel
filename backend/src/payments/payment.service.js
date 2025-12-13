@@ -84,7 +84,9 @@ const initiatePayment = async (bookingId, paymentOptions = {}) => {
       userAgent: paymentOptions.userAgent,
       metadata: {
         booking_reference: booking.booking_reference,
-        flight_id: booking.flight_id
+        flight_id: booking.flight_id,
+        success_url: paymentOptions.successUrl || `${process.env.APP_URL}/payment/success`,
+        failure_url: paymentOptions.failureUrl || `${process.env.APP_URL}/payment/failure`
       }
     };
 
