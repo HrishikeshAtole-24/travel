@@ -223,6 +223,52 @@ const handlePaymentCallback = AsyncHandler(async (req, res) => {
   const { getPool } = require('../config/database');
   const { mapAcquirerStatusFromDB } = require('../models/acquirer-status-mapping.model');
   const { StandardPaymentStatus } = require('../core/StandardPaymentStatus');
+  const { PaymentStatus } = require('../core/PaymentStatusCodes');
+  
+  /**
+   * Convert numeric status code to database enum value
+   */
+  const convertStatusCodeToEnum = (statusCode) => {
+    // Map numeric codes to enum values
+    const codeToEnum = {
+      '200': PaymentStatus.SUCCESS,        // CAPTURED -> SUCCESS
+      '330': PaymentStatus.SUCCESS,        // APPROVED -> SUCCESS
+      'approved': PaymentStatus.SUCCESS,
+      'AUTHORIZED': PaymentStatus.PROCESSING,
+      'SUCCESS': PaymentStatus.SUCCESS,
+      
+      'CREATED': PaymentStatus.CREATED,
+      'PENDING': PaymentStatus.PENDING,
+      'processing': PaymentStatus.PROCESSING,
+      '100': PaymentStatus.PROCESSING,     // INPROGRESS
+      '501': PaymentStatus.PENDING,        // PENDING_STATUS
+      '406': PaymentStatus.PROCESSING,     // UNDER_PROCESS
+      
+      '400': PaymentStatus.FAILED,         // FAILED
+      '500': PaymentStatus.FAILED,         // TRANSACTION_FAILED
+      '332': PaymentStatus.FAILED,         // PAYMENT_FAILED
+      '402': PaymentStatus.FAILED,         // ACQUIRER_ERROR
+      '405': PaymentStatus.FAILED,         // AUTH_FAILED
+      '409': PaymentStatus.FAILED,         // SIGNATURE_MISMATCH
+      '411': PaymentStatus.FAILED,         // RECURRING_ERROR
+      '505': PaymentStatus.FAILED,         // PAYMENT_OPTION_NOT_SUPPORTED
+      
+      '401': PaymentStatus.FAILED,         // DECLINED
+      '403': PaymentStatus.FAILED,         // DENIED
+      '412': PaymentStatus.FAILED,         // FRAUD_DENIED
+      
+      '410': PaymentStatus.CANCELLED,      // CANCELLED
+      '407': PaymentStatus.CANCELLED,      // REJECTED
+      
+      '404': PaymentStatus.FAILED,         // TIMEOUT
+      '408': PaymentStatus.FAILED,         // DUPLICATE
+      
+      '502': PaymentStatus.FAILED,         // INVALID
+      '300': PaymentStatus.FAILED,         // INVALID_REQUEST
+    };
+    
+    return codeToEnum[statusCode] || PaymentStatus.FAILED;
+  };
   
   const pool = getPool();
   
@@ -248,8 +294,13 @@ const handlePaymentCallback = AsyncHandler(async (req, res) => {
     // Determine status from query params
     let acquirerStatus = status === 'failed' ? 'failed' : (payment_id ? 'captured' : 'failed');
     
-    // Map to standard status
-    const standardStatus = await mapAcquirerStatusFromDB(acquirer, acquirerStatus);
+    // Map to standard status code (numeric)
+    const statusCode = await mapAcquirerStatusFromDB(acquirer, acquirerStatus);
+    
+    // Convert status code to database enum value
+    const dbStatus = convertStatusCodeToEnum(statusCode);
+    
+    logger.info(`[PaymentCallback] Status mapping: ${acquirerStatus} -> ${statusCode} -> ${dbStatus}`);
     
     // Update payment in database
     await pool.query(
@@ -258,11 +309,11 @@ const handlePaymentCallback = AsyncHandler(async (req, res) => {
            acquirer_transaction_id = $2,
            updated_at = CURRENT_TIMESTAMP
        WHERE id = $3`,
-      [standardStatus, payment_id || null, payment.id]
+      [dbStatus, payment_id || null, payment.id]
     );
 
-    // Update booking status
-    if (standardStatus === StandardPaymentStatus.CAPTURED) {
+    // Update booking status if payment successful
+    if (dbStatus === PaymentStatus.SUCCESS || statusCode === '200' || statusCode === 'approved') {
       await pool.query(
         `UPDATE bookings SET status = 'confirmed' WHERE id = $1`,
         [payment.booking_id]
@@ -274,10 +325,10 @@ const handlePaymentCallback = AsyncHandler(async (req, res) => {
     const successUrl = metadata.success_url || 'https://www.google.com';
     const failureUrl = metadata.failure_url || 'https://www.youtube.com';
 
-    logger.info(`[PaymentCallback] Payment ${payment.payment_reference}: ${standardStatus}`);
+    logger.info(`[PaymentCallback] Payment ${payment.payment_reference}: ${dbStatus}`);
 
     // Redirect based on status
-    if (standardStatus === StandardPaymentStatus.CAPTURED || standardStatus === StandardPaymentStatus.AUTHORIZED) {
+    if (dbStatus === PaymentStatus.SUCCESS) {
       // Success - redirect to success URL
       const redirectUrl = `${successUrl}?payment_reference=${payment.payment_reference}&status=success&booking_reference=${payment.booking_reference}`;
       logger.info(`[PaymentCallback] Redirecting to success URL: ${redirectUrl}`);
