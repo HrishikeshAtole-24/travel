@@ -1,0 +1,117 @@
+/* Search Page Styles */
+
+.search-page {
+  min-height: 100vh;
+  background-color: var(--gray-50);
+  padding: var(--spacing-3xl) 0;
+  margin-top: 80px;
+}
+
+.search-layout {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: var(--spacing-xl);
+}
+
+/* Sidebar */
+.search-sidebar {
+  position: sticky;
+  top: 100px;
+  height: fit-content;
+}
+
+/* Results Section */
+.search-results {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xl);
+}
+
+.results-header {
+  background-color: var(--white);
+  padding: var(--spacing-xl);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+}
+
+.results-header h1 {
+  font-size: var(--fs-2xl);
+  color: var(--gray-900);
+  margin-bottom: var(--spacing-sm);
+}
+
+.results-header p {
+  font-size: var(--fs-base);
+  color: var(--gray-600);
+  margin: 0;
+}
+
+.results-count {
+  font-size: var(--fs-lg);
+  font-weight: 600;
+  color: var(--gray-700);
+  margin-bottom: var(--spacing-lg);
+}
+
+/* Flight List */
+.flights-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+/* Loading State */
+.loading-state {
+  background-color: var(--white);
+  padding: var(--spacing-3xl);
+  border-radius: var(--radius-lg);
+  text-align: center;
+}
+
+.spinner {
+  width: 50px;
+  height: 50px;
+  border: 4px solid var(--gray-200);
+  border-top-color: var(--primary-color);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto var(--spacing-lg);
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Error & Empty States */
+.error-state,
+.empty-state {
+  background-color: var(--white);
+  padding: var(--spacing-3xl);
+  border-radius: var(--radius-lg);
+  text-align: center;
+}
+
+.error-state p,
+.empty-state p {
+  font-size: var(--fs-lg);
+  color: var(--gray-600);
+  margin-bottom: var(--spacing-lg);
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .search-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .search-sidebar {
+    position: static;
+  }
+}
+
+@media (max-width: 768px) {
+  .search-page {
+    padding: var(--spacing-xl) 0;
+    margin-top: 70px;
+  }
+}

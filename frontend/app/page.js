@@ -1,0 +1,20 @@
+import Header from './components/Header/Header';
+import Hero from './components/Hero/Hero';
+import PopularDestinations from './components/PopularDestinations/PopularDestinations';
+import WhyChooseUs from './components/WhyChooseUs/WhyChooseUs';
+import Footer from './components/Footer/Footer';
+import './page.css';
+
+export default function Home() {
+  return (
+    <>
+      <Header />
+      <main>
+        <Hero />
+        <PopularDestinations />
+        <WhyChooseUs />
+      </main>
+      <Footer />
+    </>
+  );
+}

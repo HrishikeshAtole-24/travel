@@ -25,7 +25,7 @@ const connectDB = async () => {
           database: process.env.DB_NAME || 'travel_booking',
           ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,
         };
-
+        // console.log('🔌 Connecting to PostgreSQL (Neon DB)...', connectionConfig);
     pool = new Pool({
       ...connectionConfig,
       max: 20, // Maximum pool size
@@ -35,7 +35,9 @@ const connectDB = async () => {
 
     // Test connection
     const client = await pool.connect();
+    // console.log('🔌 Connecting to PostgreSQL (Neon DB)...', client);
     const result = await client.query('SELECT NOW()');
+    // console.log('✅ PostgreSQL (Neon DB) Connected Successfully');
     logger.info('✅ PostgreSQL (Neon DB) Connected Successfully');
     logger.info(`📅 Database Time: ${result.rows[0].now}`);
     client.release();

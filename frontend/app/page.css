@@ -1,0 +1,22 @@
+/* Homepage Specific Styles */
+
+.hero-section {
+  position: relative;
+  min-height: 600px;
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.hero-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: url('/patterns/world-map.svg') center/cover no-repeat;
+  opacity: 0.1;
+}
