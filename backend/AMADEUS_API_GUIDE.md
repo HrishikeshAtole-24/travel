@@ -351,7 +351,7 @@ const express = require('express');
 const router = express.Router();
 const amadeus = require('../suppliers/amadeus');
 
-router.get('/api/airports/search', async (req, res) => {
+router.get('/airports/search', async (req, res) => {
   try {
     const { q } = req.query;  // q=mum
 

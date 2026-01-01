@@ -11,6 +11,7 @@ const {createPaymentTable} = require("./payment.model");
 const { createAcquirerTable } = require('./acquirer.model');
 const { createStandardStatusTable } = require('./standard-status.model');
 const { createAcquirerStatusMappingTable } = require('./acquirer-status-mapping.model');
+const { createAirportTable } = require('./airport.model');
 const logger = require('../config/winstonLogger');
 
 const initializeDatabase = async () => {
@@ -21,7 +22,10 @@ const initializeDatabase = async () => {
     // 1. Users table (no dependencies)
     await createUserTable();
 
-    // 2. Bookings table (depends on users)
+    // 2. Airports table (no dependencies)
+    await createAirportTable();
+
+    // 3. Bookings table (depends on users)
     await createBookingTable();
 
     // 3. Travelers table (depends on bookings)
@@ -42,6 +46,7 @@ const initializeDatabase = async () => {
     logger.info('✅ Database initialization completed successfully!');
     logger.info('📊 All tables created/verified:');
     logger.info('   - users');
+    logger.info('   - airports');
     logger.info('   - bookings');
     logger.info('   - travelers');
     logger.info('   - payments');

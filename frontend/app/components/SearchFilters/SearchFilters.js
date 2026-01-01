@@ -68,7 +68,7 @@ export default function SearchFilters({ filters, onApplyFilters }) {
           />
           <div className="price-values">
             <span>₹0</span>
-            <span>₹{localFilters.priceRange[1].toLocaleString()}</span>
+            <span suppressHydrationWarning>₹{localFilters.priceRange[1].toLocaleString()}</span>
           </div>
         </div>
       </div>

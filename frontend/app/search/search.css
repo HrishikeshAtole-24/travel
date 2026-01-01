@@ -17,7 +17,8 @@
 .search-sidebar {
   position: sticky;
   top: 100px;
-  height: fit-content;
+  height: calc(100vh - 120px); /* Make sidebar fill viewport height minus header */
+  overflow-y: auto; /* Enable vertical scrolling */
 }
 
 /* Results Section */

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import AirportAutocomplete from '../AirportAutocomplete/AirportAutocomplete';
 import './FlightSearchWidget.css';
 
 export default function FlightSearchWidget() {
@@ -9,8 +10,10 @@ export default function FlightSearchWidget() {
   const [activeTab, setActiveTab] = useState('flights');
   const [searchData, setSearchData] = useState({
     tripType: 'roundtrip',
-    from: '',
-    to: '',
+    fromCode: '',
+    fromAirport: null,
+    toCode: '',
+    toAirport: null,
     departDate: '',
     returnDate: '',
     passengers: 1,
@@ -36,9 +39,25 @@ export default function FlightSearchWidget() {
       return;
     }
 
+    // Validate required fields
+    if (!searchData.fromCode || !searchData.toCode) {
+      alert('Please select departure and destination airports');
+      return;
+    }
+
+    if (!searchData.departDate) {
+      alert('Please select departure date');
+      return;
+    }
+
+    if (searchData.tripType === 'roundtrip' && !searchData.returnDate) {
+      alert('Please select return date for round trip');
+      return;
+    }
+
     const params = new URLSearchParams({
-      from: searchData.from,
-      to: searchData.to,
+      from: searchData.fromCode,
+      to: searchData.toCode,
       departDate: searchData.departDate,
       ...(searchData.tripType === 'roundtrip' && { returnDate: searchData.returnDate }),
       passengers: searchData.passengers,
@@ -59,8 +78,26 @@ export default function FlightSearchWidget() {
   const swapLocations = () => {
     setSearchData(prev => ({
       ...prev,
-      from: prev.to,
-      to: prev.from
+      fromCode: prev.toCode,
+      fromAirport: prev.toAirport,
+      toCode: prev.fromCode,
+      toAirport: prev.fromAirport
+    }));
+  };
+
+  const handleFromChange = (code, airport) => {
+    setSearchData(prev => ({
+      ...prev,
+      fromCode: code,
+      fromAirport: airport
+    }));
+  };
+
+  const handleToChange = (code, airport) => {
+    setSearchData(prev => ({
+      ...prev,
+      toCode: code,
+      toAirport: airport
     }));
   };
 
@@ -121,18 +158,14 @@ export default function FlightSearchWidget() {
             <div className="search-fields-row">
               {/* From */}
               <div className="search-field-mmt from-field">
-                <label className="field-label">
-                  <i className="fas fa-plane-departure"></i> FROM
-                </label>
-                <input
-                  type="text"
+                <AirportAutocomplete
+                  label="FROM"
+                  icon="fa-plane-departure"
                   placeholder="Delhi"
-                  value={searchData.from}
-                  onChange={(e) => handleChange('from', e.target.value)}
-                  className="field-input city-input"
+                  value={searchData.fromAirport?.displayText || ''}
+                  onChange={handleFromChange}
                   required
                 />
-                <div className="field-subtext">DEL, Delhi Airport India</div>
               </div>
 
               {/* Swap Button */}
@@ -147,18 +180,14 @@ export default function FlightSearchWidget() {
 
               {/* To */}
               <div className="search-field-mmt to-field">
-                <label className="field-label">
-                  <i className="fas fa-plane-arrival"></i> TO
-                </label>
-                <input
-                  type="text"
+                <AirportAutocomplete
+                  label="TO"
+                  icon="fa-plane-arrival"
                   placeholder="Mumbai"
-                  value={searchData.to}
-                  onChange={(e) => handleChange('to', e.target.value)}
-                  className="field-input city-input"
+                  value={searchData.toAirport?.displayText || ''}
+                  onChange={handleToChange}
                   required
                 />
-                <div className="field-subtext">BOM, Chhatrapati Shivaji International...</div>
               </div>
 
               {/* Departure Date */}

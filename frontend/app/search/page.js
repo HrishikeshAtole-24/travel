@@ -37,21 +37,87 @@ function SearchContent() {
       const passengers = searchParams.get('passengers') || 1;
       const cabinClass = searchParams.get('cabinClass') || 'economy';
 
-      // Build API request
-      const requestBody = {
-        origin: from,
-        destination: to,
+      // Validate required parameters
+      if (!from || !to || !departDate) {
+        setError('Please select departure city, destination city, and travel date');
+        setLoading(false);
+        return;
+      }
+
+      if (from.trim() === '' || to.trim() === '') {
+        setError('Please select valid departure and destination airports');
+        setLoading(false);
+        return;
+      }
+
+      // Build API request with query parameters
+      const queryParams = new URLSearchParams({
+        origin: from.trim(),
+        destination: to.trim(),
         departureDate: departDate,
-        ...(returnDate && { returnDate }),
         adults: parseInt(passengers),
         cabinClass: cabinClass.toUpperCase(),
         currency: 'INR'
-      };
+      });
 
-      const response = await apiClient.post('/flights/search', requestBody);
+      // Add return date if provided
+      if (returnDate) {
+        queryParams.append('returnDate', returnDate);
+      }
+
+      const response = await apiClient.get(`/flights/search?${queryParams.toString()}`);
       
-      if (response.success && response.data?.flights) {
-        setFlights(response.data.flights);
+      console.log('✈️ Flight API Response:', response);
+      
+      if (response && response.data && Array.isArray(response.data)) {
+        // API returns flights directly in response.data array
+        console.log('✈️ Flights data:', response.data.length, 'flights found');
+        
+        // Transform API data to match FlightCard component expectations
+        const transformedFlights = response.data.map(flight => {
+          const itinerary = flight.itinerary || {};
+          const firstSlice = itinerary.slices?.[0] || {};
+          const firstSegment = firstSlice.segments?.[0] || {};
+          const lastSegment = firstSlice.segments?.[firstSlice.segments?.length - 1] || firstSegment;
+          
+          return {
+            ...flight,
+            segments: [{
+              airlineCode: flight.validatingAirlineCode || firstSegment.carrier || 'XX',
+              airlineName: response.dictionaries?.airlines?.[flight.validatingAirlineCode]?.name || 
+                          response.dictionaries?.airlines?.[firstSegment.carrier]?.name || 
+                          'Unknown Airline',
+              flightNumber: `${firstSegment.carrier || ''}${firstSegment.flightNumber || ''}`.trim(),
+              departure: {
+                time: firstSegment.departure?.time,
+                airport: firstSegment.departure?.airport
+              },
+              arrival: {
+                time: lastSegment.arrival?.time, 
+                airport: lastSegment.arrival?.airport
+              },
+              duration: flight.computed?.totalDurationMinutes,
+              stops: flight.computed?.totalStops || 0,
+              cabinClass: firstSegment.cabin || 'Economy'
+            }],
+            price: {
+              total: flight.pricing?.totalAmount || 0,
+              currency: flight.pricing?.totalCurrency || 'EUR'
+            }
+          };
+        });
+        
+        console.log('✈️ Transformed flights:', transformedFlights[0]);
+        setFlights(transformedFlights);
+      } else if (response && response.success && response.data) {
+        // Fallback: if API uses success wrapper format
+        const flightsData = Array.isArray(response.data) ? response.data : response.data.data || [];
+        console.log('✈️ Flights data (success format):', flightsData.length, 'flights found');
+        setFlights(flightsData);
+      } else {
+        console.error('❌ Invalid API response:', response);
+        setError('No flights found or invalid response format');
+        setFlights([]);
       }
     } catch (err) {
       setError(err.message || 'Failed to search flights');
