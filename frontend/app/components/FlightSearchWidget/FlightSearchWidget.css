@@ -297,6 +297,196 @@
   }
 }
 
+/* ========================================
+   MMT-Style Travellers Dropdown
+   ======================================== */
+
+.travelers-field {
+  position: relative;
+}
+
+.travellers-selector {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  padding: var(--spacing-xs) 0;
+}
+
+.travellers-count {
+  font-size: var(--fs-2xl);
+  font-weight: 700;
+  color: var(--gray-900);
+}
+
+.travellers-selector i {
+  font-size: var(--fs-sm);
+  color: var(--gray-500);
+  transition: transform var(--transition-fast);
+}
+
+.travellers-selector i.rotated {
+  transform: rotate(180deg);
+}
+
+.travellers-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  width: 450px;
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  z-index: var(--z-dropdown);
+  padding: var(--spacing-lg);
+  margin-top: var(--spacing-sm);
+  border: 1px solid var(--gray-200);
+}
+
+.traveller-type-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: var(--spacing-md) 0;
+  border-bottom: 1px solid var(--gray-100);
+}
+
+.traveller-type-row:last-of-type {
+  border-bottom: none;
+}
+
+.traveller-type-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.traveller-type-label {
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  color: var(--gray-800);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.traveller-type-hint {
+  font-size: 10px;
+  color: var(--gray-500);
+}
+
+.traveller-counter {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  max-width: 280px;
+  justify-content: flex-end;
+}
+
+.counter-btn {
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--gray-300);
+  background: var(--white);
+  border-radius: var(--radius-sm);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--gray-700);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.counter-btn:hover:not(.disabled):not(.active) {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+.counter-btn.active {
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+  color: var(--white);
+}
+
+.counter-btn.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.counter-btn.more {
+  font-size: 10px;
+  color: var(--gray-500);
+}
+
+/* Travel Class Section */
+.travel-class-section {
+  margin-top: var(--spacing-lg);
+  padding-top: var(--spacing-lg);
+  border-top: 1px solid var(--gray-200);
+}
+
+.travel-class-label {
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  color: var(--gray-600);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: block;
+  margin-bottom: var(--spacing-md);
+}
+
+.travel-class-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+}
+
+.class-btn {
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 1px solid var(--gray-300);
+  background: var(--white);
+  border-radius: var(--radius-full);
+  font-size: var(--fs-xs);
+  font-weight: 500;
+  color: var(--gray-700);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.class-btn:hover:not(.active) {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+.class-btn.active {
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+  color: var(--white);
+}
+
+/* Apply Button */
+.apply-btn {
+  width: 100%;
+  margin-top: var(--spacing-lg);
+  padding: var(--spacing-md) var(--spacing-xl);
+  background: linear-gradient(135deg, #53b2fe 0%, var(--primary-color) 100%);
+  border: none;
+  border-radius: var(--radius-md);
+  color: var(--white);
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.apply-btn:hover {
+  box-shadow: 0 4px 15px rgba(0, 102, 255, 0.3);
+  transform: translateY(-1px);
+}
+
 @media (max-width: 1024px) {
   .search-tabs {
     padding: var(--spacing-xs) var(--spacing-sm) 0;
@@ -350,5 +540,32 @@
 
   .search-submit-btn-mmt {
     font-size: var(--fs-lg);
+  }
+
+  /* Travellers dropdown responsive */
+  .travellers-dropdown {
+    width: calc(100vw - 40px);
+    max-width: 400px;
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+  }
+
+  .traveller-counter {
+    max-width: 200px;
+  }
+
+  .counter-btn {
+    width: 26px;
+    height: 26px;
+    font-size: var(--fs-xs);
+  }
+
+  .travel-class-options {
+    flex-direction: column;
+  }
+
+  .class-btn {
+    text-align: center;
   }
 }

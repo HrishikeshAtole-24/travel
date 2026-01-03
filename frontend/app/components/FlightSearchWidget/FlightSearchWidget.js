@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import AirportAutocomplete from '../AirportAutocomplete/AirportAutocomplete';
 import DatePicker from '../DatePicker/DatePicker';
@@ -10,6 +10,8 @@ export default function FlightSearchWidget() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('flights');
   const [calendarOpen, setCalendarOpen] = useState(null); // null, 'departure', or 'return'
+  const [travellersOpen, setTravellersOpen] = useState(false);
+  const travellersRef = useRef(null);
   
   const [searchData, setSearchData] = useState({
     tripType: 'roundtrip',
@@ -20,7 +22,11 @@ export default function FlightSearchWidget() {
     departDate: '', // Will be set dynamically
     returnDate: '',  // Will be set dynamically
     passengers: 1,
-    cabinClass: 'economy'
+    cabinClass: 'economy',
+    // MMT-style traveller breakdown (UI only)
+    adults: 1,
+    children: 0,
+    infants: 0
   });
 
   // Set dynamic dates after component mounts to avoid hydration mismatch
@@ -38,6 +44,18 @@ export default function FlightSearchWidget() {
       departDate: todayString,
       returnDate: tomorrowString
     }));
+  }, []);
+
+  // Close travellers dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (travellersRef.current && !travellersRef.current.contains(event.target)) {
+        setTravellersOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   const tabs = [
@@ -158,6 +176,71 @@ export default function FlightSearchWidget() {
       toCode: code,
       toAirport: airport
     }));
+  };
+
+  // Traveller count handlers
+  const updateTravellerCount = (type, increment) => {
+    setSearchData(prev => {
+      let newValue = prev[type] + (increment ? 1 : -1);
+      
+      // Validation rules
+      if (type === 'adults') {
+        newValue = Math.max(1, Math.min(9, newValue)); // Min 1, Max 9
+        // Infants can't exceed adults
+        const newInfants = Math.min(prev.infants, newValue);
+        const totalPassengers = newValue + prev.children + newInfants;
+        return {
+          ...prev,
+          adults: newValue,
+          infants: newInfants,
+          passengers: totalPassengers
+        };
+      }
+      
+      if (type === 'children') {
+        newValue = Math.max(0, Math.min(6, newValue)); // Min 0, Max 6
+      }
+      
+      if (type === 'infants') {
+        newValue = Math.max(0, Math.min(prev.adults, newValue)); // Min 0, Max = adults count
+      }
+      
+      const totalPassengers = 
+        (type === 'adults' ? newValue : prev.adults) + 
+        (type === 'children' ? newValue : prev.children) + 
+        (type === 'infants' ? newValue : prev.infants);
+      
+      // Max 9 total passengers
+      if (totalPassengers > 9) return prev;
+      
+      return {
+        ...prev,
+        [type]: newValue,
+        passengers: totalPassengers
+      };
+    });
+  };
+
+  const handleCabinClassChange = (cabinClass) => {
+    setSearchData(prev => ({
+      ...prev,
+      cabinClass
+    }));
+  };
+
+  const getTravellerSummary = () => {
+    const total = searchData.adults + searchData.children + searchData.infants;
+    return `${total} Traveller${total > 1 ? 's' : ''}`;
+  };
+
+  const getCabinClassDisplay = () => {
+    const classMap = {
+      'economy': 'Economy/Premium Economy',
+      'premium_economy': 'Premium Economy',
+      'business': 'Business',
+      'first': 'First Class'
+    };
+    return classMap[searchData.cabinClass] || 'Economy';
   };
 
   return (
@@ -287,23 +370,160 @@ export default function FlightSearchWidget() {
                 </div>
               )}
 
-              {/* Travelers & Class */}
-              <div className="search-field-mmt travelers-field">
+              {/* Travelers & Class - MMT Style */}
+              <div className="search-field-mmt travelers-field" ref={travellersRef}>
                 <label className="field-label">
                   <i className="fas fa-user"></i> TRAVELLERS & CLASS
                 </label>
-                <select
-                  value={searchData.passengers}
-                  onChange={(e) => handleChange('passengers', e.target.value)}
-                  className="field-input"
+                <div 
+                  className="travellers-selector"
+                  onClick={() => setTravellersOpen(!travellersOpen)}
                 >
-                  {[1,2,3,4,5,6,7,8,9].map(num => (
-                    <option key={num} value={num}>{num} {num === 1 ? 'Traveller' : 'Travellers'}</option>
-                  ))}
-                </select>
-                <div className="field-subtext">
-                  {searchData.cabinClass === 'economy' ? 'Economy/Premium Economy' : searchData.cabinClass}
+                  <span className="travellers-count">{getTravellerSummary()}</span>
+                  <i className={`fas fa-chevron-down ${travellersOpen ? 'rotated' : ''}`}></i>
                 </div>
+                <div className="field-subtext">{getCabinClassDisplay()}</div>
+
+                {/* MMT Style Dropdown */}
+                {travellersOpen && (
+                  <div className="travellers-dropdown">
+                    {/* Adults */}
+                    <div className="traveller-type-row">
+                      <div className="traveller-type-info">
+                        <span className="traveller-type-label">ADULTS (12y +)</span>
+                        <span className="traveller-type-hint">on the day of travel</span>
+                      </div>
+                      <div className="traveller-counter">
+                        {[1,2,3,4,5,6,7,8,9].map(num => (
+                          <button
+                            key={num}
+                            type="button"
+                            className={`counter-btn ${searchData.adults === num ? 'active' : ''}`}
+                            onClick={() => setSearchData(prev => {
+                              const newInfants = Math.min(prev.infants, num);
+                              return {
+                                ...prev,
+                                adults: num,
+                                infants: newInfants,
+                                passengers: num + prev.children + newInfants
+                              };
+                            })}
+                          >
+                            {num}
+                          </button>
+                        ))}
+                        <button type="button" className="counter-btn more">&gt;9</button>
+                      </div>
+                    </div>
+
+                    {/* Children */}
+                    <div className="traveller-type-row">
+                      <div className="traveller-type-info">
+                        <span className="traveller-type-label">CHILDREN (2y - 12y)</span>
+                        <span className="traveller-type-hint">on the day of travel</span>
+                      </div>
+                      <div className="traveller-counter">
+                        {[0,1,2,3,4,5,6].map(num => (
+                          <button
+                            key={num}
+                            type="button"
+                            className={`counter-btn ${searchData.children === num ? 'active' : ''}`}
+                            onClick={() => {
+                              const total = searchData.adults + num + searchData.infants;
+                              if (total <= 9) {
+                                setSearchData(prev => ({
+                                  ...prev,
+                                  children: num,
+                                  passengers: prev.adults + num + prev.infants
+                                }));
+                              }
+                            }}
+                          >
+                            {num}
+                          </button>
+                        ))}
+                        <button type="button" className="counter-btn more">&gt;6</button>
+                      </div>
+                    </div>
+
+                    {/* Infants */}
+                    <div className="traveller-type-row">
+                      <div className="traveller-type-info">
+                        <span className="traveller-type-label">INFANTS (below 2y)</span>
+                        <span className="traveller-type-hint">on the day of travel</span>
+                      </div>
+                      <div className="traveller-counter">
+                        {[0,1,2,3,4,5,6].map(num => (
+                          <button
+                            key={num}
+                            type="button"
+                            className={`counter-btn ${searchData.infants === num ? 'active' : ''} ${num > searchData.adults ? 'disabled' : ''}`}
+                            onClick={() => {
+                              if (num <= searchData.adults) {
+                                const total = searchData.adults + searchData.children + num;
+                                if (total <= 9) {
+                                  setSearchData(prev => ({
+                                    ...prev,
+                                    infants: num,
+                                    passengers: prev.adults + prev.children + num
+                                  }));
+                                }
+                              }
+                            }}
+                            disabled={num > searchData.adults}
+                          >
+                            {num}
+                          </button>
+                        ))}
+                        <button type="button" className="counter-btn more">&gt;6</button>
+                      </div>
+                    </div>
+
+                    {/* Travel Class */}
+                    <div className="travel-class-section">
+                      <span className="travel-class-label">CHOOSE TRAVEL CLASS</span>
+                      <div className="travel-class-options">
+                        <button
+                          type="button"
+                          className={`class-btn ${searchData.cabinClass === 'economy' ? 'active' : ''}`}
+                          onClick={() => handleCabinClassChange('economy')}
+                        >
+                          Economy/Premium Economy
+                        </button>
+                        <button
+                          type="button"
+                          className={`class-btn ${searchData.cabinClass === 'premium_economy' ? 'active' : ''}`}
+                          onClick={() => handleCabinClassChange('premium_economy')}
+                        >
+                          Premium Economy
+                        </button>
+                        <button
+                          type="button"
+                          className={`class-btn ${searchData.cabinClass === 'business' ? 'active' : ''}`}
+                          onClick={() => handleCabinClassChange('business')}
+                        >
+                          Business
+                        </button>
+                        <button
+                          type="button"
+                          className={`class-btn ${searchData.cabinClass === 'first' ? 'active' : ''}`}
+                          onClick={() => handleCabinClassChange('first')}
+                        >
+                          First Class
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Apply Button */}
+                    <button 
+                      type="button" 
+                      className="apply-btn"
+                      onClick={() => setTravellersOpen(false)}
+                    >
+                      APPLY
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
 
