@@ -1,24 +1,44 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import AirportAutocomplete from '../AirportAutocomplete/AirportAutocomplete';
+import DatePicker from '../DatePicker/DatePicker';
 import './FlightSearchWidget.css';
 
 export default function FlightSearchWidget() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('flights');
+  const [calendarOpen, setCalendarOpen] = useState(null); // null, 'departure', or 'return'
+  
   const [searchData, setSearchData] = useState({
     tripType: 'roundtrip',
     fromCode: '',
     fromAirport: null,
     toCode: '',
     toAirport: null,
-    departDate: '',
-    returnDate: '',
+    departDate: '', // Will be set dynamically
+    returnDate: '',  // Will be set dynamically
     passengers: 1,
     cabinClass: 'economy'
   });
+
+  // Set dynamic dates after component mounts to avoid hydration mismatch
+  useEffect(() => {
+    const today = new Date();
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    // Fix timezone issue - use local date, not UTC
+    const todayString = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    const tomorrowString = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`;
+    
+    setSearchData(prev => ({
+      ...prev,
+      departDate: todayString,
+      returnDate: tomorrowString
+    }));
+  }, []);
 
   const tabs = [
     { id: 'flights', label: 'Flights', icon: 'fa-plane' },
@@ -69,10 +89,49 @@ export default function FlightSearchWidget() {
   };
 
   const handleChange = (field, value) => {
-    setSearchData(prev => ({
-      ...prev,
-      [field]: value
-    }));
+    setSearchData(prev => {
+      const newData = {
+        ...prev,
+        [field]: value
+      };
+      
+      // Smart date handling: if departure date is changed and it's after return date, clear return date
+      if (field === 'departDate' && prev.returnDate) {
+        const newDepartDate = new Date(value);
+        const currentReturnDate = new Date(prev.returnDate);
+        
+        if (newDepartDate >= currentReturnDate) {
+          // Clear return date if departure is on or after current return date
+          newData.returnDate = '';
+        }
+      }
+      
+      return newData;
+    });
+  };
+
+  // Handle calendar opening/closing - MMT style
+  const handleCalendarToggle = (calendarType) => {
+    setCalendarOpen(calendarOpen === calendarType ? null : calendarType);
+  };
+
+  // Handle date selection in MMT flow
+  const handleDateSelection = (field, value) => {
+    handleChange(field, value);
+    
+    // MMT-style flow: if departure is selected, keep calendar open for return
+    if (field === 'departDate' && searchData.tripType === 'roundtrip') {
+      // Don't close calendar, user can now select return date
+      setCalendarOpen('return');
+    } else if (field === 'returnDate') {
+      // Close calendar after return date is selected
+      setCalendarOpen(null);
+    }
+  };
+
+  // Close calendar when clicked outside
+  const handleCalendarClose = () => {
+    setCalendarOpen(null);
   };
 
   const swapLocations = () => {
@@ -192,37 +251,39 @@ export default function FlightSearchWidget() {
 
               {/* Departure Date */}
               <div className="search-field-mmt date-field">
-                <label className="field-label">
-                  <i className="fas fa-calendar-alt"></i> DEPARTURE
-                </label>
-                <input
-                  type="date"
+                <DatePicker
+                  label="DEPARTURE"
+                  icon="fa-calendar-alt"
                   value={searchData.departDate}
-                  onChange={(e) => handleChange('departDate', e.target.value)}
-                  className="field-input date-input"
+                  onChange={(date) => handleDateSelection('departDate', date)}
+                  isOpen={calendarOpen === 'departure'}
+                  onToggle={() => handleCalendarToggle('departure')}
+                  onClose={handleCalendarClose}
+                  departureDate={searchData.departDate}
+                  returnDate={searchData.returnDate}
+                  placeholder="Select Date"
+                  isReturn={false}
                   required
                 />
-                <div className="field-subtext">
-                  {searchData.departDate ? new Date(searchData.departDate).toLocaleDateString('en-US', { weekday: 'short' }) : 'Select Date'}
-                </div>
               </div>
 
               {/* Return Date */}
               {searchData.tripType === 'roundtrip' && (
                 <div className="search-field-mmt date-field">
-                  <label className="field-label">
-                    <i className="fas fa-calendar-alt"></i> RETURN
-                  </label>
-                  <input
-                    type="date"
+                  <DatePicker
+                    label="RETURN"
+                    icon="fa-calendar-alt"
                     value={searchData.returnDate}
-                    onChange={(e) => handleChange('returnDate', e.target.value)}
-                    className="field-input date-input"
+                    onChange={(date) => handleDateSelection('returnDate', date)}
+                    isOpen={calendarOpen === 'return'}
+                    onToggle={() => handleCalendarToggle('return')}
+                    onClose={handleCalendarClose}
+                    isReturn={true}
+                    departureDate={searchData.departDate}
+                    returnDate={searchData.returnDate}
+                    placeholder={searchData.returnDate ? "Select Date" : "Select Return Date"}
                     required
                   />
-                  <div className="field-subtext">
-                    {searchData.returnDate ? new Date(searchData.returnDate).toLocaleDateString('en-US', { weekday: 'short' }) : 'Select Date'}
-                  </div>
                 </div>
               )}
 

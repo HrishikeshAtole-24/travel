@@ -1,5 +1,10 @@
 /* Homepage Specific Styles */
 
+main {
+  overflow: visible;
+  position: relative;
+}
+
 .hero-section {
   position: relative;
   min-height: 600px;
@@ -7,7 +12,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .hero-section::before {
