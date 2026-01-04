@@ -16,6 +16,7 @@ function SearchContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [airportInfo, setAirportInfo] = useState({ from: null, to: null });
+  const [sortBy, setSortBy] = useState('price'); // Default sort
   const [filters, setFilters] = useState({
     stops: 'any',
     priceRange: [0, 100000],
@@ -245,6 +246,12 @@ function SearchContent() {
     setFilters(newFilters);
   };
 
+  // Reset sort when filters are reset
+  const handleResetFilters = (defaultFilters) => {
+    setFilters(defaultFilters);
+    setSortBy('price'); // Reset to default sort
+  };
+
   // Filter flights based on selected filters
   const filteredFlights = flights.filter(flight => {
     // Price filter
@@ -260,8 +267,41 @@ function SearchContent() {
       if (filters.stops === '1stop' && stops !== 1) return false;
     }
 
+    // Departure time filter
+    if (filters.departureTime !== 'any') {
+      const departureTime = flight.segments?.[0]?.departure?.time;
+      if (departureTime) {
+        const hour = new Date(departureTime).getHours();
+        if (filters.departureTime === 'morning' && (hour < 6 || hour >= 12)) return false;
+        if (filters.departureTime === 'afternoon' && (hour < 12 || hour >= 18)) return false;
+        if (filters.departureTime === 'evening' && (hour < 18 || hour >= 24)) return false;
+      }
+    }
+
     return true;
   });
+
+  // Sort filtered flights
+  const sortedFlights = [...filteredFlights].sort((a, b) => {
+    switch (sortBy) {
+      case 'price':
+        return (a.price?.total || 0) - (b.price?.total || 0);
+      case 'price-desc':
+        return (b.price?.total || 0) - (a.price?.total || 0);
+      case 'duration':
+        return (a.computed?.totalDurationMinutes || 0) - (b.computed?.totalDurationMinutes || 0);
+      case 'departure':
+        const aTime = new Date(a.segments?.[0]?.departure?.time || 0).getTime();
+        const bTime = new Date(b.segments?.[0]?.departure?.time || 0).getTime();
+        return aTime - bTime;
+      default:
+        return 0;
+    }
+  });
+
+  const handleSortChange = (e) => {
+    setSortBy(e.target.value);
+  };
 
   return (
     <>
@@ -274,7 +314,11 @@ function SearchContent() {
           <div className="search-layout">
             {/* Filters Sidebar */}
             <aside className="search-sidebar">
-              <SearchFilters filters={filters} onApplyFilters={applyFilters} />
+              <SearchFilters 
+                filters={filters} 
+                onApplyFilters={applyFilters}
+                onResetFilters={handleResetFilters}
+              />
             </aside>
 
             {/* Results Section */}
@@ -337,13 +381,17 @@ function SearchContent() {
                 </div>
               )}
 
-              {!loading && !error && filteredFlights.length > 0 && (
+              {!loading && !error && sortedFlights.length > 0 && (
                 <div className="flights-list">
                   <div className="results-info-bar">
-                    <span className="results-count">{filteredFlights.length} flights found</span>
+                    <span className="results-count">{sortedFlights.length} flights found</span>
                     <div className="sort-options">
                       <span className="sort-label">Sort by:</span>
-                      <select className="sort-select">
+                      <select 
+                        className="sort-select"
+                        value={sortBy}
+                        onChange={handleSortChange}
+                      >
                         <option value="price">Price - Low to High</option>
                         <option value="price-desc">Price - High to Low</option>
                         <option value="duration">Duration - Shortest</option>
@@ -351,7 +399,7 @@ function SearchContent() {
                       </select>
                     </div>
                   </div>
-                  {filteredFlights.map((flight, index) => (
+                  {sortedFlights.map((flight, index) => (
                     <FlightCard key={index} flight={flight} />
                   ))}
                 </div>

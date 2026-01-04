@@ -3,13 +3,28 @@
 import { useState } from 'react';
 import './SearchFilters.css';
 
-export default function SearchFilters({ filters, onApplyFilters }) {
+export default function SearchFilters({ filters, onApplyFilters, onResetFilters }) {
   const [localFilters, setLocalFilters] = useState(filters);
 
   const handleFilterChange = (filterName, value) => {
     const newFilters = { ...localFilters, [filterName]: value };
     setLocalFilters(newFilters);
     onApplyFilters(newFilters);
+  };
+
+  const handleReset = () => {
+    const defaultFilters = {
+      stops: 'any',
+      priceRange: [0, 100000],
+      departureTime: 'any',
+      airlines: []
+    };
+    setLocalFilters(defaultFilters);
+    if (onResetFilters) {
+      onResetFilters(defaultFilters);
+    } else {
+      onApplyFilters(defaultFilters);
+    }
   };
 
   return (
@@ -122,16 +137,7 @@ export default function SearchFilters({ filters, onApplyFilters }) {
 
       <button
         className="btn btn-outline reset-btn"
-        onClick={() => {
-          const defaultFilters = {
-            stops: 'any',
-            priceRange: [0, 100000],
-            departureTime: 'any',
-            airlines: []
-          };
-          setLocalFilters(defaultFilters);
-          onApplyFilters(defaultFilters);
-        }}
+        onClick={handleReset}
       >
         Reset Filters
       </button>
