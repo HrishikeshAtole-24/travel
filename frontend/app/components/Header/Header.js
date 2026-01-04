@@ -11,6 +11,9 @@ export default function Header() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const pathname = usePathname();
 
+  // Check if we're on homepage or another page
+  const isHomePage = pathname === '/';
+
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 20);
@@ -35,8 +38,11 @@ export default function Header() {
     return pathname.startsWith(path);
   };
 
+  // Always show scrolled state on non-homepage
+  const shouldShowScrolledState = !isHomePage || isScrolled;
+
   return (
-    <header className={`header ${isScrolled ? 'header-scrolled' : ''}`}>
+    <header className={`header ${shouldShowScrolledState ? 'header-scrolled' : ''}`}>
       <div className="container">
         <div className="header-content">
           <Link href="/" className="logo">
