@@ -268,7 +268,7 @@
 
 .form-row-modern {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: 1fr 1fr;
   gap: var(--spacing-md);
 }
 
@@ -276,10 +276,12 @@
   display: flex;
   flex-direction: column;
   gap: var(--spacing-xs);
+  min-width: 0;
 }
 
 .form-group-modern.half {
   flex: 1;
+  min-width: 0;
 }
 
 .form-group-modern label {
@@ -290,12 +292,18 @@
   align-items: center;
   gap: var(--spacing-sm);
   margin-bottom: var(--spacing-xs);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  user-select: none;
+  pointer-events: none;
 }
 
 .form-group-modern label i {
   color: var(--gray-500);
   font-size: var(--fs-base);
   width: 16px;
+  flex-shrink: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -308,6 +316,8 @@
   font-size: var(--fs-base);
   transition: all var(--transition-fast);
   background: var(--white);
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .modern-input:focus {
