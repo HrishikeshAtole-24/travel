@@ -1,20 +1,21 @@
 /**
  * Airport Routes
  * Handles airport search and autocomplete endpoints
+ * Supports 9,000+ airports worldwide
  */
 
 const express = require('express');
 const router = express.Router();
-// PRODUCTION: Hybrid controller (DB + fallback)
+// PRODUCTION: Database-backed controller
 const airportController = require('../controllers/airport.controller');
 
 // ═══════════════════════════════════════════════════════════════
-// 🛫 AIRPORT ROUTES - PRODUCTION
+// 🛫 AIRPORT ROUTES - PRODUCTION (9,000+ airports)
 // ═══════════════════════════════════════════════════════════════
 
 /**
  * Search airports for autocomplete
- * GET /airports/search?q=mumbai&limit=10&country=IN
+ * GET /api/airports/search?q=mumbai&limit=10&country=IN&includeAll=false
  */
 router.get('/search', airportController.searchAirports);
 
@@ -23,6 +24,12 @@ router.get('/search', airportController.searchAirports);
  * GET /api/airports/popular?country=IN&limit=10
  */
 router.get('/popular', airportController.getPopularAirports);
+
+/**
+ * Get airport database statistics
+ * GET /api/airports/stats
+ */
+router.get('/stats', airportController.getStats);
 
 /**
  * Check database status
@@ -54,6 +61,12 @@ router.get('/db-status', async (req, res) => {
     });
   }
 });
+
+/**
+ * Get airports by country code
+ * GET /api/airports/country/IN
+ */
+router.get('/country/:code', airportController.getByCountry);
 
 /**
  * Get airport by IATA code

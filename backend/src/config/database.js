@@ -1,6 +1,6 @@
 /**
- * PostgreSQL Database Configuration (Neon DB)
- * Connection pool for PostgreSQL with Neon serverless database
+ * PostgreSQL Database Configuration
+ * Supports both Supabase and Neon DB
  */
 const { Pool } = require('pg');
 const logger = require('./winstonLogger');
@@ -9,36 +9,46 @@ let pool;
 
 const connectDB = async () => {
   try {
-    // Use connection string from Neon DB or individual params
-    const connectionConfig = process.env.DATABASE_URL
+    // Prioritize individual params (for Supabase with special chars in password)
+    // Falls back to DATABASE_URL if DB_HOST not set
+    const connectionConfig = process.env.DB_HOST
       ? {
-          connectionString: process.env.DATABASE_URL,
-          ssl: {
-            rejectUnauthorized: false, // Required for Neon DB
-          },
-        }
-      : {
-          host: process.env.DB_HOST || 'localhost',
-          port: process.env.DB_PORT || 5432,
+          host: process.env.DB_HOST,
+          port: parseInt(process.env.DB_PORT) || 5432,
           user: process.env.DB_USER || 'postgres',
           password: process.env.DB_PASSWORD || '',
-          database: process.env.DB_NAME || 'travel_booking',
+          database: process.env.DB_NAME || 'postgres',
           ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,
+        }
+      : process.env.DATABASE_URL
+      ? {
+          connectionString: process.env.DATABASE_URL,
+          ssl: { rejectUnauthorized: false },
+        }
+      : {
+          host: 'localhost',
+          port: 5432,
+          user: 'postgres',
+          password: '',
+          database: 'travel_booking',
+          ssl: false,
         };
-        // console.log('🔌 Connecting to PostgreSQL (Neon DB)...', connectionConfig);
+    
     pool = new Pool({
       ...connectionConfig,
       max: 20, // Maximum pool size
       idleTimeoutMillis: 30000, // Close idle clients after 30 seconds
-      connectionTimeoutMillis: 10000, // Return error after 10 seconds if connection not available
+      connectionTimeoutMillis: 15000, // Return error after 15 seconds
     });
 
     // Test connection
     const client = await pool.connect();
-    // console.log('🔌 Connecting to PostgreSQL (Neon DB)...', client);
     const result = await client.query('SELECT NOW()');
-    // console.log('✅ PostgreSQL (Neon DB) Connected Successfully');
-    logger.info('✅ PostgreSQL (Neon DB) Connected Successfully');
+    
+    const dbType = process.env.DB_HOST?.includes('supabase') ? 'Supabase' : 
+                   process.env.DATABASE_URL?.includes('neon') ? 'Neon DB' : 'PostgreSQL';
+    
+    logger.info(`✅ ${dbType} Connected Successfully`);
     logger.info(`📅 Database Time: ${result.rows[0].now}`);
     client.release();
 

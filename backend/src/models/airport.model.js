@@ -1,7 +1,8 @@
 /**
  * Airport Model (PostgreSQL Schema)
  * Master airports database for fast autocomplete
- * Based on IATA standards + major airports worldwide
+ * Based on IATA standards + 9,000+ airports worldwide
+ * Data source: OurAirports.com
  */
 const { getPool } = require('../config/database');
 const logger = require('../config/winstonLogger');
@@ -24,6 +25,8 @@ const createAirportTable = async () => {
       is_major_airport BOOLEAN DEFAULT false,
       priority_score INTEGER DEFAULT 0,
       search_keywords TEXT,
+      airport_type VARCHAR(50),
+      has_scheduled_service BOOLEAN DEFAULT false,
       created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
     );
@@ -35,12 +38,18 @@ const createAirportTable = async () => {
     CREATE INDEX IF NOT EXISTS idx_airports_keywords ON airports USING GIN (to_tsvector('english', search_keywords));
     CREATE INDEX IF NOT EXISTS idx_airports_priority ON airports(priority_score DESC);
     CREATE INDEX IF NOT EXISTS idx_airports_country ON airports(country_code);
+    CREATE INDEX IF NOT EXISTS idx_airports_type ON airports(airport_type);
+    CREATE INDEX IF NOT EXISTS idx_airports_scheduled ON airports(has_scheduled_service);
+    
+    -- Composite index for common search pattern
+    CREATE INDEX IF NOT EXISTS idx_airports_search_combo 
+      ON airports(country_code, priority_score DESC, has_scheduled_service);
     
     -- Trigger to update search_keywords automatically
     CREATE OR REPLACE FUNCTION update_airport_search_keywords()
     RETURNS TRIGGER AS $$
     BEGIN
-      NEW.search_keywords = LOWER(NEW.iata_code || ' ' || NEW.city_name || ' ' || NEW.airport_name || ' ' || NEW.country_name);
+      NEW.search_keywords = LOWER(COALESCE(NEW.iata_code, '') || ' ' || COALESCE(NEW.city_name, '') || ' ' || COALESCE(NEW.airport_name, '') || ' ' || COALESCE(NEW.country_name, ''));
       NEW.updated_at = CURRENT_TIMESTAMP;
       RETURN NEW;
     END;
@@ -63,18 +72,28 @@ const createAirportTable = async () => {
 
 /**
  * Search airports by query (for autocomplete)
+ * Enhanced with smart ranking like MMT/Booking.com
  */
-const searchAirports = async (query, limit = 10, country = null) => {
+const searchAirports = async (query, limit = 10, country = null, onlyScheduled = true) => {
   const pool = getPool();
+  
+  const searchTerm = query.toLowerCase().trim();
   
   let sql = `
     SELECT 
       iata_code,
+      icao_code,
       airport_name,
       city_name,
       country_name,
       country_code,
-      priority_score
+      priority_score,
+      is_major_airport,
+      airport_type,
+      has_scheduled_service,
+      latitude,
+      longitude,
+      timezone
     FROM airports 
     WHERE (
       iata_code ILIKE $1
@@ -84,7 +103,7 @@ const searchAirports = async (query, limit = 10, country = null) => {
     )
   `;
   
-  const params = [`%${query.toLowerCase()}%`];
+  const params = [`%${searchTerm}%`];
   
   // Add country filter if specified
   if (country) {
@@ -92,13 +111,27 @@ const searchAirports = async (query, limit = 10, country = null) => {
     params.push(country.toUpperCase());
   }
   
+  // Only airports with scheduled service (commercial flights)
+  if (onlyScheduled) {
+    sql += ` AND (has_scheduled_service = true OR is_major_airport = true OR priority_score >= 50)`;
+  }
+  
+  // Smart ranking: exact match > starts with > contains
   sql += `
     ORDER BY 
-      CASE WHEN iata_code ILIKE $1 THEN 1 ELSE 2 END,
+      CASE 
+        WHEN UPPER(iata_code) = UPPER($${params.length + 1}) THEN 1
+        WHEN UPPER(city_name) = UPPER($${params.length + 1}) THEN 2
+        WHEN city_name ILIKE $${params.length + 1} || '%' THEN 3
+        WHEN iata_code ILIKE $${params.length + 1} || '%' THEN 4
+        ELSE 5
+      END,
       priority_score DESC,
+      is_major_airport DESC,
       city_name ASC
-    LIMIT $${params.length + 1}
+    LIMIT $${params.length + 2}
   `;
+  params.push(searchTerm);
   params.push(limit);
 
   try {
@@ -237,11 +270,73 @@ const getPopularAirports = async (countryCode = 'IN', limit = 10) => {
   }
 };
 
+/**
+ * Get airport database statistics
+ */
+const getAirportStats = async () => {
+  const pool = getPool();
+  
+  try {
+    const stats = await pool.query(`
+      SELECT 
+        COUNT(*) as total_airports,
+        COUNT(CASE WHEN is_major_airport THEN 1 END) as major_airports,
+        COUNT(CASE WHEN has_scheduled_service THEN 1 END) as scheduled_service,
+        COUNT(DISTINCT country_code) as total_countries,
+        COUNT(CASE WHEN airport_type = 'large_airport' THEN 1 END) as large_airports,
+        COUNT(CASE WHEN airport_type = 'medium_airport' THEN 1 END) as medium_airports,
+        COUNT(CASE WHEN airport_type = 'small_airport' THEN 1 END) as small_airports
+      FROM airports
+    `);
+    
+    const topCountries = await pool.query(`
+      SELECT country_code, country_name, COUNT(*) as count
+      FROM airports
+      GROUP BY country_code, country_name
+      ORDER BY count DESC
+      LIMIT 10
+    `);
+    
+    return {
+      ...stats.rows[0],
+      top_countries: topCountries.rows
+    };
+  } catch (error) {
+    logger.error('❌ Error getting airport stats:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get all airports for a specific country
+ */
+const getAirportsByCountry = async (countryCode, limit = 100) => {
+  const pool = getPool();
+  
+  try {
+    const result = await pool.query(`
+      SELECT iata_code, airport_name, city_name, country_name, country_code, 
+             priority_score, is_major_airport, airport_type
+      FROM airports
+      WHERE country_code = UPPER($1)
+      ORDER BY priority_score DESC, city_name ASC
+      LIMIT $2
+    `, [countryCode, limit]);
+    
+    return result.rows;
+  } catch (error) {
+    logger.error('❌ Error getting airports by country:', error);
+    throw error;
+  }
+};
+
 module.exports = {
   createAirportTable,
   searchAirports,
   getAirportByCode,
   getPopularAirports,
   insertAirport,
-  bulkInsertAirports
+  bulkInsertAirports,
+  getAirportStats,
+  getAirportsByCountry
 };
