@@ -1,10 +1,19 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import getSymbolFromCurrency from 'currency-symbol-map';
 import './SearchFilters.css';
 
-export default function SearchFilters({ filters, onApplyFilters, onResetFilters }) {
+export default function SearchFilters({ filters, priceRange = { min: 0, max: 100000, currency: 'INR' }, onApplyFilters, onResetFilters }) {
   const [localFilters, setLocalFilters] = useState(filters);
+  
+  // Get currency symbol
+  const currencySymbol = getSymbolFromCurrency(priceRange.currency) || priceRange.currency;
+
+  // Sync localFilters when filters prop changes (e.g., when priceRange is calculated)
+  useEffect(() => {
+    setLocalFilters(filters);
+  }, [filters]);
 
   const handleFilterChange = (filterName, value) => {
     const newFilters = { ...localFilters, [filterName]: value };
@@ -15,7 +24,7 @@ export default function SearchFilters({ filters, onApplyFilters, onResetFilters 
   const handleReset = () => {
     const defaultFilters = {
       stops: 'any',
-      priceRange: [0, 100000],
+      priceRange: [priceRange.min, priceRange.max],
       departureTime: 'any',
       airlines: []
     };
@@ -74,16 +83,16 @@ export default function SearchFilters({ filters, onApplyFilters, onResetFilters 
         <div className="price-range">
           <input
             type="range"
-            min="0"
-            max="100000"
-            step="1000"
-            value={localFilters.priceRange[1]}
-            onChange={(e) => handleFilterChange('priceRange', [0, parseInt(e.target.value)])}
+            min={priceRange.min}
+            max={priceRange.max}
+            step="1"
+            value={Math.min(Math.max(localFilters.priceRange[1] || priceRange.min, priceRange.min), priceRange.max)}
+            onChange={(e) => handleFilterChange('priceRange', [priceRange.min, parseInt(e.target.value)])}
             className="price-slider"
           />
           <div className="price-values">
-            <span>₹0</span>
-            <span suppressHydrationWarning>₹{localFilters.priceRange[1].toLocaleString()}</span>
+            <span suppressHydrationWarning>{currencySymbol}{priceRange.min.toLocaleString()}</span>
+            <span suppressHydrationWarning>{currencySymbol}{Math.min(Math.max(localFilters.priceRange[1] || priceRange.max, priceRange.min), priceRange.max).toLocaleString()}</span>
           </div>
         </div>
       </div>

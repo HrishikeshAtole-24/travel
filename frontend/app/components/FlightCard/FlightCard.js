@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import getSymbolFromCurrency from 'currency-symbol-map';
 import './FlightCard.css';
 
 export default function FlightCard({ flight }) {
@@ -47,6 +48,9 @@ export default function FlightCard({ flight }) {
   const computed = flight.computed || {};
   const layovers = flight.layovers || [];
   const allSegments = flight.allSegments || [];
+  
+  // Get currency symbol
+  const currencySymbol = getSymbolFromCurrency(price.currency) || price.currency || '₹';
 
   // Check if different operating airline
   const hasCodeShare = segment.operatingAirlineCode && 
@@ -130,7 +134,7 @@ export default function FlightCard({ flight }) {
         <div className="flight-price-section">
           <div className="price-info">
             <div className="price-amount">
-              ₹{price.total?.toLocaleString() || '0'}
+              {currencySymbol}{price.total?.toLocaleString() || '0'}
             </div>
             <div className="price-label">per person</div>
           </div>
@@ -261,15 +265,15 @@ export default function FlightCard({ flight }) {
             <h4>Fare Breakdown</h4>
             <div className="price-row">
               <span>Base Fare</span>
-              <span>₹{price.base?.toLocaleString() || '0'}</span>
+              <span>{currencySymbol}{price.base?.toLocaleString() || '0'}</span>
             </div>
             <div className="price-row">
               <span>Taxes & Fees</span>
-              <span>₹{price.taxes?.toLocaleString() || '0'}</span>
+              <span>{currencySymbol}{price.taxes?.toLocaleString() || '0'}</span>
             </div>
             <div className="price-row total">
               <span>Total</span>
-              <span>₹{price.total?.toLocaleString() || '0'}</span>
+              <span>{currencySymbol}{price.total?.toLocaleString() || '0'}</span>
             </div>
             {price.fareFamily && (
               <div className="fare-family">

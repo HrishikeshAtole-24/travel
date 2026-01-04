@@ -17,6 +17,7 @@ function SearchContent() {
   const [error, setError] = useState(null);
   const [airportInfo, setAirportInfo] = useState({ from: null, to: null });
   const [sortBy, setSortBy] = useState('price'); // Default sort
+  const [priceRange, setPriceRange] = useState({ min: 0, max: 100000, currency: 'INR' }); // Dynamic price range
   const [filters, setFilters] = useState({
     stops: 'any',
     priceRange: [0, 100000],
@@ -224,6 +225,22 @@ function SearchContent() {
         
         console.log('✈️ Transformed flights:', transformedFlights[0]);
         setFlights(transformedFlights);
+        
+        // Calculate dynamic price range from flight data
+        if (transformedFlights.length > 0) {
+          const prices = transformedFlights.map(f => f.price?.total || 0).filter(p => p > 0);
+          const currency = transformedFlights[0]?.price?.currency || 'INR';
+          if (prices.length > 0) {
+            const minPrice = Math.floor(Math.min(...prices));
+            const maxPrice = Math.ceil(Math.max(...prices));
+            setPriceRange({ min: minPrice, max: maxPrice, currency });
+            // Update filters with new price range
+            setFilters(prev => ({
+              ...prev,
+              priceRange: [minPrice, maxPrice]
+            }));
+          }
+        }
       } else if (response && response.success && response.data) {
         // Fallback: if API uses success wrapper format
         const flightsData = Array.isArray(response.data) ? response.data : response.data.data || [];
@@ -315,7 +332,8 @@ function SearchContent() {
             {/* Filters Sidebar */}
             <aside className="search-sidebar">
               <SearchFilters 
-                filters={filters} 
+                filters={filters}
+                priceRange={priceRange}
                 onApplyFilters={applyFilters}
                 onResetFilters={handleResetFilters}
               />
