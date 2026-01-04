@@ -3,12 +3,15 @@
 import { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
+import apiClient from '@/lib/api/client';
 import './Header.css';
 
 export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+  const [userProfile, setUserProfile] = useState(null);
   const pathname = usePathname();
 
   // Check if we're on homepage or another page
@@ -19,18 +22,62 @@ export default function Header() {
       setIsScrolled(window.scrollY > 20);
     };
 
-    // Check if user is logged in
+    // Check if user is logged in and fetch profile
     const token = localStorage.getItem('token');
     setIsLoggedIn(!!token);
+    
+    if (token) {
+      fetchUserProfile();
+    }
 
     window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    
+    // Close dropdown when clicking outside
+    const handleClickOutside = (e) => {
+      if (!e.target.closest('.profile-dropdown-container')) {
+        setShowProfileDropdown(false);
+      }
+    };
+    document.addEventListener('click', handleClickOutside);
+    
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      document.removeEventListener('click', handleClickOutside);
+    };
   }, []);
+
+  const fetchUserProfile = async () => {
+    try {
+      const response = await apiClient.get('/auth/profile');
+      if (response.success && response.data?.user) {
+        setUserProfile(response.data.user);
+      }
+    } catch (error) {
+      console.error('Failed to fetch user profile:', error);
+    }
+  };
 
   const handleLogout = () => {
     localStorage.removeItem('token');
     setIsLoggedIn(false);
+    setUserProfile(null);
+    setShowProfileDropdown(false);
     window.location.href = '/';
+  };
+
+  const toggleProfileDropdown = (e) => {
+    e.stopPropagation();
+    setShowProfileDropdown(!showProfileDropdown);
+  };
+
+  const getInitials = () => {
+    if (userProfile?.firstName && userProfile?.lastName) {
+      return `${userProfile.firstName[0]}${userProfile.lastName[0]}`.toUpperCase();
+    }
+    if (userProfile?.email) {
+      return userProfile.email[0].toUpperCase();
+    }
+    return 'U';
   };
 
   const isActive = (path) => {
@@ -62,13 +109,49 @@ export default function Header() {
 
           <div className="header-actions">
             {isLoggedIn ? (
-              <div className="user-menu">
-                <button className="btn btn-ghost" onClick={() => window.location.href = '/my-bookings'}>
-                  My Trips
+              <div className="profile-dropdown-container">
+                <button className="profile-btn" onClick={toggleProfileDropdown}>
+                  <div className="profile-avatar">
+                    {getInitials()}
+                  </div>
+                  <span className="profile-name">
+                    {userProfile?.firstName || 'Profile'}
+                  </span>
+                  <i className="fas fa-chevron-down"></i>
                 </button>
-                <button className="btn btn-outline" onClick={handleLogout}>
-                  Logout
-                </button>
+                
+                {showProfileDropdown && (
+                  <div className="profile-dropdown">
+                    <div className="dropdown-header">
+                      <div className="dropdown-avatar">
+                        {getInitials()}
+                      </div>
+                      <div className="dropdown-user-info">
+                        <div className="dropdown-name">
+                          {userProfile?.firstName} {userProfile?.lastName}
+                        </div>
+                        <div className="dropdown-email">{userProfile?.email}</div>
+                      </div>
+                    </div>
+                    
+                    <div className="dropdown-divider"></div>
+                    
+                    <div className="dropdown-menu">
+                      <Link href="/my-bookings" className="dropdown-item">
+                        <i className="fas fa-ticket"></i>
+                        <span>My Bookings</span>
+                      </Link>
+                      <Link href="/profile" className="dropdown-item">
+                        <i className="fas fa-user"></i>
+                        <span>Profile Settings</span>
+                      </Link>
+                      <button className="dropdown-item" onClick={handleLogout}>
+                        <i className="fas fa-right-from-bracket"></i>
+                        <span>Logout</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (
               <button 
