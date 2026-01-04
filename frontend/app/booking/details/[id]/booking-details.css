@@ -24,10 +24,18 @@
   margin-bottom: var(--spacing-xl);
 }
 
+.back-btn i {
+  transition: transform var(--transition-base);
+}
+
 .back-btn:hover {
   background: var(--gray-50);
-  border-color: var(--gray-300);
-  color: var(--gray-900);
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+.back-btn:hover i {
+  transform: translateX(-3px);
 }
 
 /* Details Header */
@@ -44,6 +52,13 @@
   font-size: var(--fs-4xl);
   color: var(--gray-900);
   margin-bottom: var(--spacing-md);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.header-left h1 i {
+  color: var(--primary-color);
 }
 
 .booking-ref-large {
@@ -57,6 +72,13 @@
   color: var(--gray-500);
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.booking-ref-large .ref-label i {
+  color: var(--primary-color);
 }
 
 .booking-ref-large .ref-value {
@@ -139,6 +161,11 @@
   gap: var(--spacing-sm);
 }
 
+.details-card .card-header h2 i {
+  color: var(--primary-color);
+  font-size: var(--fs-xl);
+}
+
 .details-card .card-body {
   padding: var(--spacing-xl);
 }
@@ -187,6 +214,14 @@
 .airline-text .flight-number {
   font-size: var(--fs-sm);
   color: var(--gray-500);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.airline-text .flight-number i {
+  color: var(--primary-color);
+  font-size: var(--fs-xs);
 }
 
 /* Route Display */
@@ -237,6 +272,13 @@
   font-size: var(--fs-sm);
   color: var(--gray-600);
   font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.route-stops-info i {
+  color: var(--primary-color);
 }
 
 .route-line-visual {
@@ -262,6 +304,12 @@
   font-size: var(--fs-xl);
   color: var(--primary-color);
   margin: 0 var(--spacing-sm);
+  animation: planeFloat 2s ease-in-out infinite;
+}
+
+@keyframes planeFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
 }
 
 .flight-meta {
@@ -273,6 +321,15 @@
   display: flex;
   flex-direction: column;
   gap: var(--spacing-xs);
+  padding: var(--spacing-md);
+  background: var(--white);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--gray-100);
+}
+
+.meta-item i {
+  color: var(--primary-color);
+  font-size: var(--fs-lg);
 }
 
 .meta-label {
@@ -295,6 +352,13 @@
   background: var(--gray-100);
   padding: var(--spacing-xs) var(--spacing-md);
   border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.traveler-count i {
+  color: var(--primary-color);
 }
 
 .traveler-item {
@@ -319,6 +383,13 @@
   font-size: var(--fs-sm);
   font-weight: 600;
   color: var(--primary-color);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.traveler-number i {
+  font-size: var(--fs-lg);
 }
 
 .traveler-type {
@@ -356,6 +427,12 @@
   gap: var(--spacing-xs);
 }
 
+.info-item > i {
+  color: var(--primary-color);
+  font-size: var(--fs-lg);
+  margin-bottom: var(--spacing-xs);
+}
+
 .info-label {
   font-size: var(--fs-xs);
   color: var(--gray-500);
@@ -367,6 +444,12 @@
   font-size: var(--fs-base);
   color: var(--gray-900);
   font-weight: 500;
+}
+
+.info-value.pnr {
+  font-family: 'SF Mono', 'Consolas', monospace;
+  font-weight: 600;
+  color: var(--primary-color);
 }
 
 .info-value.email {
@@ -398,6 +481,9 @@
   color: rgba(255, 255, 255, 0.8);
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
 }
 
 .amount-value {
@@ -410,6 +496,13 @@
   font-size: var(--fs-base);
   color: var(--gray-700);
   margin-bottom: var(--spacing-md);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.payments-list h3 i {
+  color: var(--primary-color);
 }
 
 .payment-item {
@@ -435,6 +528,13 @@
   font-weight: 600;
   color: var(--gray-900);
   font-family: 'SF Mono', 'Consolas', monospace;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.payment-ref i {
+  color: var(--primary-color);
 }
 
 .payment-status {
@@ -443,6 +543,9 @@
   padding: var(--spacing-xs) var(--spacing-sm);
   border-radius: var(--radius-sm);
   text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
 }
 
 .payment-status.payment-success {
@@ -480,12 +583,26 @@
 .payment-date {
   font-size: var(--fs-sm);
   color: var(--gray-500);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.payment-date i {
+  color: var(--gray-400);
 }
 
 .no-payments {
   text-align: center;
   padding: var(--spacing-xl);
   color: var(--gray-500);
+}
+
+.no-payments > i {
+  font-size: 3rem;
+  color: var(--gray-300);
+  display: block;
+  margin-bottom: var(--spacing-md);
 }
 
 .no-payments .btn {
@@ -511,13 +628,126 @@
   gap: var(--spacing-md);
   justify-content: center;
   flex-wrap: wrap;
+  margin-bottom: var(--spacing-2xl);
 }
 
 .details-actions .btn {
   min-width: 200px;
 }
 
+.btn-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md) var(--spacing-xl);
+  font-weight: 600;
+  border-radius: var(--radius-lg);
+  transition: all var(--transition-base);
+  cursor: pointer;
+  border: none;
+}
+
+.btn-action.btn-primary {
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+  color: white;
+}
+
+.btn-action.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(0, 102, 255, 0.3);
+}
+
+.btn-action.btn-outline {
+  background: white;
+  color: var(--primary-color);
+  border: 2px solid var(--primary-color);
+}
+
+.btn-action.btn-outline:hover {
+  background: var(--primary-color);
+  color: white;
+}
+
+.btn-action.btn-ghost {
+  background: transparent;
+  color: var(--gray-600);
+  border: 1px solid var(--gray-200);
+}
+
+.btn-action.btn-ghost:hover {
+  background: var(--gray-50);
+  border-color: var(--gray-300);
+}
+
+/* Trust Section */
+.trust-section {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: var(--spacing-xl);
+  padding: var(--spacing-xl);
+  background: var(--white);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
+}
+
+.trust-section .trust-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  color: var(--gray-600);
+  font-size: var(--fs-sm);
+  font-weight: 500;
+}
+
+.trust-section .trust-item i {
+  font-size: var(--fs-lg);
+  color: var(--primary-color);
+}
+
 /* Loading & Error States */
+.state-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-3xl);
+  background: var(--white);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-md);
+  text-align: center;
+  min-height: 400px;
+}
+
+.state-container .state-icon {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  margin-bottom: var(--spacing-lg);
+  background: linear-gradient(135deg, var(--primary-light), var(--primary-color));
+  color: white;
+}
+
+.state-container .state-icon.error {
+  background: linear-gradient(135deg, #ffb3ba, #ff6b7a);
+}
+
+.state-container h3 {
+  font-size: var(--fs-xl);
+  color: var(--gray-900);
+  margin-bottom: var(--spacing-sm);
+}
+
+.state-container p {
+  color: var(--gray-600);
+  margin-bottom: var(--spacing-xl);
+}
+
 .loading-state,
 .error-state {
   display: flex;
