@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import './Header.css';
 
@@ -8,6 +9,7 @@ export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const pathname = usePathname();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -28,6 +30,11 @@ export default function Header() {
     window.location.href = '/';
   };
 
+  const isActive = (path) => {
+    if (path === '/') return pathname === '/';
+    return pathname.startsWith(path);
+  };
+
   return (
     <header className={`header ${isScrolled ? 'header-scrolled' : ''}`}>
       <div className="container">
@@ -41,10 +48,10 @@ export default function Header() {
           </Link>
 
           <nav className="nav-menu">
-            <Link href="/" className="nav-link">Home</Link>
-            <Link href="/search" className="nav-link">Flights</Link>
-            <Link href="/my-bookings" className="nav-link">My Bookings</Link>
-            <Link href="/contact" className="nav-link">Contact</Link>
+            <Link href="/" className={`nav-link ${isActive('/') ? 'active' : ''}`}>Home</Link>
+            <Link href="/search" className={`nav-link ${isActive('/search') ? 'active' : ''}`}>Flights</Link>
+            <Link href="/my-bookings" className={`nav-link ${isActive('/my-bookings') ? 'active' : ''}`}>My Bookings</Link>
+            <Link href="/contact" className={`nav-link ${isActive('/contact') ? 'active' : ''}`}>Contact</Link>
           </nav>
 
           <div className="header-actions">

@@ -80,6 +80,25 @@
   width: 100%;
 }
 
+/* Active Nav Link */
+.nav-link.active {
+  color: var(--primary-light);
+  font-weight: 600;
+}
+
+.nav-link.active::after {
+  width: 100%;
+  background-color: var(--primary-light);
+}
+
+.header-scrolled .nav-link.active {
+  color: var(--primary-color);
+}
+
+.header-scrolled .nav-link.active::after {
+  background-color: var(--primary-color);
+}
+
 /* Header Actions */
 .header-actions {
   display: flex;
