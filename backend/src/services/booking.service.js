@@ -132,7 +132,6 @@ const createBooking = async (bookingData, userId = null) => {
 const getBookingById = async (bookingId, userId = null) => {
   try {
     const pool = getPool();
-
     let query = 'SELECT * FROM bookings WHERE id = $1';
     const params = [bookingId];
 
@@ -143,7 +142,6 @@ const getBookingById = async (bookingId, userId = null) => {
     }
 
     const result = await pool.query(query, params);
-
     if (result.rows.length === 0) {
       throw ApiError.notFound('Booking not found');
     }
@@ -155,7 +153,6 @@ const getBookingById = async (bookingId, userId = null) => {
       'SELECT * FROM travelers WHERE booking_id = $1',
       [bookingId]
     );
-
     // Get payments
     const paymentsResult = await pool.query(
       'SELECT payment_reference, amount, currency, status, created_at FROM payments WHERE booking_id = $1',
@@ -252,19 +249,16 @@ const getBookingByReference = async (bookingReference, contactEmail = null) => {
  * Get user's bookings
  */
 const getUserBookings = async (userId) => {
-  console.log('Fetching bookings for user:', userId);
   try {
     const pool = getPool();
-    console.log('Database pool acquired');
     const result = await pool.query(
       `SELECT id, booking_reference, status, total_price, currency, 
-              contact_email, pnr, ticket_number, created_at
+              contact_email, pnr, ticket_number, flight_data, created_at
        FROM bookings 
        WHERE user_id = $1 
        ORDER BY created_at DESC`,
       [userId]
     );
-    console.log('Bookings fetched:', result);
 
     return {
       bookings: result.rows.map(booking => ({
@@ -276,6 +270,7 @@ const getUserBookings = async (userId) => {
         contactEmail: booking.contact_email,
         pnr: booking.pnr,
         ticketNumber: booking.ticket_number,
+        flightData: booking.flight_data,
         createdAt: booking.created_at
       }))
     };

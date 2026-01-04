@@ -37,14 +37,14 @@ router.get('/my-bookings', authenticateToken, bookingController.getMyBookings);
  * @access  Public
  * @query   ?email=xxx
  */
-router.get('/reference/:bookingReference', bookingController.getBookingByReference);
+router.get('/reference/:bookingReference',authenticateToken, bookingController.getBookingByReference);
 
 /**
  * @route   GET /api/bookings/:bookingId
  * @desc    Get booking details by ID
  * @access  Public with optional auth
  */
-router.get('/:bookingId', optionalAuth, bookingController.getBooking);
+router.get('/:bookingId', authenticateToken, bookingController.getBooking);
 
 /**
  * @route   POST /api/bookings/:bookingId/cancel
