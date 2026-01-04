@@ -1,92 +1,128 @@
-/* Popular Destinations Section */
+/* Popular Flights Section - Booking.com Style */
 
-.popular-destinations {
-  padding: var(--spacing-3xl) 0;
-  background-color: var(--gray-50);
+.popular-flights-section {
+  padding: 60px 0;
+  background-color: #ffffff;
 }
 
-.section-header {
-  text-align: center;
-  margin-bottom: var(--spacing-3xl);
+/* Header */
+.popular-flights-header {
+  margin-bottom: 24px;
 }
 
-.section-header h2 {
-  font-size: var(--fs-4xl);
-  color: var(--gray-900);
-  margin-bottom: var(--spacing-md);
+.popular-flights-header h2 {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin-bottom: 8px;
 }
 
-.section-header p {
-  font-size: var(--fs-lg);
-  color: var(--gray-600);
-  margin-bottom: 0;
+.popular-flights-header p {
+  font-size: 14px;
+  color: #6b7280;
+  margin: 0;
 }
 
-.destinations-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: var(--spacing-xl);
+/* Tabs */
+.flights-tabs {
+  display: flex;
+  gap: 24px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid #e5e7eb;
 }
 
-.destination-card {
-  background-color: var(--white);
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-  box-shadow: var(--shadow-md);
-  transition: all var(--transition-base);
+.flights-tab {
+  background: none;
+  border: none;
+  padding: 12px 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: #6b7280;
   cursor: pointer;
-}
-
-.destination-card:hover {
-  transform: translateY(-8px);
-  box-shadow: var(--shadow-xl);
-}
-
-.destination-image {
   position: relative;
-  height: 200px;
-  overflow: hidden;
+  transition: color 0.2s ease;
 }
 
-.destination-image-placeholder {
+.flights-tab:hover {
+  color: #1a1a2e;
+}
+
+.flights-tab.active {
+  color: #0066ff;
+}
+
+.flights-tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: #0066ff;
+}
+
+/* Flight Cards Grid */
+.popular-flights-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+/* Flight Card */
+.popular-flight-card {
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.popular-flight-card:hover {
+  transform: translateY(-4px);
+}
+
+.popular-flight-card:hover .popular-flight-image img {
+  transform: scale(1.05);
+}
+
+.popular-flight-image {
+  position: relative;
+  height: 180px;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+
+.popular-flight-image img {
   width: 100%;
   height: 100%;
-  background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  object-fit: cover;
+  transition: transform 0.3s ease;
 }
 
-.destination-image-placeholder span {
-  font-size: var(--fs-2xl);
-  font-weight: 700;
-  color: var(--white);
+.popular-flight-info h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1a1a2e;
+  margin-bottom: 4px;
 }
 
-.destination-info {
-  padding: var(--spacing-lg);
+.popular-flight-info p {
+  font-size: 14px;
+  color: #6b7280;
+  margin: 0;
 }
 
-.destination-info h3 {
-  font-size: var(--fs-xl);
-  color: var(--gray-900);
-  margin-bottom: var(--spacing-xs);
+/* Responsive */
+@media (max-width: 1024px) {
+  .popular-flights-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
-.destination-info p {
-  font-size: var(--fs-sm);
-  color: var(--gray-600);
-  margin-bottom: var(--spacing-md);
-}
-
-.destination-price {
-  font-size: var(--fs-lg);
-  font-weight: 700;
-  color: var(--primary-color);
-}
-
-@media (max-width: 768px) {
-  .destinations-grid {
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+@media (max-width: 576px) {
+  .popular-flights-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .popular-flights-header h2 {
+    font-size: 20px;
   }
 }
