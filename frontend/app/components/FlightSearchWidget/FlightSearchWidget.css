@@ -55,7 +55,7 @@
 .search-widget-card-mmt {
   background-color: var(--white);
   border-radius: 0 0 var(--radius-xl) var(--radius-xl);
-  padding: var(--spacing-2xl);
+  padding: var(--spacing-lg) var(--spacing-xl);
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.12);
   overflow: visible;
   position: relative;
@@ -66,8 +66,8 @@
 .trip-type-selector-mmt {
   display: flex;
   gap: var(--spacing-xl);
-  margin-bottom: var(--spacing-xl);
-  padding-bottom: var(--spacing-lg);
+  margin-bottom: var(--spacing-md);
+  padding-bottom: var(--spacing-sm);
   border-bottom: 1px solid var(--gray-200);
 }
 
@@ -97,7 +97,7 @@
   display: grid;
   grid-template-columns: 1.2fr auto 1.2fr 1fr 1fr 1fr;
   gap: var(--spacing-md);
-  margin-bottom: var(--spacing-xl);
+  margin-bottom: var(--spacing-md);
   align-items: stretch;
   position: relative;
   z-index: 1;
@@ -204,10 +204,10 @@
   display: flex;
   align-items: center;
   gap: var(--spacing-lg);
-  padding: var(--spacing-lg);
+  padding: var(--spacing-sm) var(--spacing-md);
   background-color: var(--gray-50);
   border-radius: var(--radius-md);
-  margin-bottom: var(--spacing-xl);
+  margin-bottom: var(--spacing-md);
   flex-wrap: wrap;
 }
 
@@ -240,8 +240,8 @@
 /* Search Button */
 .search-submit-btn-mmt {
   width: 100%;
-  padding: var(--spacing-lg) var(--spacing-2xl);
-  font-size: var(--fs-xl);
+  padding: var(--spacing-md) var(--spacing-xl);
+  font-size: var(--fs-lg);
   font-weight: 700;
   color: var(--white);
   background: linear-gradient(135deg, #53b2fe 0%, var(--primary-color) 100%);
