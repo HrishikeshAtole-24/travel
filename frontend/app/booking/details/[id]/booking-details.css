@@ -132,7 +132,7 @@
 .details-grid {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 18px;
   margin-bottom: var(--spacing-2xl);
 }
 
@@ -155,7 +155,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px 28px;
+  padding: 14px 24px;
   background: linear-gradient(135deg, #f8f9fa 0%, var(--white) 100%);
   border-bottom: 1px solid #e5e7eb;
 }
@@ -174,7 +174,7 @@
 }
 
 .details-card .card-body {
-  padding: 24px 28px;
+  padding: 20px 24px;
 }
 
 /* Flight Card Specific - Full Width Rectangular */
@@ -185,7 +185,7 @@
 .flight-visual {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 14px;
 }
 
 .airline-info-large {
@@ -195,16 +195,16 @@
 }
 
 .airline-logo-large {
-  width: 48px;
-  height: 48px;
+  width: 44px;
+  height: 44px;
   background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
-  border-radius: var(--radius-lg);
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 700;
   color: var(--white);
-  font-size: var(--fs-base);
+  font-size: 15px;
 }
 
 .airline-text {
@@ -236,29 +236,29 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 24px 28px;
+  padding: 20px 24px;
   background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
-  border-radius: 12px;
-  border: 2px solid #e5e7eb;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
 }
 
 .route-city {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--spacing-xs);
-  min-width: 120px;
+  gap: 4px;
+  min-width: 100px;
 }
 
 .city-code {
-  font-size: 36px;
+  font-size: 32px;
   font-weight: 700;
   color: var(--gray-900);
   letter-spacing: -0.5px;
 }
 
 .city-time {
-  font-size: var(--fs-xl);
+  font-size: var(--fs-lg);
   font-weight: 600;
   color: var(--primary-color);
 }
@@ -371,10 +371,10 @@
 }
 
 .traveler-item {
-  padding: 16px 20px;
+  padding: 14px 18px;
   background: var(--gray-50);
-  border-radius: var(--radius-lg);
-  margin-bottom: var(--spacing-md);
+  border-radius: 10px;
+  margin-bottom: 12px;
 }
 
 .traveler-item:last-child {
@@ -385,7 +385,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: var(--spacing-md);
+  margin-bottom: 10px;
 }
 
 .traveler-number {
@@ -411,23 +411,23 @@
 }
 
 .traveler-name {
-  font-size: var(--fs-xl);
+  font-size: var(--fs-lg);
   font-weight: 600;
   color: var(--gray-900);
-  margin-bottom: var(--spacing-md);
+  margin-bottom: 10px;
 }
 
 .traveler-info-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
+  gap: 14px;
 }
 
 /* Info Items - Horizontal Spread */
 .info-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 18px;
+  gap: 16px;
 }
 
 .info-item {
@@ -472,10 +472,10 @@
 
 /* Payment Card */
 .payment-summary {
-  padding: 20px 24px;
+  padding: 18px 22px;
   background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
-  border-radius: var(--radius-lg);
-  margin-bottom: 20px;
+  border-radius: 10px;
+  margin-bottom: 16px;
 }
 
 .total-amount {
@@ -515,10 +515,10 @@
 }
 
 .payment-item {
-  padding: var(--spacing-md);
+  padding: 10px 14px;
   background: var(--gray-50);
-  border-radius: var(--radius-md);
-  margin-bottom: var(--spacing-sm);
+  border-radius: 8px;
+  margin-bottom: 8px;
 }
 
 .payment-item:last-child {
@@ -529,7 +529,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: var(--spacing-sm);
+  margin-bottom: 6px;
 }
 
 .payment-ref {
