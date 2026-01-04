@@ -15,12 +15,51 @@ function SearchContent() {
   const [flights, setFlights] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [airportInfo, setAirportInfo] = useState({ from: null, to: null });
   const [filters, setFilters] = useState({
     stops: 'any',
     priceRange: [0, 100000],
     departureTime: 'any',
     airlines: []
   });
+
+  // Fetch airport info for displaying city names
+  useEffect(() => {
+    const fetchAirportInfo = async () => {
+      const from = searchParams.get('from');
+      const to = searchParams.get('to');
+      
+      try {
+        const [fromResponse, toResponse] = await Promise.all([
+          from ? apiClient.get(`/airports/${from}`).catch(() => null) : null,
+          to ? apiClient.get(`/airports/${to}`).catch(() => null) : null
+        ]);
+        
+        console.log('Airport API responses:', { fromResponse, toResponse });
+        
+        setAirportInfo({
+          from: fromResponse?.data ? {
+            iata_code: fromResponse.data.iata,
+            city_name: fromResponse.data.city,
+            airport_name: fromResponse.data.name
+          } : { iata_code: from, city_name: from },
+          to: toResponse?.data ? {
+            iata_code: toResponse.data.iata,
+            city_name: toResponse.data.city,
+            airport_name: toResponse.data.name
+          } : { iata_code: to, city_name: to }
+        });
+      } catch (err) {
+        console.error('Error fetching airport info:', err);
+        setAirportInfo({
+          from: { iata_code: from, city_name: from },
+          to: { iata_code: to, city_name: to }
+        });
+      }
+    };
+    
+    fetchAirportInfo();
+  }, [searchParams]);
 
   useEffect(() => {
     searchFlights();
@@ -240,14 +279,40 @@ function SearchContent() {
 
             {/* Results Section */}
             <section className="search-results">
-              <div className="results-header">
-                <h1>
-                  {searchParams.get('from')} → {searchParams.get('to')}
-                </h1>
-                <p>
-                  {searchParams.get('departDate')} • {searchParams.get('passengers')} Passenger(s)
-                  {searchParams.get('returnDate') && ` • Return: ${searchParams.get('returnDate')}`}
-                </p>
+              {/* Compact Results Header */}
+              <div className="results-header-compact">
+                <div className="route-summary">
+                  <div className="route-city">
+                    <span className="city-code">{searchParams.get('from')}</span>
+                    <span className="city-name">{airportInfo.from?.city_name || searchParams.get('from')}</span>
+                  </div>
+                  <div className="route-arrow">
+                    <i className="fas fa-arrow-right"></i>
+                  </div>
+                  <div className="route-city">
+                    <span className="city-code">{searchParams.get('to')}</span>
+                    <span className="city-name">{airportInfo.to?.city_name || searchParams.get('to')}</span>
+                  </div>
+                </div>
+                <div className="trip-meta">
+                  <span className="meta-item">
+                    <i className="fas fa-calendar-alt"></i>
+                    {new Date(searchParams.get('departDate')).toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
+                  </span>
+                  {searchParams.get('returnDate') && (
+                    <span className="meta-item">
+                      <i className="fas fa-exchange-alt"></i>
+                      {new Date(searchParams.get('returnDate')).toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
+                    </span>
+                  )}
+                  <span className="meta-item">
+                    <i className="fas fa-user"></i>
+                    {searchParams.get('passengers')} Traveller{parseInt(searchParams.get('passengers')) > 1 ? 's' : ''}
+                  </span>
+                  <span className="meta-item cabin-class">
+                    {searchParams.get('cabinClass')?.replace('_', ' ') || 'Economy'}
+                  </span>
+                </div>
               </div>
 
               {loading && (
@@ -274,8 +339,17 @@ function SearchContent() {
 
               {!loading && !error && filteredFlights.length > 0 && (
                 <div className="flights-list">
-                  <div className="results-count">
-                    {filteredFlights.length} flights found
+                  <div className="results-info-bar">
+                    <span className="results-count">{filteredFlights.length} flights found</span>
+                    <div className="sort-options">
+                      <span className="sort-label">Sort by:</span>
+                      <select className="sort-select">
+                        <option value="price">Price - Low to High</option>
+                        <option value="price-desc">Price - High to Low</option>
+                        <option value="duration">Duration - Shortest</option>
+                        <option value="departure">Departure - Earliest</option>
+                      </select>
+                    </div>
                   </div>
                   {filteredFlights.map((flight, index) => (
                     <FlightCard key={index} flight={flight} />

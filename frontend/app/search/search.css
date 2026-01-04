@@ -3,67 +3,160 @@
 .search-page {
   min-height: 100vh;
   background-color: var(--gray-50);
-  padding: var(--spacing-xl) 0 var(--spacing-3xl);
+  padding: var(--spacing-md) 0 var(--spacing-xl);
   margin-top: 80px;
 }
 
 /* Compact Search Widget Wrapper */
 .search-page .search-widget-compact {
-  margin-bottom: var(--spacing-xl);
+  margin-bottom: var(--spacing-md);
 }
 
 .search-layout {
   display: grid;
-  grid-template-columns: 300px 1fr;
-  gap: var(--spacing-xl);
+  grid-template-columns: 280px 1fr;
+  gap: var(--spacing-lg);
 }
 
 /* Sidebar */
 .search-sidebar {
   position: sticky;
   top: 100px;
-  height: calc(100vh - 120px); /* Make sidebar fill viewport height minus header */
-  overflow-y: auto; /* Enable vertical scrolling */
+  height: calc(100vh - 120px);
+  overflow-y: auto;
 }
 
 /* Results Section */
 .search-results {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-xl);
+  gap: var(--spacing-md);
 }
 
-.results-header {
+/* Compact Results Header */
+.results-header-compact {
   background-color: var(--white);
-  padding: var(--spacing-xl);
+  padding: var(--spacing-md) var(--spacing-lg);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-lg);
+  flex-wrap: wrap;
 }
 
-.results-header h1 {
+.route-summary {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-lg);
+}
+
+.route-city {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 100px;
+}
+
+.city-code {
   font-size: var(--fs-2xl);
+  font-weight: 700;
   color: var(--gray-900);
-  margin-bottom: var(--spacing-sm);
+  line-height: 1.1;
 }
 
-.results-header p {
-  font-size: var(--fs-base);
+.city-name {
+  font-size: var(--fs-sm);
+  color: var(--gray-500);
+  font-weight: 400;
+  margin-top: 2px;
+  text-transform: capitalize;
+}
+
+.route-arrow {
+  color: var(--primary-color);
+  font-size: var(--fs-lg);
+  padding: 0 var(--spacing-sm);
+}
+
+.trip-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  flex-wrap: wrap;
+}
+
+.meta-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  font-size: var(--fs-sm);
   color: var(--gray-600);
-  margin: 0;
+  white-space: nowrap;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background: var(--gray-50);
+  border-radius: var(--radius-md);
+}
+
+.meta-item i {
+  color: var(--primary-color);
+  font-size: var(--fs-xs);
+}
+
+.meta-item.cabin-class {
+  background: rgba(0, 102, 255, 0.1);
+  color: var(--primary-color);
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+/* Results Info Bar */
+.results-info-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--spacing-md);
+  padding: var(--spacing-sm) 0;
 }
 
 .results-count {
-  font-size: var(--fs-lg);
+  font-size: var(--fs-base);
   font-weight: 600;
   color: var(--gray-700);
-  margin-bottom: var(--spacing-lg);
+}
+
+.sort-options {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.sort-label {
+  font-size: var(--fs-sm);
+  color: var(--gray-500);
+}
+
+.sort-select {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: 1px solid var(--gray-300);
+  border-radius: var(--radius-md);
+  font-size: var(--fs-sm);
+  color: var(--gray-700);
+  background: var(--white);
+  cursor: pointer;
+}
+
+.sort-select:focus {
+  outline: none;
+  border-color: var(--primary-color);
 }
 
 /* Flight List */
 .flights-list {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-lg);
+  gap: var(--spacing-md);
 }
 
 /* Loading State */
@@ -113,11 +206,39 @@
   .search-sidebar {
     position: static;
   }
+
+  .results-header-compact {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-md);
+  }
 }
 
 @media (max-width: 768px) {
   .search-page {
-    padding: var(--spacing-xl) 0;
+    padding: var(--spacing-md) 0;
     margin-top: 70px;
+  }
+
+  .trip-meta {
+    gap: var(--spacing-sm);
+  }
+
+  .meta-item {
+    font-size: var(--fs-xs);
+  }
+
+  .results-info-bar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-sm);
+  }
+
+  .sort-options {
+    width: 100%;
+  }
+
+  .sort-select {
+    flex: 1;
   }
 }
