@@ -6,6 +6,7 @@ import Header from '../components/Header/Header';
 import Footer from '../components/Footer/Footer';
 import SearchFilters from '../components/SearchFilters/SearchFilters';
 import FlightCard from '../components/FlightCard/FlightCard';
+import SearchWidgetCompact from '../components/SearchWidgetCompact/SearchWidgetCompact';
 import apiClient from '@/lib/api/client';
 import './search.css';
 
@@ -73,37 +74,111 @@ function SearchContent() {
         // API returns flights directly in response.data array
         console.log('✈️ Flights data:', response.data.length, 'flights found');
         
-        // Transform API data to match FlightCard component expectations
+        // Transform API data to match FlightCard component expectations with FULL DATA
         const transformedFlights = response.data.map(flight => {
           const itinerary = flight.itinerary || {};
           const firstSlice = itinerary.slices?.[0] || {};
           const firstSegment = firstSlice.segments?.[0] || {};
           const lastSegment = firstSlice.segments?.[firstSlice.segments?.length - 1] || firstSegment;
           
+          // Extract all segments with full details
+          const allSegments = firstSlice.segments?.map((seg, idx) => ({
+            segmentId: seg.segmentId || `SEG_${idx}`,
+            airlineCode: seg.marketingAirlineCode || seg.carrier || 'XX',
+            operatingAirlineCode: seg.operatingAirlineCode || seg.marketingAirlineCode,
+            airlineName: response.dictionaries?.airlines?.[seg.marketingAirlineCode]?.name || 
+                        seg.airlineName || 'Unknown Airline',
+            flightNumber: `${seg.marketingAirlineCode || ''}${seg.flightNumber || ''}`.trim(),
+            aircraftCode: seg.aircraftCode || null,
+            aircraftName: seg.aircraftCode ? (response.dictionaries?.aircraft?.[seg.aircraftCode]?.name || seg.aircraftCode) : null,
+            departure: {
+              time: seg.departure?.time,
+              airport: seg.departure?.airportCode || seg.departure?.airport,
+              terminal: seg.departure?.terminal || null,
+              formatted: seg.departure?.formatted || null
+            },
+            arrival: {
+              time: seg.arrival?.time,
+              airport: seg.arrival?.airportCode || seg.arrival?.airport,
+              terminal: seg.arrival?.terminal || null,
+              formatted: seg.arrival?.formatted || null,
+              nextDay: seg.arrival?.formatted?.nextDay || false
+            },
+            duration: seg.durationMinutes,
+            cabinClass: seg.cabinClass || 'ECONOMY',
+            bookingClass: seg.bookingClass || null,
+            baggage: seg.baggage || {
+              checkIn: { pieces: 1, weightKg: 15 },
+              cabin: { pieces: 1, weightKg: 7 }
+            }
+          })) || [];
+
+          // Calculate layovers
+          const layovers = firstSlice.layovers || [];
+          
           return {
             ...flight,
+            // Main segment for card display
             segments: [{
-              airlineCode: flight.validatingAirlineCode || firstSegment.carrier || 'XX',
+              airlineCode: flight.validatingAirlineCode || firstSegment.marketingAirlineCode || 'XX',
+              operatingAirlineCode: firstSegment.operatingAirlineCode || firstSegment.marketingAirlineCode,
               airlineName: response.dictionaries?.airlines?.[flight.validatingAirlineCode]?.name || 
-                          response.dictionaries?.airlines?.[firstSegment.carrier]?.name || 
+                          response.dictionaries?.airlines?.[firstSegment.marketingAirlineCode]?.name || 
                           'Unknown Airline',
-              flightNumber: `${firstSegment.carrier || ''}${firstSegment.flightNumber || ''}`.trim(),
+              flightNumber: `${firstSegment.marketingAirlineCode || ''}${firstSegment.flightNumber || ''}`.trim(),
+              aircraftCode: firstSegment.aircraftCode || null,
+              aircraftName: firstSegment.aircraftCode ? 
+                (response.dictionaries?.aircraft?.[firstSegment.aircraftCode]?.name || firstSegment.aircraftCode) : null,
               departure: {
                 time: firstSegment.departure?.time,
-                airport: firstSegment.departure?.airport
+                airport: firstSegment.departure?.airportCode || firstSegment.departure?.airport,
+                terminal: firstSegment.departure?.terminal,
+                formatted: firstSegment.departure?.formatted
               },
               arrival: {
                 time: lastSegment.arrival?.time, 
-                airport: lastSegment.arrival?.airport
+                airport: lastSegment.arrival?.airportCode || lastSegment.arrival?.airport,
+                terminal: lastSegment.arrival?.terminal,
+                formatted: lastSegment.arrival?.formatted,
+                nextDay: lastSegment.arrival?.formatted?.nextDay || false
               },
-              duration: flight.computed?.totalDurationMinutes,
-              stops: flight.computed?.totalStops || 0,
-              cabinClass: firstSegment.cabin || 'Economy'
+              duration: flight.computed?.totalDurationMinutes || firstSlice.durationMinutes,
+              durationFormatted: flight.computed?.totalDurationFormatted || firstSlice.durationFormatted,
+              stops: flight.computed?.totalStops || (firstSlice.segments?.length - 1) || 0,
+              cabinClass: firstSegment.cabinClass || 'ECONOMY',
+              bookingClass: firstSegment.bookingClass,
+              baggage: firstSegment.baggage || {
+                checkIn: { pieces: 1, weightKg: 15 },
+                cabin: { pieces: 1, weightKg: 7 }
+              }
             }],
+            // All segments for detailed view
+            allSegments,
+            // Layover information
+            layovers,
+            // Computed fields
+            computed: {
+              totalStops: flight.computed?.totalStops || 0,
+              totalDurationMinutes: flight.computed?.totalDurationMinutes || firstSlice.durationMinutes,
+              totalDurationFormatted: flight.computed?.totalDurationFormatted || firstSlice.durationFormatted,
+              isNonStop: flight.computed?.isNonStop ?? (firstSlice.segments?.length === 1),
+              isOvernight: flight.computed?.isOvernight || false,
+              pricePerTraveler: flight.computed?.pricePerTraveler || null
+            },
+            // Pricing info
             price: {
               total: flight.pricing?.totalAmount || 0,
-              currency: flight.pricing?.totalCurrency || 'EUR'
-            }
+              currency: flight.pricing?.totalCurrency || 'INR',
+              base: flight.pricing?.baseAmount || 0,
+              taxes: flight.pricing?.taxesAmount || 0,
+              isRefundable: flight.pricing?.isRefundable || false,
+              isChangeable: flight.pricing?.isChangeable || true,
+              fareFamily: flight.pricing?.fareFamily || null
+            },
+            // Traveler pricing breakdown
+            travelerPricing: flight.travelerPricing || [],
+            // Source info
+            source: flight.source || {}
           };
         });
         
@@ -154,6 +229,9 @@ function SearchContent() {
       <Header />
       <main className="search-page">
         <div className="container">
+          {/* Compact Search Widget */}
+          <SearchWidgetCompact onSearch={() => setLoading(true)} />
+          
           <div className="search-layout">
             {/* Filters Sidebar */}
             <aside className="search-sidebar">
@@ -168,6 +246,7 @@ function SearchContent() {
                 </h1>
                 <p>
                   {searchParams.get('departDate')} • {searchParams.get('passengers')} Passenger(s)
+                  {searchParams.get('returnDate') && ` • Return: ${searchParams.get('returnDate')}`}
                 </p>
               </div>
 

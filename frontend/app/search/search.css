@@ -3,8 +3,13 @@
 .search-page {
   min-height: 100vh;
   background-color: var(--gray-50);
-  padding: var(--spacing-3xl) 0;
+  padding: var(--spacing-xl) 0 var(--spacing-3xl);
   margin-top: 80px;
+}
+
+/* Compact Search Widget Wrapper */
+.search-page .search-widget-compact {
+  margin-bottom: var(--spacing-xl);
 }
 
 .search-layout {
