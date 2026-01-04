@@ -117,23 +117,25 @@
 
 /* Bookings Grid */
 .bookings-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
-  gap: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
-/* Booking Card */
+/* Booking Card - Rectangular Layout */
 .booking-card {
   background: #ffffff;
-  border-radius: 12px;
+  border-radius: 16px;
   border: 1px solid #e5e7eb;
   overflow: hidden;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
 .booking-card:hover {
   border-color: #0066ff;
-  box-shadow: 0 4px 20px rgba(0, 102, 255, 0.08);
+  box-shadow: 0 8px 24px rgba(0, 102, 255, 0.12);
+  transform: translateY(-2px);
 }
 
 /* Card Header */
@@ -141,7 +143,7 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  padding: 20px 24px;
+  padding: 16px 24px;
   background: #fafbfc;
   border-bottom: 1px solid #e5e7eb;
 }
@@ -216,9 +218,12 @@
   color: #7c3aed;
 }
 
-/* Card Body */
+/* Card Body - Horizontal Layout */
 .booking-card-body {
-  padding: 24px;
+  padding: 20px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
 }
 
 /* Flight Route Info */
@@ -230,19 +235,19 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 20px;
+  margin-bottom: 14px;
 }
 
 .airline-logo {
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
   background: linear-gradient(135deg, #0066ff, #0052cc);
   border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: #ffffff;
-  font-size: 18px;
+  font-size: 16px;
 }
 
 .airline-details {
@@ -269,27 +274,27 @@
   font-size: 10px;
 }
 
-/* Route Visual */
+/* Route Visual - Horizontal Rectangular */
 .route-visual {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 20px;
-  background: #f8f9fa;
-  border-radius: 10px;
-  border: 1px solid #e5e7eb;
+  padding: 18px 28px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+  border-radius: 12px;
+  border: 2px solid #e5e7eb;
 }
 
 .route-endpoint {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
-  min-width: 80px;
+  gap: 6px;
+  min-width: 120px;
 }
 
 .airport-code {
-  font-size: 24px;
+  font-size: 28px;
   font-weight: 700;
   color: #1a1a2e;
   letter-spacing: -0.5px;
@@ -340,19 +345,21 @@
   font-weight: 500;
 }
 
-/* Booking Details Grid */
+/* Booking Details Grid - Horizontal Spread */
 .booking-details-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
-  padding-top: 20px;
-  border-top: 1px dashed #e5e7eb;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  padding-top: 18px;
+  border-top: 1px solid #e5e7eb;
 }
 
 .detail-item {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
+  flex: 1;
 }
 
 .detail-label {
@@ -396,9 +403,10 @@
 /* Card Footer */
 .booking-card-footer {
   display: flex;
+  justify-content: flex-end;
   gap: 12px;
-  padding: 16px 24px;
-  background: #fafbfc;
+  padding: 16px 28px;
+  background: linear-gradient(180deg, #ffffff 0%, #fafbfc 100%);
   border-top: 1px solid #e5e7eb;
 }
 
@@ -587,7 +595,15 @@
 /* Responsive */
 @media (max-width: 1024px) {
   .bookings-grid {
-    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
+  .booking-card-body {
+    padding: 20px 24px;
+  }
+  
+  .route-visual {
+    padding: 20px 24px;
   }
 }
 
@@ -618,6 +634,10 @@
   .tab-label {
     display: none;
   }
+  
+  .booking-card-body {
+    padding: 16px 20px;
+  }
 
   .route-visual {
     flex-direction: column;
@@ -639,13 +659,31 @@
   .connector-line i {
     transform: translate(-50%, -50%) rotate(90deg);
   }
+  
+  .route-endpoint {
+    min-width: 100px;
+  }
+  
+  .airport-code {
+    font-size: 28px;
+  }
 
   .booking-details-grid {
-    grid-template-columns: 1fr;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  
+  .detail-item {
+    min-width: 45%;
   }
 
   .booking-card-footer {
     flex-direction: column;
+    padding: 16px 20px;
+  }
+  
+  .booking-card-footer .btn {
+    width: 100%;
   }
 
   .bookings-summary {

@@ -128,29 +128,36 @@
   color: #4c4fac;
 }
 
-/* Details Grid */
+/* Details Grid - Single Column Rectangular Layout */
 .details-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: var(--spacing-xl);
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
   margin-bottom: var(--spacing-2xl);
 }
 
-/* Details Card */
+/* Details Card - Rectangular Layout */
 .details-card {
   background: var(--white);
-  border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-md);
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
   overflow: hidden;
+  border: 1px solid #e5e7eb;
+  transition: all 0.3s ease;
+}
+
+.details-card:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
 }
 
 .details-card .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: var(--spacing-lg) var(--spacing-xl);
-  background: linear-gradient(135deg, var(--gray-50) 0%, var(--white) 100%);
-  border-bottom: 1px solid var(--gray-100);
+  padding: 16px 28px;
+  background: linear-gradient(135deg, #f8f9fa 0%, var(--white) 100%);
+  border-bottom: 1px solid #e5e7eb;
 }
 
 .details-card .card-header h2 {
@@ -167,18 +174,18 @@
 }
 
 .details-card .card-body {
-  padding: var(--spacing-xl);
+  padding: 24px 28px;
 }
 
-/* Flight Card Specific */
+/* Flight Card Specific - Full Width Rectangular */
 .flight-card {
-  grid-column: span 2;
+  /* Full width in single column layout */
 }
 
 .flight-visual {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-xl);
+  gap: 18px;
 }
 
 .airline-info-large {
@@ -188,8 +195,8 @@
 }
 
 .airline-logo-large {
-  width: 56px;
-  height: 56px;
+  width: 48px;
+  height: 48px;
   background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
   border-radius: var(--radius-lg);
   display: flex;
@@ -197,7 +204,7 @@
   justify-content: center;
   font-weight: 700;
   color: var(--white);
-  font-size: var(--fs-lg);
+  font-size: var(--fs-base);
 }
 
 .airline-text {
@@ -224,14 +231,15 @@
   font-size: var(--fs-xs);
 }
 
-/* Route Display */
+/* Route Display - Horizontal Rectangular */
 .route-display {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--spacing-xl);
-  background: var(--gray-50);
-  border-radius: var(--radius-lg);
+  padding: 24px 28px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+  border-radius: 12px;
+  border: 2px solid #e5e7eb;
 }
 
 .route-city {
@@ -243,9 +251,10 @@
 }
 
 .city-code {
-  font-size: var(--fs-4xl);
+  font-size: 36px;
   font-weight: 700;
   color: var(--gray-900);
+  letter-spacing: -0.5px;
 }
 
 .city-time {
@@ -362,7 +371,7 @@
 }
 
 .traveler-item {
-  padding: var(--spacing-lg);
+  padding: 16px 20px;
   background: var(--gray-50);
   border-radius: var(--radius-lg);
   margin-bottom: var(--spacing-md);
@@ -411,14 +420,14 @@
 .traveler-info-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: var(--spacing-md);
+  gap: 16px;
 }
 
-/* Info Items */
+/* Info Items - Horizontal Spread */
 .info-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: var(--spacing-lg);
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
 }
 
 .info-item {
@@ -463,10 +472,10 @@
 
 /* Payment Card */
 .payment-summary {
-  padding: var(--spacing-xl);
+  padding: 20px 24px;
   background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
   border-radius: var(--radius-lg);
-  margin-bottom: var(--spacing-xl);
+  margin-bottom: 20px;
 }
 
 .total-amount {
@@ -797,16 +806,17 @@
 /* Responsive */
 @media (max-width: 1024px) {
   .details-grid {
-    grid-template-columns: 1fr;
+    gap: 20px;
   }
 
   .flight-card {
-    grid-column: span 1;
+    /* Full width */
   }
 
   .route-display {
     flex-direction: column;
     gap: var(--spacing-xl);
+    padding: 24px;
   }
 
   .route-line-container {
@@ -830,7 +840,8 @@
     margin: var(--spacing-sm) 0;
   }
 
-  .traveler-info-grid {
+  .traveler-info-grid,
+  .info-grid {
     grid-template-columns: repeat(2, 1fr);
   }
 }
