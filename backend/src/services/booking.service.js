@@ -252,9 +252,10 @@ const getBookingByReference = async (bookingReference, contactEmail = null) => {
  * Get user's bookings
  */
 const getUserBookings = async (userId) => {
+  console.log('Fetching bookings for user:', userId);
   try {
     const pool = getPool();
-
+    console.log('Database pool acquired');
     const result = await pool.query(
       `SELECT id, booking_reference, status, total_price, currency, 
               contact_email, pnr, ticket_number, created_at
@@ -263,9 +264,9 @@ const getUserBookings = async (userId) => {
        ORDER BY created_at DESC`,
       [userId]
     );
+    console.log('Bookings fetched:', result);
 
     return {
-      success: true,
       bookings: result.rows.map(booking => ({
         id: booking.id,
         bookingReference: booking.booking_reference,

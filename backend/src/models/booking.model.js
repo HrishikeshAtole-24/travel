@@ -27,6 +27,8 @@ const createBookingTable = async () => {
       contact_email VARCHAR(255),
       contact_phone VARCHAR(20),
       special_requests TEXT,
+      pnr VARCHAR(20),
+      ticket_number VARCHAR(50),
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE

@@ -25,11 +25,11 @@ router.post('/create', optionalAuth, bookingController.createBooking);
 router.post('/create-and-pay', optionalAuth, bookingController.createBookingAndInitiatePayment);
 
 /**
- * @route   GET /api/bookings/:bookingId
- * @desc    Get booking details by ID
- * @access  Public with optional auth
+ * @route   GET /api/bookings/my-bookings
+ * @desc    Get all bookings for logged-in user
+ * @access  Protected (requires authentication)
  */
-router.get('/:bookingId', optionalAuth, bookingController.getBooking);
+router.get('/my-bookings', authenticateToken, bookingController.getMyBookings);
 
 /**
  * @route   GET /api/bookings/reference/:bookingReference
@@ -40,11 +40,11 @@ router.get('/:bookingId', optionalAuth, bookingController.getBooking);
 router.get('/reference/:bookingReference', bookingController.getBookingByReference);
 
 /**
- * @route   GET /api/bookings/my-bookings
- * @desc    Get all bookings for logged-in user
- * @access  Protected (requires authentication)
+ * @route   GET /api/bookings/:bookingId
+ * @desc    Get booking details by ID
+ * @access  Public with optional auth
  */
-router.get('/my-bookings', authenticateToken, bookingController.getMyBookings);
+router.get('/:bookingId', optionalAuth, bookingController.getBooking);
 
 /**
  * @route   POST /api/bookings/:bookingId/cancel
