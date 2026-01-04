@@ -1,26 +1,25 @@
 /* Why Choose Us Section - Professional Design */
 
 .why-choose-section {
-  padding: 80px 0;
+  padding: 60px 0;
   background-color: #f8f9fa;
 }
 
 /* Header */
 .why-header {
-  text-align: center;
-  margin-bottom: 60px;
+  text-align: left;
+  margin-bottom: 32px;
 }
 
 .why-header h2 {
-  font-size: 32px;
+  font-size: 28px;
   font-weight: 700;
   color: #1a1a2e;
-  margin-bottom: 12px;
-  letter-spacing: -0.5px;
+  margin: 0 0 8px 0;
 }
 
 .why-header p {
-  font-size: 16px;
+  font-size: 14px;
   color: #6b7280;
   margin: 0;
 }
