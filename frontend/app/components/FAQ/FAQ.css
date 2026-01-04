@@ -2,7 +2,7 @@
 
 .faq-section {
   padding: var(--spacing-3xl) 0;
-  background-color: var(--gray-50);
+  background-color: var(--white);
 }
 
 .faq-section .section-header {
@@ -28,7 +28,7 @@
 }
 
 .faq-card {
-  background: var(--white);
+  background: var(--gray-50);
   padding: var(--spacing-xl);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
