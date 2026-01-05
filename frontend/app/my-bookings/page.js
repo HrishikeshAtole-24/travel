@@ -13,6 +13,7 @@ export default function MyBookingsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('all');
+  const [paymentLoading, setPaymentLoading] = useState(null);
 
   useEffect(() => {
     const token = apiClient.getToken();
@@ -119,6 +120,42 @@ export default function MyBookingsPage() {
 
   const handleViewDetails = (bookingId) => {
     router.push(`/booking/details/${bookingId}`);
+  };
+
+  const handlePayNow = async (booking) => {
+    try {
+      setPaymentLoading(booking.id);
+      
+      // Get booking details to fetch payment info
+      const response = await apiClient.getBookingById(booking.id);
+      
+      if (response.success && response.data) {
+        const bookingData = response.data.booking || response.data;
+        
+        // Check if payment info is available
+        if (bookingData.payment?.checkoutUrl) {
+          window.location.href = bookingData.payment.checkoutUrl;
+        } else if (bookingData.paymentReference) {
+          // Fetch payment details by reference
+          const paymentResponse = await apiClient.get(`/payments/${bookingData.paymentReference}`);
+          
+          if (paymentResponse.success && paymentResponse.data?.checkoutUrl) {
+            window.location.href = paymentResponse.data.checkoutUrl;
+          } else {
+            // Fallback to payment page
+            router.push(`/payment?bookingId=${booking.bookingReference || booking.id}`);
+          }
+        } else {
+          // No payment info, redirect to payment page
+          router.push(`/payment?bookingId=${booking.bookingReference || booking.id}`);
+        }
+      }
+    } catch (err) {
+      console.error('Payment redirect error:', err);
+      alert('Failed to initiate payment. Please try again.');
+    } finally {
+      setPaymentLoading(null);
+    }
   };
 
   const tabs = [
@@ -337,9 +374,19 @@ export default function MyBookingsPage() {
                       {booking.status === 'payment_initiated' && (
                         <button 
                           className="btn btn-primary"
-                          onClick={() => router.push(`/payment?bookingId=${booking.id}`)}
+                          onClick={() => handlePayNow(booking)}
+                          disabled={paymentLoading === booking.id}
                         >
-                          <i className="fas fa-credit-card"></i> Pay Now
+                          {paymentLoading === booking.id ? (
+                            <>
+                              <span className="spinner-small"></span>
+                              Processing...
+                            </>
+                          ) : (
+                            <>
+                              <i className="fas fa-credit-card"></i> Pay Now
+                            </>
+                          )}
                         </button>
                       )}
                     </div>

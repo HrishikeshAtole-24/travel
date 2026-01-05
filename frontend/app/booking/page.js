@@ -168,8 +168,10 @@ export default function BookingPage() {
         // Store booking info
         sessionStorage.setItem('bookingData', JSON.stringify(booking));
         
-        // Redirect to payment URL if available
-        if (payment?.paymentUrl) {
+        // Redirect to payment checkout URL
+        if (payment?.checkoutUrl) {
+          window.location.href = payment.checkoutUrl;
+        } else if (payment?.paymentUrl) {
           window.location.href = payment.paymentUrl;
         } else if (booking?.bookingId) {
           router.push(`/confirmation?bookingId=${booking.bookingReference || booking.bookingId}`);
