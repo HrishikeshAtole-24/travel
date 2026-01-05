@@ -3,11 +3,14 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import getSymbolFromCurrency from 'currency-symbol-map';
+import { validateFlightPrice } from '@/lib/api/flights';
 import './FlightCard.css';
 
 export default function FlightCard({ flight }) {
   const router = useRouter();
   const [showDetails, setShowDetails] = useState(false);
+  const [isValidating, setIsValidating] = useState(false);
+  const [validationError, setValidationError] = useState(null);
 
   const formatTime = (dateString) => {
     if (!dateString) return '--:--';
@@ -37,10 +40,41 @@ export default function FlightCard({ flight }) {
     return classMap[cabin] || cabin;
   };
 
-  const handleSelectFlight = () => {
-    // Store flight data and navigate to booking page
-    sessionStorage.setItem('selectedFlight', JSON.stringify(flight));
-    router.push('/booking');
+  const handleSelectFlight = async () => {
+    try {
+      setIsValidating(true);
+      setValidationError(null);
+
+      console.log('🔍 Validating flight price for:', flight.id || flight.offerId);
+
+      // Pass the entire flight object - the API function will handle transformation
+      const validationResponse = await validateFlightPrice(flight);
+      
+      console.log('✅ Price validation successful:', validationResponse);
+
+      // Store validated flight data
+      const validatedFlight = {
+        ...flight,
+        validatedOffer: validationResponse.data?.data?.flightOffers?.[0],
+        validationTimestamp: new Date().toISOString(),
+        dictionaries: validationResponse.data?.dictionaries
+      };
+
+      sessionStorage.setItem('selectedFlight', JSON.stringify(validatedFlight));
+      
+      // Navigate to booking page
+      router.push('/booking');
+    } catch (error) {
+      console.error('❌ Price validation failed:', error);
+      setValidationError(error.message || 'Failed to validate price. Please try again.');
+      
+      // Auto-clear error after 5 seconds
+      setTimeout(() => {
+        setValidationError(null);
+      }, 5000);
+    } finally {
+      setIsValidating(false);
+    }
   };
 
   const segment = flight.segments?.[0] || {};
@@ -139,13 +173,35 @@ export default function FlightCard({ flight }) {
             <div className="price-label">per person</div>
           </div>
           <button 
-            className="btn btn-primary select-flight-btn"
+            className={`btn btn-primary select-flight-btn ${isValidating ? 'loading' : ''}`}
             onClick={handleSelectFlight}
+            disabled={isValidating}
           >
-            Select Flight
+            {isValidating ? (
+              <>
+                <span className="spinner-small"></span>
+                Validating...
+              </>
+            ) : (
+              'Select Flight'
+            )}
           </button>
         </div>
       </div>
+
+      {/* Validation Error Message */}
+      {validationError && (
+        <div className="validation-error-banner">
+          <i className="fas fa-exclamation-triangle"></i>
+          <span>{validationError}</span>
+          <button 
+            className="close-error-btn"
+            onClick={() => setValidationError(null)}
+          >
+            <i className="fas fa-times"></i>
+          </button>
+        </div>
+      )}
 
       {/* Flight Card Footer - Quick Info */}
       <div className="flight-card-footer">

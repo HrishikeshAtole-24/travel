@@ -118,7 +118,8 @@ export default function BookingPage() {
     }
 
     try {
-      // Get segment info
+      // Use validated offer if available, otherwise fallback to original flight data
+      const validatedOffer = flight.validatedOffer;
       const segment = flight.segments?.[0] || {};
       const price = flight.price || {};
 
@@ -137,17 +138,22 @@ export default function BookingPage() {
         stops: flight.stops || (flight.segments?.length - 1) || 0
       };
 
+      // Use validated price if available
+      const validatedPrice = validatedOffer?.price || price;
+
       const bookingRequest = {
         flightData: flightData,
         travelers: travelers,
         contactEmail: contactDetails.email,
         contactPhone: contactDetails.phone,
-        totalPrice: price.total || flight.totalPrice || 0,
-        currency: price.currency || 'INR',
+        totalPrice: validatedPrice.total || price.total || flight.totalPrice || 0,
+        currency: validatedPrice.currency || price.currency || 'INR',
         specialRequests: specialRequests || undefined,
         paymentAcquirer: 'RAZORPAY',
         successUrl: `${window.location.origin}/confirmation`,
-        failureUrl: `${window.location.origin}/payment-failed`
+        failureUrl: `${window.location.origin}/payment-failed`,
+        // Include validated flight offer for Amadeus booking
+        validatedFlightOffer: validatedOffer || undefined
       };
 
       console.log('Creating booking with data:', bookingRequest);
@@ -403,6 +409,14 @@ export default function BookingPage() {
               <div className="summary-card">
                 <h3>Booking Summary</h3>
                 
+                {/* Price Validation Badge */}
+                {flight.validatedOffer && (
+                  <div className="price-validated-badge">
+                    <i className="fas fa-shield-check"></i>
+                    <span>Price Validated & Confirmed</span>
+                  </div>
+                )}
+                
                 <div className="summary-flight">
                   <div className="summary-route">
                     <span>{segment.departure?.airport}</span>
@@ -418,18 +432,18 @@ export default function BookingPage() {
 
                 <div className="summary-row">
                   <span>Base Fare</span>
-                  <span>₹{flight.price?.base?.toLocaleString() || '0'}</span>
+                  <span>₹{(flight.validatedOffer?.price?.base || flight.price?.base || 0).toLocaleString()}</span>
                 </div>
                 <div className="summary-row">
                   <span>Taxes & Fees</span>
-                  <span>₹{flight.price?.taxes?.toLocaleString() || '0'}</span>
+                  <span>₹{((flight.validatedOffer?.price?.total || flight.price?.total || 0) - (flight.validatedOffer?.price?.base || flight.price?.base || 0)).toLocaleString()}</span>
                 </div>
 
                 <div className="summary-divider"></div>
 
                 <div className="summary-total">
                   <span>Total Amount</span>
-                  <span>₹{flight.price?.total?.toLocaleString() || '0'}</span>
+                  <span>₹{(flight.validatedOffer?.price?.total || flight.price?.total || 0).toLocaleString()}</span>
                 </div>
               </div>
             </aside>
