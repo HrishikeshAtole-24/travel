@@ -15,6 +15,9 @@ export default function BookingDetailsPage() {
   const [booking, setBooking] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancelReason, setCancelReason] = useState('');
+  const [cancelling, setCancelling] = useState(false);
 
   useEffect(() => {
     if (bookingId) {
@@ -26,7 +29,7 @@ export default function BookingDetailsPage() {
     try {
       setLoading(true);
       setError(null);
-      const response = await apiClient.get(`/bookings/${bookingId}`);
+      const response = await apiClient.getBookingById(bookingId);
       
       if (response.success && response.data?.booking) {
         setBooking(response.data.booking);
@@ -65,6 +68,29 @@ export default function BookingDetailsPage() {
       minute: '2-digit',
       hour12: true 
     });
+  };
+
+  const handleCancelBooking = async () => {
+    if (!cancelReason.trim()) {
+      alert('Please provide a reason for cancellation');
+      return;
+    }
+
+    try {
+      setCancelling(true);
+      const response = await apiClient.cancelBooking(bookingId, cancelReason);
+      
+      if (response.success) {
+        alert('Booking cancelled successfully');
+        setShowCancelModal(false);
+        fetchBookingDetails(); // Refresh booking data
+      }
+    } catch (err) {
+      alert(err.message || 'Failed to cancel booking');
+      console.error('Cancel booking error:', err);
+    } finally {
+      setCancelling(false);
+    }
   };
 
   const getStatusInfo = (status) => {
@@ -408,15 +434,29 @@ export default function BookingDetailsPage() {
                 <button className="btn btn-outline btn-action">
                   <i className="fas fa-envelope"></i> Email Ticket
                 </button>
+                <button 
+                  className="btn btn-danger btn-action"
+                  onClick={() => setShowCancelModal(true)}
+                >
+                  <i className="fas fa-times-circle"></i> Cancel Booking
+                </button>
               </>
             )}
             {booking.status === 'payment_initiated' && (
-              <button 
-                className="btn btn-primary btn-action"
-                onClick={() => router.push(`/payment?bookingId=${booking.id}`)}
-              >
-                <i className="fas fa-lock"></i> Complete Payment
-              </button>
+              <>
+                <button 
+                  className="btn btn-primary btn-action"
+                  onClick={() => router.push(`/payment?bookingId=${booking.id}`)}
+                >
+                  <i className="fas fa-lock"></i> Complete Payment
+                </button>
+                <button 
+                  className="btn btn-danger btn-action"
+                  onClick={() => setShowCancelModal(true)}
+                >
+                  <i className="fas fa-times-circle"></i> Cancel Booking
+                </button>
+              </>
             )}
             <button className="btn btn-ghost btn-action" onClick={() => window.print()}>
               <i className="fas fa-print"></i> Print Details
@@ -443,6 +483,63 @@ export default function BookingDetailsPage() {
             </div>
           </div>
         </div>
+
+        {/* Cancel Booking Modal */}
+        {showCancelModal && (
+          <div className="modal-overlay" onClick={() => setShowCancelModal(false)}>
+            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-header">
+                <h3><i className="fas fa-exclamation-triangle"></i> Cancel Booking</h3>
+                <button 
+                  className="modal-close"
+                  onClick={() => setShowCancelModal(false)}
+                >
+                  <i className="fas fa-times"></i>
+                </button>
+              </div>
+              <div className="modal-body">
+                <p className="cancel-warning">
+                  Are you sure you want to cancel this booking? This action cannot be undone.
+                </p>
+                <div className="form-group">
+                  <label className="form-label">Reason for Cancellation *</label>
+                  <textarea
+                    className="form-input"
+                    rows="4"
+                    value={cancelReason}
+                    onChange={(e) => setCancelReason(e.target.value)}
+                    placeholder="Please tell us why you're cancelling..."
+                    required
+                  />
+                </div>
+                <div className="cancel-info">
+                  <i className="fas fa-info-circle"></i>
+                  Refunds will be processed according to the airline's cancellation policy
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button 
+                  className="btn btn-ghost"
+                  onClick={() => setShowCancelModal(false)}
+                  disabled={cancelling}
+                >
+                  Keep Booking
+                </button>
+                <button 
+                  className="btn btn-danger"
+                  onClick={handleCancelBooking}
+                  disabled={cancelling || !cancelReason.trim()}
+                >
+                  {cancelling ? (
+                    <><i className="fas fa-spinner fa-spin"></i> Cancelling...</>
+                  ) : (
+                    <><i className="fas fa-times-circle"></i> Yes, Cancel Booking</>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
       <Footer />
     </>

@@ -102,6 +102,66 @@ class ApiClient {
       method: 'DELETE',
     });
   }
+
+  // ============================
+  // BOOKING API METHODS
+  // ============================
+
+  /**
+   * Create a new booking
+   * @param {Object} bookingData - Booking details
+   * @returns {Promise} Booking response
+   */
+  async createBooking(bookingData) {
+    return this.post('/bookings/create', bookingData);
+  }
+
+  /**
+   * Create booking and initiate payment in one step
+   * @param {Object} bookingData - Booking details with payment info
+   * @returns {Promise} Booking and payment response
+   */
+  async createBookingAndPay(bookingData) {
+    return this.post('/bookings/create-and-pay', bookingData);
+  }
+
+  /**
+   * Get booking by ID
+   * @param {string|number} bookingId - Booking ID
+   * @returns {Promise} Booking details
+   */
+  async getBookingById(bookingId) {
+    return this.get(`/bookings/${bookingId}`);
+  }
+
+  /**
+   * Get booking by reference number
+   * @param {string} bookingReference - Booking reference number
+   * @param {string} email - Email for verification (guest bookings)
+   * @returns {Promise} Booking details
+   */
+  async getBookingByReference(bookingReference, email) {
+    const params = email ? { email } : {};
+    return this.get(`/bookings/reference/${bookingReference}`, params);
+  }
+
+  /**
+   * Get all bookings for logged-in user
+   * @returns {Promise} User's bookings
+   */
+  async getMyBookings() {
+    return this.get('/bookings/my-bookings');
+  }
+
+  /**
+   * Cancel a booking
+   * @param {string|number} bookingId - Booking ID
+   * @param {string} reason - Cancellation reason
+   * @returns {Promise} Cancellation confirmation
+   */
+  async cancelBooking(bookingId, reason) {
+    return this.post(`/bookings/${bookingId}/cancel`, { reason });
+  }
 }
 
 // Export singleton instance

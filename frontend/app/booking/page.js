@@ -13,36 +13,98 @@ export default function BookingPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   
-  const [passengerData, setPassengerData] = useState({
+  const [travelers, setTravelers] = useState([{
     firstName: '',
     lastName: '',
-    email: '',
-    phone: '',
     dateOfBirth: '',
-    gender: 'male',
-    passportNumber: '',
-  });
+    gender: 'MALE',
+    nationality: 'IN',
+    documentType: 'PASSPORT',
+    documentNumber: '',
+    documentExpiry: '',
+    email: '',
+    phone: ''
+  }]);
 
   const [contactDetails, setContactDetails] = useState({
     email: '',
     phone: ''
   });
 
+  const [specialRequests, setSpecialRequests] = useState('');
+
   useEffect(() => {
     const flightData = sessionStorage.getItem('selectedFlight');
     if (flightData) {
-      setFlight(JSON.parse(flightData));
+      const parsedFlight = JSON.parse(flightData);
+      setFlight(parsedFlight);
+      
+      // Pre-fill contact details if user is logged in
+      const token = apiClient.getToken();
+      if (token) {
+        fetchUserProfile();
+      }
     } else {
       router.push('/search');
     }
   }, []);
 
-  const handlePassengerChange = (field, value) => {
-    setPassengerData(prev => ({ ...prev, [field]: value }));
+  const fetchUserProfile = async () => {
+    try {
+      const response = await apiClient.get('/auth/profile');
+      if (response.success && response.data?.user) {
+        const user = response.data.user;
+        setContactDetails({
+          email: user.email || '',
+          phone: user.phone || ''
+        });
+        // Pre-fill first traveler with user info
+        setTravelers([{
+          ...travelers[0],
+          firstName: user.firstName || '',
+          lastName: user.lastName || '',
+          email: user.email || '',
+          phone: user.phone || ''
+        }]);
+      }
+    } catch (error) {
+      console.error('Failed to fetch user profile:', error);
+    }
+  };
+
+  const handleTravelerChange = (index, field, value) => {
+    const updatedTravelers = [...travelers];
+    updatedTravelers[index] = {
+      ...updatedTravelers[index],
+      [field]: value
+    };
+    setTravelers(updatedTravelers);
   };
 
   const handleContactChange = (field, value) => {
     setContactDetails(prev => ({ ...prev, [field]: value }));
+  };
+
+  const validateForm = () => {
+    // Check travelers
+    for (const traveler of travelers) {
+      if (!traveler.firstName || !traveler.lastName || !traveler.dateOfBirth || !traveler.gender) {
+        setError('Please fill in all required traveler information');
+        return false;
+      }
+      if (!traveler.email || !traveler.phone) {
+        setError('Please provide email and phone for all travelers');
+        return false;
+      }
+    }
+
+    // Check contact details
+    if (!contactDetails.email || !contactDetails.phone) {
+      setError('Please provide contact information');
+      return false;
+    }
+
+    return true;
   };
 
   const handleSubmit = async (e) => {
@@ -50,42 +112,62 @@ export default function BookingPage() {
     setLoading(true);
     setError(null);
 
+    if (!validateForm()) {
+      setLoading(false);
+      return;
+    }
+
     try {
-      const bookingRequest = {
-        flightDetails: {
-          offerId: flight.offerId,
-          supplier: flight.supplier,
-          segments: flight.segments
-        },
-        travelers: [
-          {
-            id: '1',
-            type: 'adult',
-            firstName: passengerData.firstName,
-            lastName: passengerData.lastName,
-            dateOfBirth: passengerData.dateOfBirth,
-            gender: passengerData.gender,
-            ...(passengerData.passportNumber && {
-              documents: [{
-                documentType: 'PASSPORT',
-                number: passengerData.passportNumber
-              }]
-            }),
-            contact: {
-              email: contactDetails.email,
-              phone: contactDetails.phone
-            }
-          }
-        ],
-        contactInfo: contactDetails
+      // Get segment info
+      const segment = flight.segments?.[0] || {};
+      const price = flight.price || {};
+
+      // Build flight data object matching backend expectations
+      const flightData = {
+        flightId: flight.offerId || flight.flightId || `${segment.airlineCode}${segment.flightNumber}`,
+        origin: segment.departure?.airport || flight.origin,
+        destination: segment.arrival?.airport || flight.destination,
+        departureDate: segment.departure?.date || flight.departureDate,
+        departureTime: segment.departure?.time ? new Date(segment.departure.time).toTimeString().slice(0, 5) : '',
+        arrivalDate: segment.arrival?.date || flight.arrivalDate,
+        arrivalTime: segment.arrival?.time ? new Date(segment.arrival.time).toTimeString().slice(0, 5) : '',
+        airline: segment.airlineCode || flight.airline,
+        flightNumber: segment.flightNumber || flight.flightNumber,
+        cabin: flight.cabin || 'ECONOMY',
+        stops: flight.stops || (flight.segments?.length - 1) || 0
       };
 
-      const response = await apiClient.post('/bookings/create-and-pay', bookingRequest);
+      const bookingRequest = {
+        flightData: flightData,
+        travelers: travelers,
+        contactEmail: contactDetails.email,
+        contactPhone: contactDetails.phone,
+        totalPrice: price.total || flight.totalPrice || 0,
+        currency: price.currency || 'INR',
+        specialRequests: specialRequests || undefined,
+        paymentAcquirer: 'RAZORPAY',
+        successUrl: `${window.location.origin}/confirmation`,
+        failureUrl: `${window.location.origin}/payment-failed`
+      };
+
+      console.log('Creating booking with data:', bookingRequest);
+
+      const response = await apiClient.createBookingAndPay(bookingRequest);
       
+      console.log('Booking response:', response);
+
       if (response.success && response.data) {
-        // Redirect to payment page or confirmation
-        sessionStorage.setItem('bookingData', JSON.stringify(response.data));
-        router.push(`/payment?bookingId=${response.data.bookingId}`);
+        const { booking, payment } = response.data;
+        
+        // Store booking info
+        sessionStorage.setItem('bookingData', JSON.stringify(booking));
+        
+        // Redirect to payment URL if available
+        if (payment?.paymentUrl) {
+          window.location.href = payment.paymentUrl;
+        } else if (booking?.bookingId) {
+          router.push(`/confirmation?bookingId=${booking.bookingReference || booking.bookingId}`);
+        }
       }
     } catch (err) {
       setError(err.message || 'Failed to create booking');
@@ -100,12 +182,22 @@ export default function BookingPage() {
   }
 
   const segment = flight.segments?.[0] || {};
+  const price = flight.price || {};
 
   return (
     <>
       <Header />
       <main className="booking-page">
         <div className="container">
+          {/* Back Button */}
+          <button 
+            className="back-btn"
+            onClick={() => router.back()}
+            type="button"
+          >
+            <i className="fas fa-arrow-left"></i> Back to Search Results
+          </button>
+
           <div className="booking-layout">
             {/* Booking Form */}
             <section className="booking-form-section">
@@ -128,8 +220,8 @@ export default function BookingPage() {
                       <input
                         type="text"
                         className="form-input"
-                        value={passengerData.firstName}
-                        onChange={(e) => handlePassengerChange('firstName', e.target.value)}
+                        value={travelers[0].firstName}
+                        onChange={(e) => handleTravelerChange(0, 'firstName', e.target.value)}
                         required
                       />
                     </div>
@@ -139,8 +231,8 @@ export default function BookingPage() {
                       <input
                         type="text"
                         className="form-input"
-                        value={passengerData.lastName}
-                        onChange={(e) => handlePassengerChange('lastName', e.target.value)}
+                        value={travelers[0].lastName}
+                        onChange={(e) => handleTravelerChange(0, 'lastName', e.target.value)}
                         required
                       />
                     </div>
@@ -152,8 +244,8 @@ export default function BookingPage() {
                       <input
                         type="date"
                         className="form-input"
-                        value={passengerData.dateOfBirth}
-                        onChange={(e) => handlePassengerChange('dateOfBirth', e.target.value)}
+                        value={travelers[0].dateOfBirth}
+                        onChange={(e) => handleTravelerChange(0, 'dateOfBirth', e.target.value)}
                         required
                       />
                     </div>
@@ -162,35 +254,103 @@ export default function BookingPage() {
                       <label className="form-label">Gender *</label>
                       <select
                         className="form-select"
-                        value={passengerData.gender}
-                        onChange={(e) => handlePassengerChange('gender', e.target.value)}
+                        value={travelers[0].gender}
+                        onChange={(e) => handleTravelerChange(0, 'gender', e.target.value)}
                         required
                       >
-                        <option value="male">Male</option>
-                        <option value="female">Female</option>
-                        <option value="other">Other</option>
+                        <option value="MALE">Male</option>
+                        <option value="FEMALE">Female</option>
+                        <option value="OTHER">Other</option>
                       </select>
                     </div>
                   </div>
 
-                  <div className="form-group">
-                    <label className="form-label">Passport Number (Optional)</label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      value={passengerData.passportNumber}
-                      onChange={(e) => handlePassengerChange('passportNumber', e.target.value)}
-                      placeholder="For international flights"
-                    />
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label className="form-label">Nationality *</label>
+                      <input
+                        type="text"
+                        className="form-input"
+                        value={travelers[0].nationality}
+                        onChange={(e) => handleTravelerChange(0, 'nationality', e.target.value)}
+                        placeholder="e.g., IN"
+                        maxLength="2"
+                        required
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label className="form-label">Document Type *</label>
+                      <select
+                        className="form-select"
+                        value={travelers[0].documentType}
+                        onChange={(e) => handleTravelerChange(0, 'documentType', e.target.value)}
+                        required
+                      >
+                        <option value="PASSPORT">Passport</option>
+                        <option value="ID_CARD">ID Card</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label className="form-label">Document Number *</label>
+                      <input
+                        type="text"
+                        className="form-input"
+                        value={travelers[0].documentNumber}
+                        onChange={(e) => handleTravelerChange(0, 'documentNumber', e.target.value)}
+                        placeholder="Passport/ID number"
+                        required
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label className="form-label">Document Expiry *</label>
+                      <input
+                        type="date"
+                        className="form-input"
+                        value={travelers[0].documentExpiry}
+                        onChange={(e) => handleTravelerChange(0, 'documentExpiry', e.target.value)}
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label className="form-label">Email *</label>
+                      <input
+                        type="email"
+                        className="form-input"
+                        value={travelers[0].email}
+                        onChange={(e) => handleTravelerChange(0, 'email', e.target.value)}
+                        required
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label className="form-label">Phone *</label>
+                      <input
+                        type="tel"
+                        className="form-input"
+                        value={travelers[0].phone}
+                        onChange={(e) => handleTravelerChange(0, 'phone', e.target.value)}
+                        placeholder="+919876543210"
+                        required
+                      />
+                    </div>
                   </div>
                 </div>
 
                 {/* Contact Details */}
                 <div className="form-card">
                   <h2 className="form-card-title">Contact Details</h2>
+                  <p className="form-card-subtitle">Booking confirmation will be sent to these details</p>
                   
                   <div className="form-group">
-                    <label className="form-label">Email *</label>
+                    <label className="form-label">Contact Email *</label>
                     <input
                       type="email"
                       className="form-input"
@@ -201,13 +361,29 @@ export default function BookingPage() {
                   </div>
 
                   <div className="form-group">
-                    <label className="form-label">Phone *</label>
+                    <label className="form-label">Contact Phone *</label>
                     <input
                       type="tel"
                       className="form-input"
                       value={contactDetails.phone}
                       onChange={(e) => handleContactChange('phone', e.target.value)}
+                      placeholder="+919876543210"
                       required
+                    />
+                  </div>
+                </div>
+
+                {/* Special Requests */}
+                <div className="form-card">
+                  <h2 className="form-card-title">Special Requests</h2>
+                  <div className="form-group">
+                    <label className="form-label">Any special requirements? (Optional)</label>
+                    <textarea
+                      className="form-input"
+                      rows="3"
+                      value={specialRequests}
+                      onChange={(e) => setSpecialRequests(e.target.value)}
+                      placeholder="E.g., Wheelchair assistance, Vegetarian meal, etc."
                     />
                   </div>
                 </div>
