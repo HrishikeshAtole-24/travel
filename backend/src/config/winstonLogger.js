@@ -24,14 +24,7 @@ const logger = winston.createLogger({
   ],
 });
 
-// If not in production, log to console as well
-if (process.env.NODE_ENV !== 'production') {
-  logger.add(new winston.transports.Console({
-    format: winston.format.combine(
-      winston.format.colorize(),
-      winston.format.simple()
-    ),
-  }));
-}
+// Console logging disabled - logs only go to files
+// To enable console logs, set NODE_ENV=production or add console transport
 
 module.exports = logger;

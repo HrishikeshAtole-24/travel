@@ -1,0 +1,1406 @@
+{
+	"info": {
+		"_postman_id": "ac05ce3b-10ae-4d73-b845-7c22ab17d5e7",
+		"name": "Travel Booking API - Complete Collection",
+		"description": "Complete Travel Booking API - Auth, Flights, Bookings, Payments, Reference Data & Analytics",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "50661170",
+		"_collection_link": "https://rishiatole4545-9889810.postman.co/workspace/Hrishikesh-Atole's-Workspace~2a77a9b7-aeb9-456d-8466-d9e3266d0bf0/collection/50661170-ac05ce3b-10ae-4d73-b845-7c22ab17d5e7?action=share&source=collection_link&creator=50661170"
+	},
+	"item": [
+		{
+			"name": "1. Authentication",
+			"item": [
+				{
+					"name": "Sign Up",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"john.doe@example.com\",\n  \"phone\": \"+919876543210\",\n  \"password\": \"SecurePass123!\",\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/signup",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"signup"
+							]
+						},
+						"description": "Create a new user account. Returns userId and OTPs sent for email/phone verification."
+					},
+					"response": []
+				},
+				{
+					"name": "Login",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"john.doe@example.com\",\n  \"password\": \"SecurePass123!\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/login",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"login"
+							]
+						},
+						"description": "Login with email and password. Returns JWT token and user details."
+					},
+					"response": []
+				},
+				{
+					"name": "Verify Email",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"john.doe@example.com\",\n  \"otp\": \"123456\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/verify-email",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"verify-email"
+							]
+						},
+						"description": "Verify email with OTP sent during signup."
+					},
+					"response": []
+				},
+				{
+					"name": "Verify Phone",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"phone\": \"+919876543210\",\n  \"otp\": \"123456\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/verify-phone",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"verify-phone"
+							]
+						},
+						"description": "Verify phone number with OTP sent during signup."
+					},
+					"response": []
+				},
+				{
+					"name": "Resend Email OTP",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"john.doe@example.com\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/resend-email-otp",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"resend-email-otp"
+							]
+						},
+						"description": "Resend OTP to email for verification."
+					},
+					"response": []
+				},
+				{
+					"name": "Resend Phone OTP",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"phone\": \"+919876543210\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/resend-phone-otp",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"resend-phone-otp"
+							]
+						},
+						"description": "Resend OTP to phone for verification."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Profile",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/auth/profile",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"profile"
+							]
+						},
+						"description": "Get current user profile (requires authentication)."
+					},
+					"response": []
+				},
+				{
+					"name": "Logout",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/auth/logout",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"logout"
+							]
+						},
+						"description": "Logout user (client-side token removal)."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "2. Health Check",
+			"item": [
+				{
+					"name": "API Health",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/health",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"health"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Analytics Health",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/analytics/health",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"analytics",
+								"health"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "3. Flight Search & Booking",
+			"item": [
+				{
+					"name": "1. Search Flights - Basic",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/flights/search?origin=BOM&destination=DXB&departureDate=2025-12-25&adults=1",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"flights",
+								"search"
+							],
+							"query": [
+								{
+									"key": "origin",
+									"value": "BOM"
+								},
+								{
+									"key": "destination",
+									"value": "DXB"
+								},
+								{
+									"key": "departureDate",
+									"value": "2025-12-25"
+								},
+								{
+									"key": "adults",
+									"value": "1"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "2. Search Flights - Round Trip",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/flights/search?origin=DEL&destination=LHR&departureDate=2025-12-25&returnDate=2026-01-05&adults=2",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"flights",
+								"search"
+							],
+							"query": [
+								{
+									"key": "origin",
+									"value": "DEL"
+								},
+								{
+									"key": "destination",
+									"value": "LHR"
+								},
+								{
+									"key": "departureDate",
+									"value": "2025-12-25"
+								},
+								{
+									"key": "returnDate",
+									"value": "2026-01-05"
+								},
+								{
+									"key": "adults",
+									"value": "2"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "3. Search Flights - Non-Stop Only",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/flights/search?origin=BOM&destination=DXB&departureDate=2025-12-25&adults=1&nonStopOnly=true",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"flights",
+								"search"
+							],
+							"query": [
+								{
+									"key": "origin",
+									"value": "BOM"
+								},
+								{
+									"key": "destination",
+									"value": "DXB"
+								},
+								{
+									"key": "departureDate",
+									"value": "2025-12-25"
+								},
+								{
+									"key": "adults",
+									"value": "1"
+								},
+								{
+									"key": "nonStopOnly",
+									"value": "true"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "4. Search Flights - Business Class",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/flights/search?origin=BOM&destination=LHR&departureDate=2025-12-25&adults=2&cabin=BUSINESS",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"flights",
+								"search"
+							],
+							"query": [
+								{
+									"key": "origin",
+									"value": "BOM"
+								},
+								{
+									"key": "destination",
+									"value": "LHR"
+								},
+								{
+									"key": "departureDate",
+									"value": "2025-12-25"
+								},
+								{
+									"key": "adults",
+									"value": "2"
+								},
+								{
+									"key": "cabin",
+									"value": "BUSINESS"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "5. Search Flights - With Filters",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/flights/search?origin=DEL&destination=DXB&departureDate=2025-12-25&adults=1&maxPrice=30000&airlines=EK,AI&sortBy=PRICE_ASC",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"flights",
+								"search"
+							],
+							"query": [
+								{
+									"key": "origin",
+									"value": "DEL"
+								},
+								{
+									"key": "destination",
+									"value": "DXB"
+								},
+								{
+									"key": "departureDate",
+									"value": "2025-12-25"
+								},
+								{
+									"key": "adults",
+									"value": "1"
+								},
+								{
+									"key": "maxPrice",
+									"value": "30000"
+								},
+								{
+									"key": "airlines",
+									"value": "EK,AI"
+								},
+								{
+									"key": "sortBy",
+									"value": "PRICE_ASC"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "6. Flight Price Validation",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"flightOffer\": {\r\n        \"type\": \"flight-offer\",\r\n        \"id\": \"1\",\r\n        \"source\": \"GDS\",\r\n        \"instantTicketingRequired\": false,\r\n        \"nonHomogeneous\": false,\r\n        \"oneWay\": true,\r\n        \"lastTicketingDate\": \"2025-12-24\",\r\n        \"numberOfBookableSeats\": 9,\r\n        \"itineraries\": [\r\n            {\r\n                \"duration\": \"PT21H55M\",\r\n                \"segments\": [\r\n                    {\r\n                        \"departure\": {\r\n                            \"iataCode\": \"BOM\",\r\n                            \"terminal\": \"2\",\r\n                            \"at\": \"2025-12-25T20:45:00\"\r\n                        },\r\n                        \"arrival\": {\r\n                            \"iataCode\": \"CMB\",\r\n                            \"at\": \"2025-12-25T23:15:00\"\r\n                        },\r\n                        \"carrierCode\": \"UL\",\r\n                        \"number\": \"144\",\r\n                        \"aircraft\": {\r\n                            \"code\": \"32A\"\r\n                        },\r\n                        \"operating\": {\r\n                            \"carrierCode\": \"UL\"\r\n                        },\r\n                        \"duration\": \"PT2H30M\",\r\n                        \"id\": \"1\",\r\n                        \"numberOfStops\": 0,\r\n                        \"blacklistedInEU\": false\r\n                    },\r\n                    {\r\n                        \"departure\": {\r\n                            \"iataCode\": \"CMB\",\r\n                            \"at\": \"2025-12-26T14:00:00\"\r\n                        },\r\n                        \"arrival\": {\r\n                            \"iataCode\": \"DXB\",\r\n                            \"terminal\": \"1\",\r\n                            \"at\": \"2025-12-26T17:10:00\"\r\n                        },\r\n                        \"carrierCode\": \"UL\",\r\n                        \"number\": \"231\",\r\n                        \"aircraft\": {\r\n                            \"code\": \"320\"\r\n                        },\r\n                        \"operating\": {\r\n                            \"carrierCode\": \"UL\"\r\n                        },\r\n                        \"duration\": \"PT4H40M\",\r\n                        \"id\": \"2\",\r\n                        \"numberOfStops\": 0,\r\n                        \"blacklistedInEU\": false\r\n                    }\r\n                ]\r\n            }\r\n        ],\r\n        \"price\": {\r\n            \"currency\": \"EUR\",\r\n            \"total\": \"129.97\",\r\n            \"base\": \"40.00\",\r\n            \"fees\": [\r\n                {\r\n                    \"amount\": \"0.00\",\r\n                    \"type\": \"SUPPLIER\"\r\n                }\r\n            ],\r\n            \"grandTotal\": \"129.97\"\r\n        },\r\n        \"pricingOptions\": {\r\n            \"fareType\": [\r\n                \"PUBLISHED\"\r\n            ],\r\n            \"includedCheckedBagsOnly\": true\r\n        },\r\n        \"validatingAirlineCodes\": [\r\n            \"UL\"\r\n        ],\r\n        \"travelerPricings\": [\r\n            {\r\n                \"travelerId\": \"1\",\r\n                \"fareOption\": \"STANDARD\",\r\n                \"travelerType\": \"ADULT\",\r\n                \"price\": {\r\n                    \"currency\": \"EUR\",\r\n                    \"total\": \"129.97\",\r\n                    \"base\": \"40.00\"\r\n                },\r\n                \"fareDetailsBySegment\": [\r\n                    {\r\n                        \"segmentId\": \"1\",\r\n                        \"cabin\": \"ECONOMY\",\r\n                        \"fareBasis\": \"VOWIZ\",\r\n                        \"class\": \"V\",\r\n                        \"includedCheckedBags\": {\r\n                            \"weight\": 30,\r\n                            \"weightUnit\": \"KG\"\r\n                        }\r\n                    },\r\n                    {\r\n                        \"segmentId\": \"2\",\r\n                        \"cabin\": \"ECONOMY\",\r\n                        \"fareBasis\": \"VOWIZ\",\r\n                        \"class\": \"V\",\r\n                        \"includedCheckedBags\": {\r\n                            \"weight\": 30,\r\n                            \"weightUnit\": \"KG\"\r\n                        }\r\n                    }\r\n                ]\r\n            }\r\n        ]\r\n    }\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:5000/api/flights/price",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5000",
+							"path": [
+								"api",
+								"flights",
+								"price"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "4. Booking Management",
+			"item": [
+				{
+					"name": "Create Booking",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}",
+								"type": "text",
+								"disabled": true
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"flightData\": {\n    \"flightId\": \"flight-123\",\n    \"origin\": \"BOM\",\n    \"destination\": \"DXB\",\n    \"departureDate\": \"2025-12-25\",\n    \"departureTime\": \"20:45\",\n    \"arrivalDate\": \"2025-12-26\",\n    \"arrivalTime\": \"17:10\",\n    \"airline\": \"UL\",\n    \"flightNumber\": \"144\",\n    \"cabin\": \"ECONOMY\",\n    \"stops\": 1\n  },\n  \"travelers\": [\n    {\n      \"firstName\": \"John\",\n      \"lastName\": \"Doe\",\n      \"dateOfBirth\": \"1990-05-15\",\n      \"gender\": \"MALE\",\n      \"nationality\": \"IN\",\n      \"documentType\": \"PASSPORT\",\n      \"documentNumber\": \"P1234567\",\n      \"documentExpiry\": \"2030-12-31\",\n      \"email\": \"john.doe@example.com\",\n      \"phone\": \"+919876543210\"\n    }\n  ],\n  \"contactEmail\": \"john.doe@example.com\",\n  \"contactPhone\": \"+919876543210\",\n  \"totalPrice\": 12000,\n  \"currency\": \"INR\",\n  \"specialRequests\": \"Vegetarian meal\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/bookings/create",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"bookings",
+								"create"
+							]
+						},
+						"description": "Create a new flight booking. Can be used with or without authentication (guest booking)."
+					},
+					"response": []
+				},
+				{
+					"name": "Create Booking and Pay (Combined)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}",
+								"type": "text",
+								"disabled": true
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"flightData\": {\n    \"flightId\": \"flight-123\",\n    \"origin\": \"BOM\",\n    \"destination\": \"DXB\",\n    \"departureDate\": \"2025-12-25\",\n    \"departureTime\": \"20:45\",\n    \"arrivalDate\": \"2025-12-26\",\n    \"arrivalTime\": \"17:10\",\n    \"airline\": \"UL\",\n    \"flightNumber\": \"144\",\n    \"cabin\": \"ECONOMY\",\n    \"stops\": 1\n  },\n  \"travelers\": [\n    {\n      \"firstName\": \"John\",\n      \"lastName\": \"Doe\",\n      \"dateOfBirth\": \"1990-05-15\",\n      \"gender\": \"MALE\",\n      \"nationality\": \"IN\",\n      \"documentType\": \"PASSPORT\",\n      \"documentNumber\": \"P1234567\",\n      \"documentExpiry\": \"2030-12-31\",\n      \"email\": \"john.doe@example.com\",\n      \"phone\": \"+919876543210\"\n    }\n  ],\n  \"contactEmail\": \"john.doe@example.com\",\n  \"contactPhone\": \"+919876543210\",\n  \"totalPrice\": 12000,\n  \"currency\": \"INR\",\n  \"specialRequests\": \"Vegetarian meal\",\n  \"paymentAcquirer\": \"RAZORPAY\",\n  \"successUrl\": \"http://localhost:3000/payment-success\",\n  \"failureUrl\": \"http://localhost:3000/payment-failed\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/bookings/create-and-pay",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"bookings",
+								"create-and-pay"
+							]
+						},
+						"description": "Create booking and initiate payment in one step. Returns booking details and payment URL."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Booking by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}",
+								"type": "text",
+								"disabled": true
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/bookings/:bookingId",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"bookings",
+								":bookingId"
+							],
+							"variable": [
+								{
+									"key": "bookingId",
+									"value": "1"
+								}
+							]
+						},
+						"description": "Get booking details by booking ID."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Booking by Reference",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/bookings/reference/:bookingReference?email=john.doe@example.com",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"bookings",
+								"reference",
+								":bookingReference"
+							],
+							"query": [
+								{
+									"key": "email",
+									"value": "john.doe@example.com"
+								}
+							],
+							"variable": [
+								{
+									"key": "bookingReference",
+									"value": "BK123456"
+								}
+							]
+						},
+						"description": "Get booking by reference number (requires email verification for guest bookings)."
+					},
+					"response": []
+				},
+				{
+					"name": "Get My Bookings",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/bookings/my-bookings",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"bookings",
+								"my-bookings"
+							]
+						},
+						"description": "Get all bookings for the logged-in user (requires authentication)."
+					},
+					"response": []
+				},
+				{
+					"name": "Cancel Booking",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}",
+								"type": "text",
+								"disabled": true
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"reason\": \"Change of plans\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/bookings/:bookingId/cancel",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"bookings",
+								":bookingId",
+								"cancel"
+							],
+							"variable": [
+								{
+									"key": "bookingId",
+									"value": "1"
+								}
+							]
+						},
+						"description": "Cancel a booking. Refund will be processed if applicable."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "5. Payment Management",
+			"item": [
+				{
+					"name": "Create Payment",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"bookingId\": 1,\n  \"acquirer\": \"RAZORPAY\",\n  \"customerEmail\": \"john.doe@example.com\",\n  \"customerName\": \"John Doe\",\n  \"customerPhone\": \"+919876543210\",\n  \"successUrl\": \"http://localhost:3000/payment-success\",\n  \"failureUrl\": \"http://localhost:3000/payment-failed\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/payments/create",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"payments",
+								"create"
+							]
+						},
+						"description": "Create/initiate a new payment for a booking. Returns payment URL for redirect."
+					},
+					"response": []
+				},
+				{
+					"name": "Payment Callback",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"paymentReference\": \"PAY123456\",\n  \"status\": \"success\",\n  \"transactionId\": \"txn_abc123\",\n  \"acquirerResponse\": {}\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/payments/callback",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"payments",
+								"callback"
+							]
+						},
+						"description": "Handle payment callback/verification from payment gateway."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Payment Details",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/payments/:paymentReference",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"payments",
+								":paymentReference"
+							],
+							"variable": [
+								{
+									"key": "paymentReference",
+									"value": "PAY123456"
+								}
+							]
+						},
+						"description": "Get payment details by payment reference."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Payment Status",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/payments/:paymentReference/status",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"payments",
+								":paymentReference",
+								"status"
+							],
+							"variable": [
+								{
+									"key": "paymentReference",
+									"value": "PAY123456"
+								}
+							]
+						},
+						"description": "Check payment status by payment reference."
+					},
+					"response": []
+				},
+				{
+					"name": "Process Refund",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"amount\": 12000,\n  \"reason\": \"Customer requested cancellation\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/payments/:paymentReference/refund",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"payments",
+								":paymentReference",
+								"refund"
+							],
+							"variable": [
+								{
+									"key": "paymentReference",
+									"value": "PAY123456"
+								}
+							]
+						},
+						"description": "Process refund for a payment."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Payments by Booking",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/payments/booking/:bookingId",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"payments",
+								"booking",
+								":bookingId"
+							],
+							"variable": [
+								{
+									"key": "bookingId",
+									"value": "1"
+								}
+							]
+						},
+						"description": "Get all payments for a specific booking."
+					},
+					"response": []
+				},
+				{
+					"name": "Razorpay Webhook",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "X-Razorpay-Signature",
+								"value": "signature_here",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/payments/webhook/razorpay",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"payments",
+								"webhook",
+								"razorpay"
+							]
+						},
+						"description": "Razorpay webhook endpoint (called by Razorpay)."
+					},
+					"response": []
+				},
+				{
+					"name": "Stripe Webhook",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Stripe-Signature",
+								"value": "signature_here",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/payments/webhook/stripe",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"payments",
+								"webhook",
+								"stripe"
+							]
+						},
+						"description": "Stripe webhook endpoint (called by Stripe)."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "6. Reference Data APIs",
+			"item": [
+				{
+					"name": "7. Location Search - Mumbai",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/reference/locations/search?q=mumbai&type=AIRPORT",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"reference",
+								"locations",
+								"search"
+							],
+							"query": [
+								{
+									"key": "q",
+									"value": "mumbai"
+								},
+								{
+									"key": "type",
+									"value": "AIRPORT"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "8. Location Search - Delhi",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/reference/locations/search?q=delhi&type=AIRPORT,CITY",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"reference",
+								"locations",
+								"search"
+							],
+							"query": [
+								{
+									"key": "q",
+									"value": "delhi"
+								},
+								{
+									"key": "type",
+									"value": "AIRPORT,CITY"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "9. Airport Info - BOM",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/reference/airports/BOM",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"reference",
+								"airports",
+								"BOM"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "10. Airport Info - DEL",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/reference/airports/DEL",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"reference",
+								"airports",
+								"DEL"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "11. City Airports - London",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/reference/cities/LON/airports",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"reference",
+								"cities",
+								"LON",
+								"airports"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "12. City Airports - New York",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/reference/cities/NYC/airports",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"reference",
+								"cities",
+								"NYC",
+								"airports"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "13. Airline Info - Emirates",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/reference/airlines/EK",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"reference",
+								"airlines",
+								"EK"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "14. Airline Info - Air India",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/reference/airlines/AI",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"reference",
+								"airlines",
+								"AI"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "15. Airline Routes - Air India",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/reference/airlines/AI/routes?date=2025-12-15",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"reference",
+								"airlines",
+								"AI",
+								"routes"
+							],
+							"query": [
+								{
+									"key": "date",
+									"value": "2025-12-15"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "7. Analytics APIs",
+			"item": [
+				{
+					"name": "16. Cheapest Dates - BOM to DXB",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/analytics/cheapest-dates?origin=BOM&destination=DXB&departureDate=2025-12-01&duration=7",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"analytics",
+								"cheapest-dates"
+							],
+							"query": [
+								{
+									"key": "origin",
+									"value": "BOM"
+								},
+								{
+									"key": "destination",
+									"value": "DXB"
+								},
+								{
+									"key": "departureDate",
+									"value": "2025-12-01"
+								},
+								{
+									"key": "duration",
+									"value": "7"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "17. Cheapest Dates - DEL to LHR",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/analytics/cheapest-dates?origin=DEL&destination=LHR&departureDate=2025-12-15",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"analytics",
+								"cheapest-dates"
+							],
+							"query": [
+								{
+									"key": "origin",
+									"value": "DEL"
+								},
+								{
+									"key": "destination",
+									"value": "LHR"
+								},
+								{
+									"key": "departureDate",
+									"value": "2025-12-15"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "18. Destinations from BOM",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/analytics/destinations?origin=BOM&departureDate=2025-12-15&maxPrice=50000",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"analytics",
+								"destinations"
+							],
+							"query": [
+								{
+									"key": "origin",
+									"value": "BOM"
+								},
+								{
+									"key": "departureDate",
+									"value": "2025-12-15"
+								},
+								{
+									"key": "maxPrice",
+									"value": "50000"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "19. Destinations from DEL",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/analytics/destinations?origin=DEL&oneWay=true",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"analytics",
+								"destinations"
+							],
+							"query": [
+								{
+									"key": "origin",
+									"value": "DEL"
+								},
+								{
+									"key": "oneWay",
+									"value": "true"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "20. Popular Routes from BOM",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/analytics/popular-routes?from=BOM&limit=10",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"analytics",
+								"popular-routes"
+							],
+							"query": [
+								{
+									"key": "from",
+									"value": "BOM"
+								},
+								{
+									"key": "limit",
+									"value": "10"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:5000/api",
+			"type": "string"
+		}
+	]
+}

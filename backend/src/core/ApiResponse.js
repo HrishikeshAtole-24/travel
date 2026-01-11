@@ -1,13 +1,13 @@
 // Standardized API Response Handler
 class ApiResponse {
-  static success(data, statusCode = 200, message = 'Success') {
-    return {
+  static success(res, data, message = 'Success', statusCode = 200) {
+    return res.status(statusCode).json({
       success: true,
       statusCode,
       message,
       data,
       timestamp: new Date().toISOString()
-    };
+    });
   }
 
   static error(message, statusCode = 500, errors = null) {

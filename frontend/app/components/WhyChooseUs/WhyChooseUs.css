@@ -1,0 +1,168 @@
+/* Why Choose Us Section - Professional Design */
+
+.why-choose-section {
+  padding: 60px 0;
+  background-color: #f8f9fa;
+}
+
+/* Header */
+.why-header {
+  text-align: left;
+  margin-bottom: 32px;
+}
+
+.why-header h2 {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin: 0 0 8px 0;
+}
+
+.why-header p {
+  font-size: 14px;
+  color: #6b7280;
+  margin: 0;
+}
+
+/* Features Grid */
+.why-features {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+  margin-bottom: 60px;
+}
+
+.why-feature {
+  background: #ffffff;
+  padding: 32px 24px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  transition: all 0.2s ease;
+}
+
+.why-feature:hover {
+  border-color: #0066ff;
+  box-shadow: 0 4px 20px rgba(0, 102, 255, 0.08);
+}
+
+.why-feature-icon {
+  width: 48px;
+  height: 48px;
+  background: #0066ff;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.why-feature-icon i {
+  font-size: 20px;
+  color: #ffffff;
+}
+
+.why-feature-content h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1a1a2e;
+  margin-bottom: 8px;
+}
+
+.why-feature-content p {
+  font-size: 14px;
+  color: #6b7280;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* Stats Section */
+.why-stats {
+  display: flex;
+  justify-content: center;
+  gap: 80px;
+  padding: 40px 0;
+  margin-bottom: 40px;
+  border-top: 1px solid #e5e7eb;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.why-stat {
+  text-align: center;
+}
+
+.why-stat-number {
+  display: block;
+  font-size: 36px;
+  font-weight: 700;
+  color: #0066ff;
+  line-height: 1;
+  margin-bottom: 8px;
+}
+
+.why-stat-label {
+  font-size: 14px;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+/* Trust Indicators */
+.trust-indicators {
+  display: flex;
+  justify-content: center;
+  gap: 48px;
+  flex-wrap: wrap;
+}
+
+.trust-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #4b5563;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.trust-item i {
+  font-size: 18px;
+  color: #0066ff;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .why-features {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .why-stats {
+    gap: 40px;
+  }
+}
+
+@media (max-width: 768px) {
+  .why-choose-section {
+    padding: 60px 0;
+  }
+  
+  .why-features {
+    grid-template-columns: 1fr;
+  }
+  
+  .why-stats {
+    flex-wrap: wrap;
+    gap: 32px;
+  }
+  
+  .why-stat {
+    flex: 1 1 40%;
+  }
+  
+  .trust-indicators {
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+  }
+  
+  .why-header h2 {
+    font-size: 26px;
+  }
+}

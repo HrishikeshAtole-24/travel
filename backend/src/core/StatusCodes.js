@@ -1,5 +1,5 @@
 // HTTP Status Codes Constants
-module.exports = {
+const StatusCodes = {
   // Success
   OK: 200,
   CREATED: 201,
@@ -21,3 +21,5 @@ module.exports = {
   SERVICE_UNAVAILABLE: 503,
   GATEWAY_TIMEOUT: 504,
 };
+
+module.exports = { StatusCodes };

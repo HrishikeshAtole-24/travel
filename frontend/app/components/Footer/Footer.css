@@ -1,0 +1,334 @@
+/* Footer Styles */
+
+.footer {
+  background-color: var(--gray-900);
+  color: var(--white);
+  padding: var(--spacing-3xl) 0 var(--spacing-xl);
+}
+
+/* Footer Links Grid - MakeMyTrip Style */
+.footer-links-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--spacing-xl);
+  margin-bottom: var(--spacing-3xl);
+  padding-bottom: var(--spacing-2xl);
+  border-bottom: 1px solid var(--gray-700);
+}
+
+.footer-link-section {
+  margin-bottom: var(--spacing-lg);
+}
+
+.footer-section-title {
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--white);
+  margin-bottom: var(--spacing-md);
+  letter-spacing: 0.5px;
+}
+
+.footer-link-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+}
+
+.footer-link {
+  color: var(--gray-400);
+  font-size: var(--fs-xs);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+  line-height: 1.6;
+}
+
+.footer-link::after {
+  content: ', ';
+}
+
+.footer-link:last-child::after {
+  content: '';
+}
+
+.footer-link:hover {
+  color: var(--primary-light);
+  text-decoration: underline;
+}
+
+/* App Download Section */
+.app-download-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  padding: var(--spacing-xl) var(--spacing-2xl);
+  border-radius: var(--radius-xl);
+  margin-bottom: var(--spacing-2xl);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.app-download-section::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -10%;
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(0, 102, 255, 0.15) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.app-download-content {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xl);
+  position: relative;
+  z-index: 1;
+}
+
+.app-icon-wrapper {
+  width: 70px;
+  height: 70px;
+  background: linear-gradient(135deg, var(--primary-color) 0%, #53b2fe 100%);
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 8px 20px rgba(0, 102, 255, 0.3);
+}
+
+.app-icon-wrapper i {
+  font-size: 32px;
+  color: var(--white);
+}
+
+.app-info h3 {
+  font-size: var(--fs-xl);
+  font-weight: 700;
+  color: var(--white);
+  margin-bottom: var(--spacing-xs);
+}
+
+.app-info p {
+  color: var(--gray-400);
+  font-size: var(--fs-sm);
+  margin-bottom: var(--spacing-sm);
+}
+
+.app-offer-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  background: rgba(0, 196, 140, 0.15);
+  border: 1px solid rgba(0, 196, 140, 0.3);
+  padding: var(--spacing-xs) var(--spacing-md);
+  border-radius: var(--radius-full);
+  font-size: var(--fs-xs);
+  color: var(--gray-300);
+}
+
+.app-offer-badge i {
+  color: var(--secondary-color);
+}
+
+.app-offer-badge strong {
+  color: var(--secondary-color);
+}
+
+.app-buttons {
+  display: flex;
+  gap: var(--spacing-md);
+  position: relative;
+  z-index: 1;
+}
+
+.app-store-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: var(--spacing-sm) var(--spacing-lg);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  text-decoration: none;
+  color: var(--white);
+}
+
+.app-store-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.4);
+  transform: translateY(-2px);
+}
+
+.app-store-btn i {
+  font-size: 28px;
+  color: var(--white);
+}
+
+.app-store-btn.google-play:hover i {
+  color: #3DDC84;
+}
+
+.app-store-btn.apple-store:hover i {
+  color: #fff;
+}
+
+.store-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  color: var(--white);
+}
+
+.store-text small {
+  font-size: 10px;
+  color: var(--gray-400);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.store-text strong {
+  font-size: var(--fs-base);
+  font-weight: 600;
+}
+
+/* Social Section */
+.social-section {
+  display: flex;
+  justify-content: center;
+  margin-bottom: var(--spacing-xl);
+  padding: var(--spacing-lg) 0;
+  border-bottom: 1px solid var(--gray-700);
+}
+
+.social-links {
+  display: flex;
+  gap: var(--spacing-md);
+}
+
+.social-link {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--gray-400);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+}
+
+.social-link i {
+  font-size: var(--fs-lg);
+}
+
+.social-link:hover {
+  transform: translateY(-3px);
+}
+
+.social-link:hover i {
+  color: var(--white);
+}
+
+.social-link[aria-label="Instagram"]:hover {
+  background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
+  border-color: transparent;
+}
+
+.social-link[aria-label="Twitter"]:hover {
+  background: #000;
+  border-color: #333;
+}
+
+.social-link[aria-label="LinkedIn"]:hover {
+  background: #0077B5;
+  border-color: #0077B5;
+}
+
+.social-link[aria-label="Facebook"]:hover {
+  background: #1877F2;
+  border-color: #1877F2;
+}
+
+.social-link[aria-label="YouTube"]:hover {
+  background: #FF0000;
+  border-color: #FF0000;
+}
+
+/* Footer Bottom */
+.footer-bottom {
+  text-align: center;
+  padding-top: var(--spacing-lg);
+}
+
+.footer-bottom p {
+  color: var(--gray-500);
+  margin: 0;
+  font-size: var(--fs-sm);
+}
+
+.footer-disclaimer {
+  margin-top: var(--spacing-sm) !important;
+  font-size: var(--fs-xs) !important;
+  color: var(--gray-600) !important;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+  .footer-links-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 992px) {
+  .footer-links-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .app-download-section {
+    flex-direction: column;
+    text-align: center;
+    gap: var(--spacing-xl);
+    padding: var(--spacing-xl);
+  }
+  
+  .app-download-content {
+    flex-direction: column;
+  }
+
+  .app-info {
+    text-align: center;
+  }
+
+  .app-offer-badge {
+    justify-content: center;
+  }
+}
+
+@media (max-width: 576px) {
+  .footer-links-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .app-buttons {
+    flex-direction: column;
+    width: 100%;
+  }
+  
+  .app-store-btn {
+    justify-content: center;
+  }
+  
+  .social-links {
+    gap: var(--spacing-lg);
+  }
+}
