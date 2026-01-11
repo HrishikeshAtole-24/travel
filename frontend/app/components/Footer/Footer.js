@@ -21,15 +21,15 @@ export default function Footer() {
     aboutSite: {
       title: 'ABOUT THE SITE',
       links: [
-        { name: 'Customer Support', href: '/support' },
+        { name: 'Customer Support', href: '/contact' },
         { name: 'Loyalty Program', href: '/loyalty' },
         { name: 'Payment Security', href: '/payment-security' },
-        { name: 'Privacy Policy', href: '/privacy' },
-        { name: 'Cookie Policy', href: '/cookies' },
-        { name: 'User Agreement', href: '/user-agreement' },
-        { name: 'Terms of Service', href: '/terms' },
-        { name: 'Refund Policy', href: '/refund' },
-        { name: 'Escalation Channel', href: '/escalation' }
+        { name: 'Privacy Policy', href: '/privacy-policy' },
+        { name: 'Cookie Policy', href: '/privacy-policy' },
+        { name: 'User Agreement', href: '/terms-and-conditions' },
+        { name: 'Terms of Service', href: '/terms-and-conditions' },
+        { name: 'Refund Policy', href: '/refund-policy' },
+        { name: 'Escalation Channel', href: '/contact' }
       ]
     },
     productOffering: {
