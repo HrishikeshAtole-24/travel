@@ -1,4 +1,5 @@
 import './globals.css';
+import Chatbot from './components/Chatbot/Chatbot';
 
 export const metadata = {
   title: 'SkyWings - Your Travel Partner',
@@ -21,6 +22,7 @@ export default function RootLayout({ children }) {
       </head>
       <body suppressHydrationWarning={true}>
         {children}
+        <Chatbot />
       </body>
     </html>
   );
