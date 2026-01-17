@@ -1,0 +1,147 @@
+/* Flagship Hotels Section */
+.flagship-hotels {
+  padding: var(--spacing-2xl) 0;
+  background: #ffffff;
+}
+
+.flagship-hotels-header {
+  margin-bottom: var(--spacing-xl);
+}
+
+.section-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--gray-900);
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.flagship-hotels-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--spacing-lg);
+}
+
+.hotel-card {
+  display: block;
+  text-decoration: none;
+  border-radius: 12px;
+  overflow: hidden;
+  background: white;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.hotel-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 12px 28px rgba(0, 102, 255, 0.15);
+}
+
+.hotel-card-image-wrapper {
+  position: relative;
+  width: 100%;
+  height: 180px;
+  overflow: hidden;
+}
+
+.hotel-card-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s ease;
+}
+
+.hotel-card:hover .hotel-card-image {
+  transform: scale(1.08);
+}
+
+.hotel-card-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.7), transparent);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.hotel-card:hover .hotel-card-overlay {
+  opacity: 1;
+}
+
+.hotel-card-content {
+  padding: var(--spacing-md);
+  background: white;
+}
+
+.hotel-card-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--gray-900);
+  margin: 0;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .flagship-hotels-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--spacing-md);
+  }
+
+  .hotel-card-image-wrapper {
+    height: 160px;
+  }
+
+  .section-title {
+    font-size: 24px;
+  }
+}
+
+@media (max-width: 768px) {
+  .flagship-hotels {
+    padding: var(--spacing-xl) 0;
+  }
+
+  .flagship-hotels-header {
+    margin-bottom: var(--spacing-lg);
+  }
+
+  .flagship-hotels-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--spacing-sm);
+  }
+
+  .hotel-card-image-wrapper {
+    height: 140px;
+  }
+
+  .hotel-card-content {
+    padding: var(--spacing-sm);
+  }
+
+  .hotel-card-title {
+    font-size: 14px;
+  }
+
+  .section-title {
+    font-size: 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .flagship-hotels-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hotel-card-image-wrapper {
+    height: 160px;
+  }
+
+  .hotel-card-title {
+    font-size: 15px;
+  }
+}
