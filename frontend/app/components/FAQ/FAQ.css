@@ -2,7 +2,7 @@
 
 .faq-section {
   padding: 60px 0;
-  background-color: #ffffff;
+  background-color: #f8f9fa;
 }
 
 .faq-section .section-header {
@@ -30,7 +30,7 @@
 }
 
 .faq-card {
-  background: var(--gray-50);
+  background: #ffffff;
   padding: var(--spacing-xl);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
