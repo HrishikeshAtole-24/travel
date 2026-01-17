@@ -62,9 +62,9 @@
 .business-links {
   display: flex;
   align-items: center;
-  gap: var(--spacing-md);
+  gap: 6px;
   margin-left: auto;
-  margin-right: var(--spacing-lg);
+  margin-right: var(--spacing-md);
 }
 
 .business-link {
@@ -96,6 +96,7 @@
   font-size: 18px;
   color: rgba(255, 255, 255, 0.95);
   transition: transform 0.25s ease;
+  flex-shrink: 0;
 }
 
 .business-link:hover i {
@@ -109,7 +110,7 @@
 .business-link-content {
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: 2px;
   line-height: 1.3;
 }
 
@@ -117,12 +118,14 @@
   font-weight: 600;
   font-size: 13px;
   letter-spacing: -0.01em;
+  white-space: nowrap;
 }
 
 .business-link-desc {
   font-size: 11px;
   opacity: 0.75;
   font-weight: 400;
+  white-space: nowrap;
 }
 
 .business-link:hover .business-link-desc {
@@ -180,7 +183,7 @@
 .nav-link-content {
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: 2px;
   line-height: 1.3;
 }
 

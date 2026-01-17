@@ -1,0 +1,241 @@
+/* Travel Insights Section */
+.travel-insights {
+  padding: var(--spacing-xl) 0 var(--spacing-2xl);
+  background: #ffffff;
+}
+
+.insights-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.insights-slider {
+  display: flex;
+  gap: var(--spacing-lg);
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  padding: var(--spacing-sm) 0;
+}
+
+.insights-slider::-webkit-scrollbar {
+  display: none;
+}
+
+.insight-card {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md) var(--spacing-lg);
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+  text-decoration: none;
+  min-width: 380px;
+  max-width: 380px;
+  position: relative;
+  border: 1px solid #f0f0f0;
+  flex-shrink: 0;
+  min-height: 90px;
+}
+
+.insight-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(0, 102, 255, 0.12);
+  border-color: rgba(0, 102, 255, 0.2);
+}
+
+.insight-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  flex-shrink: 0;
+  transition: transform 0.3s ease;
+  padding: 8px;
+}
+
+.insight-icon i {
+  font-size: 32px;
+}
+
+.insight-logo {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.insight-card:hover .insight-icon {
+  transform: scale(1.05);
+}
+
+.insight-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.insight-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin-bottom: 6px;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+  display: none;
+}
+
+.insight-description {
+  font-size: 13px;
+  color: #6b7280;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.insight-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(0, 102, 255, 0.08);
+  color: var(--primary-color);
+  font-size: 14px;
+  flex-shrink: 0;
+  transition: all 0.3s ease;
+}
+
+.insight-card:hover .insight-arrow {
+  background: var(--primary-color);
+  color: white;
+  transform: translateX(3px);
+}
+
+/* Scroll Buttons */
+.scroll-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: white;
+  border: 1px solid #e5e7eb;
+  color: #6b7280;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  z-index: 2;
+}
+
+.scroll-btn:hover {
+  background: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+  transform: scale(1.05);
+}
+
+.scroll-btn i {
+  font-size: 16px;
+}
+
+.scroll-btn-left {
+  margin-right: -10px;
+}
+
+.scroll-btn-right {
+  margin-left: -10px;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .insight-card {
+    min-width: 340px;
+    max-width: 340px;
+  }
+}
+
+@media (max-width: 768px) {
+  .travel-insights {
+    padding: var(--spacing-lg) 0;
+  }
+
+  .insights-wrapper {
+    gap: var(--spacing-sm);
+  }
+
+  .scroll-btn {
+    display: none;
+  }
+
+  .insights-slider {
+    gap: var(--spacing-md);
+    padding-left: var(--spacing-sm);
+    padding-right: var(--spacing-sm);
+  }
+
+  .insight-card {
+    min-width: 300px;
+    max-width: 300px;
+    padding: var(--spacing-md);
+  }
+
+  .insight-icon {
+    width: 60px;
+    height: 60px;
+    font-size: 28px;
+    padding: 6px;
+  }
+
+  .insight-icon i {
+    font-size: 26px;
+  }
+
+  .insight-title {
+    font-size: 14px;
+  }
+
+  .insight-description {
+    font-size: 11px;
+  }
+
+  .insight-arrow {
+    width: 28px;
+    height: 28px;
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .insight-card {
+    min-width: 280px;
+    max-width: 280px;
+    gap: var(--spacing-sm);
+  }
+
+  .insight-icon {
+    width: 52px;
+    height: 52px;
+    padding: 5px;
+  }
+
+  .insight-icon i {
+    font-size: 22px;
+  }
+
+  .insight-title {
+    font-size: 13px;
+  }
+
+  .insight-description {
+    font-size: 10px;
+  }
+}
