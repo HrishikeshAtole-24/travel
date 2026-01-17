@@ -44,6 +44,66 @@
   gap: var(--spacing-xl);
 }
 
+@media (max-width: 1024px) {
+  .booking-layout {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-lg);
+  }
+
+  .booking-summary {
+    position: static;
+    order: -1;
+  }
+}
+
+@media (max-width: 768px) {
+  .booking-page {
+    padding: var(--spacing-xl) 0;
+    margin-top: 72px;
+  }
+
+  .booking-form-section h1 {
+    font-size: var(--fs-2xl);
+  }
+
+  .form-card {
+    padding: var(--spacing-lg);
+  }
+
+  .form-card-title {
+    font-size: var(--fs-lg);
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-md);
+  }
+}
+
+@media (max-width: 480px) {
+  .booking-page {
+    padding: var(--spacing-lg) 0;
+    margin-top: 64px;
+  }
+
+  .back-btn {
+    font-size: var(--fs-xs);
+    padding: var(--spacing-xs) var(--spacing-sm);
+  }
+
+  .form-card {
+    padding: var(--spacing-md);
+  }
+
+  .booking-form-section h1 {
+    font-size: var(--fs-xl);
+  }
+
+  .form-card-title {
+    font-size: var(--fs-base);
+  }
+}
+
 /* Booking Form Section */
 .booking-form-section h1 {
   font-size: var(--fs-3xl);

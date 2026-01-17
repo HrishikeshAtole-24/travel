@@ -611,40 +611,246 @@
   }
 }
 
-@media (max-width: 768px) {
-  .flight-route {
-    grid-template-columns: 1fr;
-    gap: var(--spacing-md);
+/* Responsive Styles */
+@media (max-width: 1024px) {
+  .flight-card-content {
+    grid-template-columns: 180px 1fr 180px;
+    gap: var(--spacing-lg);
+    padding: var(--spacing-lg);
   }
 
-  .route-segment {
-    text-align: left;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+  .airline-logo {
+    width: 40px;
+    height: 40px;
+    font-size: var(--fs-xs);
   }
 
   .route-time {
     font-size: var(--fs-xl);
   }
 
+  .price-amount {
+    font-size: var(--fs-2xl);
+  }
+}
+
+@media (max-width: 768px) {
+  .flight-card {
+    border-radius: var(--radius-md);
+  }
+
+  .flight-card-content {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-md);
+    padding: var(--spacing-md);
+  }
+
+  .flight-airline {
+    padding-bottom: var(--spacing-sm);
+    border-bottom: 1px solid var(--gray-200);
+  }
+
+  .airline-logo {
+    width: 36px;
+    height: 36px;
+  }
+
+  .airline-name {
+    font-size: var(--fs-sm);
+  }
+
+  .flight-number {
+    font-size: var(--fs-xs);
+  }
+
+  .flight-route {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-md);
+    padding: var(--spacing-md) 0;
+    border-bottom: 1px solid var(--gray-200);
+  }
+
+  .route-segment {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: var(--spacing-md);
+    text-align: left;
+    align-items: center;
+  }
+
+  .route-segment:first-child {
+    margin-bottom: var(--spacing-sm);
+  }
+
+  .route-time {
+    font-size: var(--fs-xl);
+    margin-bottom: 0;
+  }
+
+  .route-airport {
+    align-items: flex-start;
+  }
+
   .route-info {
     width: 100%;
+    padding: var(--spacing-sm) 0;
+  }
+
+  .route-line {
+    justify-content: center;
+  }
+
+  .route-duration {
+    font-size: var(--fs-xs);
+  }
+
+  .route-stops {
+    font-size: 10px;
+  }
+
+  .flight-price-section {
+    align-items: flex-start;
+    padding-top: var(--spacing-sm);
+  }
+
+  .price-amount {
+    font-size: var(--fs-2xl);
+  }
+
+  .price-note {
+    font-size: 10px;
+  }
+
+  .seats-left-badge {
+    font-size: 10px;
+    padding: 4px var(--spacing-xs);
+  }
+
+  .select-flight-btn {
+    width: 100%;
+    padding: var(--spacing-md);
+    font-size: var(--fs-base);
+  }
+
+  .flight-details-content {
+    padding: var(--spacing-md);
   }
 
   .segment-route {
     grid-template-columns: 1fr;
-    gap: var(--spacing-sm);
+    gap: var(--spacing-md);
   }
 
   .segment-point {
     text-align: left;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    grid-template-columns: auto 1fr;
+    gap: var(--spacing-md);
+  }
+
+  .point-time {
+    font-size: var(--fs-xl);
+  }
+
+  .flight-card-footer {
+    flex-direction: column;
+    gap: var(--spacing-sm);
+  }
+
+  .view-details-btn {
+    width: 100%;
+    justify-content: center;
   }
 
   .condition-badges {
-    flex-direction: column;
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 480px) {
+  .flight-card-content {
+    padding: var(--spacing-sm);
+  }
+
+  .flight-airline {
+    gap: var(--spacing-sm);
+  }
+
+  .airline-logo {
+    width: 32px;
+    height: 32px;
+    font-size: 10px;
+  }
+
+  .airline-name {
+    font-size: var(--fs-xs);
+  }
+
+  .flight-number,
+  .codeshare-info {
+    font-size: 10px;
+  }
+
+  .route-segment {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-xs);
+  }
+
+  .route-time {
+    font-size: var(--fs-lg);
+  }
+
+  .route-airport {
+    font-size: var(--fs-xs);
+  }
+
+  .terminal-info {
+    font-size: 10px;
+    padding: 2px 4px;
+  }
+
+  .route-info {
+    padding: var(--spacing-xs) 0;
+  }
+
+  .route-duration {
+    font-size: 10px;
+  }
+
+  .price-amount {
+    font-size: var(--fs-xl);
+  }
+
+  .price-note {
+    font-size: 9px;
+  }
+
+  .select-flight-btn {
+    padding: var(--spacing-sm) var(--spacing-md);
+    font-size: var(--fs-sm);
+  }
+
+  .flight-details-content {
+    padding: var(--spacing-sm);
+  }
+
+  .segment-header h4 {
+    font-size: var(--fs-base);
+  }
+
+  .point-time {
+    font-size: var(--fs-lg);
+  }
+
+  .point-location {
+    font-size: var(--fs-xs);
+  }
+
+  .flight-meta-item {
+    font-size: 10px;
+  }
+
+  .condition-badge {
+    font-size: 9px;
+    padding: 3px 6px;
   }
 }

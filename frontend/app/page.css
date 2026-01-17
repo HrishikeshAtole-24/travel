@@ -13,6 +13,7 @@ main {
   align-items: center;
   justify-content: center;
   overflow: visible;
+  padding-top: 80px;
 }
 
 .hero-section::before {
@@ -24,4 +25,18 @@ main {
   bottom: 0;
   background: url('/patterns/world-map.svg') center/cover no-repeat;
   opacity: 0.1;
+}
+
+@media (max-width: 768px) {
+  .hero-section {
+    min-height: auto;
+    padding: 100px 0 40px;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero-section {
+    min-height: auto;
+    padding: 80px 0 30px;
+  }
 }

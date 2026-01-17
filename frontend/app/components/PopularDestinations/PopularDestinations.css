@@ -68,6 +68,68 @@
   gap: 16px;
 }
 
+@media (max-width: 1024px) {
+  .popular-flights-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .popular-flights-section {
+    padding: 40px 0;
+  }
+
+  .popular-flights-header h2 {
+    font-size: 20px;
+  }
+
+  .flights-tabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .flights-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .flights-tab {
+    white-space: nowrap;
+  }
+
+  .popular-flights-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  .popular-flight-image {
+    height: 160px;
+  }
+}
+
+@media (max-width: 480px) {
+  .popular-flights-section {
+    padding: 32px 0;
+  }
+
+  .popular-flights-header h2 {
+    font-size: 18px;
+  }
+
+  .flights-tab {
+    font-size: 13px;
+  }
+
+  .popular-flights-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .popular-flight-image {
+    height: 200px;
+  }
+}
+
 /* Flight Card */
 .popular-flight-card {
   cursor: pointer;

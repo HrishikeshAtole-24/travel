@@ -121,12 +121,12 @@ h1, h2, h3, h4, h5, h6 {
   margin-bottom: var(--spacing-md);
 }
 
-h1 { font-size: var(--fs-5xl); }
-h2 { font-size: var(--fs-4xl); }
-h3 { font-size: var(--fs-3xl); }
-h4 { font-size: var(--fs-2xl); }
-h5 { font-size: var(--fs-xl); }
-h6 { font-size: var(--fs-lg); }
+h1 { font-size: clamp(2rem, 5vw, var(--fs-5xl)); }
+h2 { font-size: clamp(1.75rem, 4vw, var(--fs-4xl)); }
+h3 { font-size: clamp(1.5rem, 3.5vw, var(--fs-3xl)); }
+h4 { font-size: clamp(1.25rem, 2.5vw, var(--fs-2xl)); }
+h5 { font-size: clamp(1.125rem, 2vw, var(--fs-xl)); }
+h6 { font-size: clamp(1rem, 1.5vw, var(--fs-lg)); }
 
 p {
   margin-bottom: var(--spacing-md);
@@ -153,9 +153,33 @@ a:hover {
   padding: 0 var(--spacing-lg);
 }
 
+@media (max-width: 768px) {
+  .container {
+    padding: 0 var(--spacing-md);
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding: 0 var(--spacing-sm);
+  }
+}
+
 .container-fluid {
   width: 100%;
   padding: 0 var(--spacing-lg);
+}
+
+@media (max-width: 768px) {
+  .container-fluid {
+    padding: 0 var(--spacing-md);
+  }
+}
+
+@media (max-width: 480px) {
+  .container-fluid {
+    padding: 0 var(--spacing-sm);
+  }
 }
 
 .flex {
@@ -372,6 +396,10 @@ a:hover {
   h1 { font-size: var(--fs-4xl); }
   h2 { font-size: var(--fs-3xl); }
   h3 { font-size: var(--fs-2xl); }
+  
+  .btn {
+    font-size: var(--fs-sm);
+  }
 }
 
 @media (max-width: 768px) {
@@ -382,9 +410,29 @@ a:hover {
   h1 { font-size: var(--fs-3xl); }
   h2 { font-size: var(--fs-2xl); }
   h3 { font-size: var(--fs-xl); }
+  h4 { font-size: var(--fs-lg); }
+  h5 { font-size: var(--fs-base); }
+  h6 { font-size: var(--fs-sm); }
   
   .btn {
     padding: var(--spacing-sm) var(--spacing-lg);
+    font-size: var(--fs-sm);
+  }
+  
+  .btn-lg {
+    padding: var(--spacing-md) var(--spacing-xl);
+    font-size: var(--fs-base);
+  }
+  
+  .card {
+    padding: var(--spacing-lg);
+  }
+  
+  .form-input,
+  .form-select,
+  .form-textarea {
+    padding: var(--spacing-sm) var(--spacing-md);
+    font-size: var(--fs-sm);
   }
 }
 
@@ -395,5 +443,96 @@ a:hover {
   
   .container {
     padding: 0 var(--spacing-md);
+  }
+  
+  .card {
+    padding: var(--spacing-md);
+    border-radius: var(--radius-md);
+  }
+}
+
+@media (max-width: 480px) {
+  html {
+    font-size: 13px;
+  }
+  
+  .container {
+    max-width: 100%;
+    padding: 0 var(--spacing-sm);
+  }
+  
+  .btn {
+    padding: var(--spacing-xs) var(--spacing-md);
+    font-size: var(--fs-xs);
+    width: 100%;
+  }
+  
+  .btn-sm {
+    padding: 6px var(--spacing-sm);
+    font-size: 11px;
+  }
+  
+  .card {
+    padding: var(--spacing-sm);
+  }
+  
+  .form-input,
+  .form-select,
+  .form-textarea {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: var(--fs-xs);
+  }
+}
+
+/* ============================================
+   UTILITY RESPONSIVE HELPERS
+   ============================================ */
+
+.hide-mobile {
+  display: block;
+}
+
+.show-mobile {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .hide-mobile {
+    display: none !important;
+  }
+  
+  .show-mobile {
+    display: block !important;
+  }
+}
+
+/* Prevent horizontal scroll on mobile */
+body {
+  overflow-x: hidden;
+}
+
+/* Touch-friendly tap targets */
+@media (max-width: 768px) {
+  button,
+  a,
+  input[type="button"],
+  input[type="submit"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Touch-friendly checkboxes but not radio buttons */
+  input[type="checkbox"] {
+    min-height: 24px;
+    min-width: 24px;
+  }
+  
+  /* Stack grids on mobile */
+  .grid-2,
+  .grid-3,
+  .grid-4 {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--spacing-md);
   }
 }
