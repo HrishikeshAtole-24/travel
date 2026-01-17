@@ -13,6 +13,7 @@ export default function Header() {
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userProfile, setUserProfile] = useState(null);
+  const [isMobile, setIsMobile] = useState(false);
   const pathname = usePathname();
 
   // Check if we're on homepage or another page
@@ -22,6 +23,14 @@ export default function Header() {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 20);
     };
+
+    // Check if mobile view
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
 
     // Check if user is logged in and fetch profile
     const token = localStorage.getItem('token');
@@ -43,6 +52,7 @@ export default function Header() {
     
     return () => {
       window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', checkMobile);
       document.removeEventListener('click', handleClickOutside);
     };
   }, []);
@@ -105,10 +115,6 @@ export default function Header() {
             <span>SkyWings</span>
           </Link>
 
-          <button className="mobile-menu-toggle" onClick={toggleMobileMenu}>
-            <i className={`fas ${mobileMenuOpen ? 'fa-times' : 'fa-bars'}`}></i>
-          </button>
-
           {/* Business Links - MMT Style */}
           <div className="business-links">
             <Link href="/list-property" className="business-link">
@@ -134,7 +140,7 @@ export default function Header() {
             </Link>
           </div>
 
-          <nav className={`nav-menu ${mobileMenuOpen ? 'mobile-open' : ''}`}>
+          <nav className="nav-menu">
             <Link href="/" className={`nav-link ${isActive('/') ? 'active' : ''}`}>
               <i className="fas fa-home"></i>
               <div className="nav-link-content">
@@ -188,6 +194,53 @@ export default function Header() {
                     <div className="dropdown-divider"></div>
                     
                     <div className="dropdown-menu">
+                      {/* Mobile-only: Business Links */}
+                      {isMobile && (
+                        <>
+                          <Link href="/list-property" className="dropdown-item">
+                            <i className="fas fa-building"></i>
+                            <div className="dropdown-item-content">
+                              <span className="dropdown-item-title">List Your Property</span>
+                              <span className="dropdown-item-desc">Grow your business!</span>
+                            </div>
+                          </Link>
+                          <Link href="/mybiz" className="dropdown-item">
+                            <i className="fas fa-briefcase"></i>
+                            <div className="dropdown-item-content">
+                              <span className="dropdown-item-title">Introducing myBiz</span>
+                              <span className="dropdown-item-desc">Business Travel Solution</span>
+                            </div>
+                          </Link>
+                          <Link href="/wishlist" className="dropdown-item">
+                            <i className="fas fa-heart"></i>
+                            <div className="dropdown-item-content">
+                              <span className="dropdown-item-title">Wishlist</span>
+                              <span className="dropdown-item-desc">Save favourites</span>
+                            </div>
+                          </Link>
+                          <div className="dropdown-divider"></div>
+                        </>
+                      )}
+                      
+                      {/* Mobile-only: Navigation Links */}
+                      {isMobile && (
+                        <>
+                          <Link href="/" className="dropdown-item">
+                            <i className="fas fa-home"></i>
+                            <span>Home</span>
+                          </Link>
+                          <Link href="/my-bookings" className="dropdown-item">
+                            <i className="fas fa-ticket"></i>
+                            <span>My Bookings</span>
+                          </Link>
+                          <Link href="/contact" className="dropdown-item">
+                            <i className="fas fa-headset"></i>
+                            <span>Contact Us</span>
+                          </Link>
+                          <div className="dropdown-divider"></div>
+                        </>
+                      )}
+                      
                       <Link href="/profile" className="dropdown-item">
                         <i className="fas fa-user"></i>
                         <span>Profile Settings</span>
