@@ -60,6 +60,7 @@
   overflow: visible;
   position: relative;
   max-width: 100%;
+  z-index: 1;
 }
 
 /* Trip Type Selector */
@@ -81,10 +82,39 @@
 }
 
 .trip-type-radio input[type="radio"] {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
+  min-width: 20px;
+  min-height: 20px;
+  max-width: 20px;
+  max-height: 20px;
   cursor: pointer;
   accent-color: var(--primary-color);
+  flex-shrink: 0;
+  -webkit-appearance: radio;
+  appearance: radio;
+}
+
+@media (max-width: 768px) {
+  .trip-type-radio input[type="radio"] {
+    width: 20px;
+    height: 20px;
+    min-width: 20px;
+    min-height: 20px;
+    max-width: 20px;
+    max-height: 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .trip-type-radio input[type="radio"] {
+    width: 20px;
+    height: 20px;
+    min-width: 20px;
+    min-height: 20px;
+    max-width: 20px;
+    max-height: 20px;
+  }
 }
 
 .trip-type-radio input[type="radio"]:disabled {
@@ -227,10 +257,28 @@
 }
 
 .fare-type input[type="radio"] {
-  width: 16px;
-  height: 16px;
+  width: 20px;
+  height: 20px;
+  min-width: 20px;
+  min-height: 20px;
+  max-width: 20px;
+  max-height: 20px;
   cursor: pointer;
   accent-color: var(--primary-color);
+  flex-shrink: 0;
+  -webkit-appearance: radio;
+  appearance: radio;
+}
+
+@media (max-width: 768px) {
+  .fare-type input[type="radio"] {
+    width: 20px;
+    height: 20px;
+    min-width: 20px;
+    min-height: 20px;
+    max-width: 20px;
+    max-height: 20px;
+  }
 }
 
 .fare-type i {
@@ -338,7 +386,7 @@
   background: var(--white);
   border-radius: var(--radius-lg);
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-  z-index: var(--z-dropdown);
+  z-index: 9998;
   padding: var(--spacing-lg);
   margin-top: var(--spacing-sm);
   border: 1px solid var(--gray-200);
@@ -488,9 +536,32 @@
   transform: translateY(-1px);
 }
 
+@media (max-width: 1200px) {
+  .search-fields-row {
+    grid-template-columns: 1fr auto 1fr;
+    gap: var(--spacing-sm);
+  }
+
+  .date-field,
+  .travelers-field {
+    grid-column: span 1;
+  }
+}
+
 @media (max-width: 1024px) {
+  .flight-search-widget-mmt {
+    max-width: 100%;
+  }
+
   .search-tabs {
     padding: var(--spacing-xs) var(--spacing-sm) 0;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .search-tabs::-webkit-scrollbar {
+    display: none;
   }
 
   .tab-item {
@@ -508,65 +579,165 @@
   }
 
   .swap-button-mmt {
-    margin: 0 auto;
-    transform: rotate(90deg);
-  }
-
-  .swap-button-mmt:hover {
-    transform: rotate(270deg);
+    display: none;
   }
 
   .special-fares {
     flex-direction: column;
     align-items: flex-start;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm);
+  }
+
+  .fare-type {
+    font-size: 0.875rem;
+    gap: 5px;
+  }
+
+  .trip-type-selector-mmt {
+    flex-wrap: wrap;
+    gap: var(--spacing-md);
   }
 }
 
 @media (max-width: 768px) {
+  .flight-search-widget-mmt {
+    padding: 0 var(--spacing-md);
+  }
+
   .search-widget-card-mmt {
-    padding: var(--spacing-lg);
+    padding: var(--spacing-md);
+    border-radius: var(--radius-md);
+    overflow: visible;
   }
 
   .search-tabs {
     gap: 0;
+    padding: var(--spacing-xs) var(--spacing-xs) 0;
+    margin: 0 calc(var(--spacing-md) * -1);
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+  }
+
+  .tab-item {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    min-width: auto;
+    flex: 1;
   }
 
   .tab-item span {
     font-size: 0.7rem;
   }
 
+  .tab-item i {
+    font-size: 1rem;
+  }
+
+  .search-field-mmt {
+    padding: var(--spacing-sm);
+  }
+
   .city-input {
-    font-size: var(--fs-xl);
+    font-size: var(--fs-base);
+  }
+
+  .field-input {
+    font-size: var(--fs-sm);
   }
 
   .search-submit-btn-mmt {
-    font-size: var(--fs-lg);
+    font-size: var(--fs-base);
+    padding: var(--spacing-md);
   }
 
   /* Travellers dropdown responsive */
   .travellers-dropdown {
-    width: calc(100vw - 40px);
+    width: calc(100vw - 32px);
     max-width: 400px;
     left: 50%;
     right: auto;
     transform: translateX(-50%);
+    padding: var(--spacing-md);
+    z-index: 9998;
+  }
+
+  .traveller-type-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--spacing-sm);
   }
 
   .traveller-counter {
-    max-width: 200px;
+    max-width: none;
+    justify-content: flex-start;
   }
 
   .counter-btn {
-    width: 26px;
-    height: 26px;
-    font-size: var(--fs-xs);
+    width: 32px;
+    height: 32px;
+    font-size: var(--fs-sm);
   }
 
   .travel-class-options {
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-sm);
   }
 
   .class-btn {
     text-align: center;
+    padding: var(--spacing-md) var(--spacing-sm);
+  }
+}
+
+@media (max-width: 480px) {
+  .flight-search-widget-mmt {
+    padding: 0 var(--spacing-sm);
+  }
+
+  .search-tabs {
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+    padding: var(--spacing-xs) 0 0;
+    margin: 0 calc(var(--spacing-sm) * -1);
+  }
+
+  .search-widget-card-mmt {
+    padding: var(--spacing-sm);
+    border-radius: var(--radius-md);
+    margin-top: 5px;
+  }
+
+  .tab-item {
+    padding: var(--spacing-xs);
+  }
+
+  .tab-item span {
+    display: none;
+  }
+
+  .tab-item i {
+    font-size: 1.25rem;
+  }
+
+  .field-label {
+    font-size: 0.65rem;
+  }
+
+  .city-input {
+    font-size: 0.9rem;
+  }
+
+  .trip-type-selector-mmt {
+    gap: var(--spacing-md);
+    flex-wrap: wrap;
+  }
+
+  .trip-type-radio {
+    font-size: 0.875rem;
+    gap: var(--spacing-xs);
+  }
+
+  .search-submit-btn-mmt {
+    font-size: 0.9rem;
+    padding: var(--spacing-sm) var(--spacing-md);
   }
 }

@@ -6,6 +6,29 @@
   background: linear-gradient(135deg, #0066FF 0%, #004bb5 100%);
 }
 
+@media (max-width: 1024px) {
+  .auth-promo-side {
+    display: none;
+  }
+
+  .auth-page-container {
+    justify-content: center;
+    align-items: center;
+  }
+}
+
+@media (max-width: 768px) {
+  .auth-page-container {
+    padding: var(--spacing-lg);
+  }
+}
+
+@media (max-width: 480px) {
+  .auth-page-container {
+    padding: var(--spacing-md);
+  }
+}
+
 /* Left Promotional Side */
 .auth-promo-side {
   flex: 1;

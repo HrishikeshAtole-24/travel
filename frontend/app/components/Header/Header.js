@@ -11,7 +11,9 @@ export default function Header() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userProfile, setUserProfile] = useState(null);
+  const [isMobile, setIsMobile] = useState(false);
   const pathname = usePathname();
 
   // Check if we're on homepage or another page
@@ -21,6 +23,14 @@ export default function Header() {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 20);
     };
+
+    // Check if mobile view
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
 
     // Check if user is logged in and fetch profile
     const token = localStorage.getItem('token');
@@ -42,6 +52,7 @@ export default function Header() {
     
     return () => {
       window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', checkMobile);
       document.removeEventListener('click', handleClickOutside);
     };
   }, []);
@@ -68,6 +79,10 @@ export default function Header() {
   const toggleProfileDropdown = (e) => {
     e.stopPropagation();
     setShowProfileDropdown(!showProfileDropdown);
+  };
+
+  const toggleMobileMenu = () => {
+    setMobileMenuOpen(!mobileMenuOpen);
   };
 
   const getInitials = () => {
@@ -100,11 +115,53 @@ export default function Header() {
             <span>SkyWings</span>
           </Link>
 
+          {/* Business Links - MMT Style */}
+          <div className="business-links">
+            <Link href="/list-property" className="business-link">
+              <i className="fas fa-building"></i>
+              <div className="business-link-content">
+                <span className="business-link-title">List Your Property</span>
+                <span className="business-link-desc">Grow your business!</span>
+              </div>
+            </Link>
+            <Link href="/mybiz" className="business-link">
+              <i className="fas fa-briefcase"></i>
+              <div className="business-link-content">
+                <span className="business-link-title">Introducing myBiz</span>
+                <span className="business-link-desc">Business Travel Solution</span>
+              </div>
+            </Link>
+            <Link href="/wishlist" className="business-link">
+              <i className="fas fa-heart"></i>
+              <div className="business-link-content">
+                <span className="business-link-title">Wishlist</span>
+                <span className="business-link-desc">Save favourites</span>
+              </div>
+            </Link>
+          </div>
+
           <nav className="nav-menu">
-            <Link href="/" className={`nav-link ${isActive('/') ? 'active' : ''}`}>Home</Link>
-            <Link href="/search" className={`nav-link ${isActive('/search') ? 'active' : ''}`}>Flights</Link>
-            <Link href="/my-bookings" className={`nav-link ${isActive('/my-bookings') ? 'active' : ''}`}>My Bookings</Link>
-            <Link href="/contact" className={`nav-link ${isActive('/contact') ? 'active' : ''}`}>Contact</Link>
+            <Link href="/" className={`nav-link ${isActive('/') ? 'active' : ''}`}>
+              <i className="fas fa-home"></i>
+              <div className="nav-link-content">
+                <span className="nav-link-title">Home</span>
+                <span className="nav-link-desc">Discover flights</span>
+              </div>
+            </Link>
+            <Link href="/my-bookings" className={`nav-link ${isActive('/my-bookings') ? 'active' : ''}`}>
+              <i className="fas fa-ticket"></i>
+              <div className="nav-link-content">
+                <span className="nav-link-title">My Bookings</span>
+                <span className="nav-link-desc">Track your trips</span>
+              </div>
+            </Link>
+            <Link href="/contact" className={`nav-link ${isActive('/contact') ? 'active' : ''}`}>
+              <i className="fas fa-headset"></i>
+              <div className="nav-link-content">
+                <span className="nav-link-title">Contact</span>
+                <span className="nav-link-desc">24/7 Support</span>
+              </div>
+            </Link>
           </nav>
 
           <div className="header-actions">
@@ -137,10 +194,53 @@ export default function Header() {
                     <div className="dropdown-divider"></div>
                     
                     <div className="dropdown-menu">
-                      <Link href="/my-bookings" className="dropdown-item">
-                        <i className="fas fa-ticket"></i>
-                        <span>My Bookings</span>
-                      </Link>
+                      {/* Mobile-only: Business Links */}
+                      {isMobile && (
+                        <>
+                          <Link href="/list-property" className="dropdown-item">
+                            <i className="fas fa-building"></i>
+                            <div className="dropdown-item-content">
+                              <span className="dropdown-item-title">List Your Property</span>
+                              <span className="dropdown-item-desc">Grow your business!</span>
+                            </div>
+                          </Link>
+                          <Link href="/mybiz" className="dropdown-item">
+                            <i className="fas fa-briefcase"></i>
+                            <div className="dropdown-item-content">
+                              <span className="dropdown-item-title">Introducing myBiz</span>
+                              <span className="dropdown-item-desc">Business Travel Solution</span>
+                            </div>
+                          </Link>
+                          <Link href="/wishlist" className="dropdown-item">
+                            <i className="fas fa-heart"></i>
+                            <div className="dropdown-item-content">
+                              <span className="dropdown-item-title">Wishlist</span>
+                              <span className="dropdown-item-desc">Save favourites</span>
+                            </div>
+                          </Link>
+                          <div className="dropdown-divider"></div>
+                        </>
+                      )}
+                      
+                      {/* Mobile-only: Navigation Links */}
+                      {isMobile && (
+                        <>
+                          <Link href="/" className="dropdown-item">
+                            <i className="fas fa-home"></i>
+                            <span>Home</span>
+                          </Link>
+                          <Link href="/my-bookings" className="dropdown-item">
+                            <i className="fas fa-ticket"></i>
+                            <span>My Bookings</span>
+                          </Link>
+                          <Link href="/contact" className="dropdown-item">
+                            <i className="fas fa-headset"></i>
+                            <span>Contact Us</span>
+                          </Link>
+                          <div className="dropdown-divider"></div>
+                        </>
+                      )}
+                      
                       <Link href="/profile" className="dropdown-item">
                         <i className="fas fa-user"></i>
                         <span>Profile Settings</span>

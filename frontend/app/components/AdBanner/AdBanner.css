@@ -1,0 +1,87 @@
+/* Ad Banner Section */
+.ad-banner {
+  padding: var(--spacing-lg) 0;
+  background: #ffffff;
+}
+
+.ad-banner-link {
+  display: block;
+  text-decoration: none;
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.ad-banner-link:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.ad-banner-content {
+  position: relative;
+  width: 100%;
+  border-radius: 12px;
+  overflow: hidden;
+  background: linear-gradient(90deg, #ff6b35 0%, #4ecdc4 100%);
+}
+
+.ad-banner-image {
+  width: 100%;
+  height: auto;
+  display: block;
+  object-fit: cover;
+  max-height: 200px;
+}
+
+.ad-label {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: rgba(255, 255, 255, 0.95);
+  color: #6b7280;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .ad-banner {
+    padding: var(--spacing-md) 0;
+  }
+
+  .ad-banner-image {
+    max-height: 150px;
+  }
+
+  .ad-label {
+    top: 8px;
+    right: 8px;
+    font-size: 10px;
+    padding: 3px 6px;
+  }
+}
+
+@media (max-width: 480px) {
+  .ad-banner {
+    padding: var(--spacing-sm) 0;
+  }
+
+  .ad-banner-image {
+    max-height: 120px;
+    border-radius: 8px;
+  }
+
+  .ad-banner-content {
+    border-radius: 8px;
+  }
+
+  .ad-label {
+    top: 6px;
+    right: 6px;
+  }
+}

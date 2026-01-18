@@ -7,6 +7,48 @@
   box-shadow: var(--shadow-md);
 }
 
+@media (max-width: 768px) {
+  .search-filters {
+    padding: var(--spacing-md);
+  }
+
+  .filters-title {
+    font-size: var(--fs-lg);
+  }
+
+  .filter-section {
+    margin-bottom: var(--spacing-lg);
+  }
+
+  .filter-heading {
+    font-size: var(--fs-sm);
+  }
+}
+
+@media (max-width: 480px) {
+  .search-filters {
+    padding: var(--spacing-sm);
+    border-radius: var(--radius-md);
+  }
+
+  .filters-title {
+    font-size: var(--fs-base);
+    margin-bottom: var(--spacing-md);
+  }
+
+  .filter-section {
+    margin-bottom: var(--spacing-md);
+  }
+
+  .filter-heading {
+    font-size: var(--fs-xs);
+  }
+
+  .filter-option span {
+    font-size: var(--fs-xs);
+  }
+}
+
 .filters-title {
   font-size: var(--fs-xl);
   color: var(--gray-900);

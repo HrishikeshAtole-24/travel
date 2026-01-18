@@ -20,10 +20,83 @@
   border: 1px solid #ddd;
   border-radius: 8px;
   box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-  z-index: 1000;
-  max-height: 300px;
+  z-index: 9999;
+  max-height: 400px;
   overflow-y: auto;
   margin-top: 4px;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .autocomplete-dropdown {
+    max-height: 350px;
+  }
+}
+
+@media (max-width: 768px) {
+  .autocomplete-dropdown {
+    position: fixed;
+    top: auto;
+    left: 12px;
+    right: 12px;
+    bottom: 16px;
+    max-height: 45vh;
+    border-radius: 12px;
+    box-shadow: 0 -4px 30px rgba(0,0,0,0.25);
+    z-index: 9999;
+  }
+  
+  .airport-item {
+    padding: 14px 16px;
+  }
+
+  .airport-main {
+    font-size: 14px;
+  }
+
+  .airport-code {
+    font-size: 13px;
+  }
+
+  .airport-sub {
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .autocomplete-dropdown {
+    left: 8px;
+    right: 8px;
+    bottom: 12px;
+    max-height: 50vh;
+    border-radius: 16px;
+  }
+
+  .dropdown-header {
+    padding: 10px 14px 8px;
+    font-size: 11px;
+    position: sticky;
+    top: 0;
+    background: #f8f9fa;
+    z-index: 1;
+  }
+
+  .airport-item {
+    padding: 12px 14px;
+  }
+
+  .airport-main {
+    font-size: 13px;
+    gap: 6px;
+  }
+
+  .airport-code {
+    font-size: 12px;
+  }
+
+  .airport-sub {
+    font-size: 11px;
+  }
 }
 
 .dropdown-header {
@@ -126,28 +199,6 @@
   color: #666;
   font-size: 14px;
   font-style: italic;
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-  .autocomplete-dropdown {
-    position: fixed;
-    top: auto;
-    left: 16px;
-    right: 16px;
-    max-height: 40vh;
-    bottom: 20px;
-    border-radius: 12px;
-    box-shadow: 0 8px 30px rgba(0,0,0,0.2);
-  }
-  
-  .airport-main {
-    font-size: 15px;
-  }
-  
-  .airport-sub {
-    font-size: 13px;
-  }
 }
 
 /* Focus states */

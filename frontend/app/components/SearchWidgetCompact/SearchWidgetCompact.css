@@ -1,26 +1,29 @@
-/* Compact Search Widget for Search Results Page */
+/* Compact Search Widget for Search Results Page - MMT Inspired */
 
 .search-widget-compact {
-  background: linear-gradient(135deg, var(--primary-color) 0%, #004494 100%);
-  border-radius: var(--radius-lg);
-  margin-bottom: var(--spacing-xl);
+  background: var(--white);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   overflow: visible;
   position: relative;
   z-index: 100;
+  transition: all var(--transition-base);
 }
 
-/* Collapsed Summary Bar */
+/* Collapsed Summary Bar - Clean MMT Style */
 .compact-summary {
   display: flex;
   align-items: center;
-  padding: var(--spacing-lg) var(--spacing-xl);
+  padding: var(--spacing-md) var(--spacing-xl);
   cursor: pointer;
   transition: all var(--transition-base);
-  gap: var(--spacing-lg);
+  gap: var(--spacing-xl);
+  background: linear-gradient(135deg, var(--primary-color) 0%, #004494 100%);
+  border-radius: var(--radius-lg);
 }
 
 .compact-summary:hover {
-  background: rgba(255, 255, 255, 0.05);
+  box-shadow: 0 4px 12px rgba(0, 102, 255, 0.2);
+  transform: translateY(-1px);
 }
 
 .summary-route {
@@ -92,12 +95,14 @@
   transform: translateY(-1px);
 }
 
-/* Expanded Form View */
+/* Expanded Form View - Clean White Card */
 .compact-expanded {
   background: var(--white);
   border-radius: var(--radius-lg);
-  padding: var(--spacing-xl);
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  padding: var(--spacing-lg) var(--spacing-xl);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  margin-top: var(--spacing-xs);
+  border: 1px solid var(--gray-200);
 }
 
 .compact-header {
@@ -546,22 +551,43 @@
   .modify-search-btn {
     width: 100%;
     justify-content: center;
-    margin-top: var(--spacing-md);
+    margin: var(--spacing-sm) 0 0 0;
+    padding: var(--spacing-md);
   }
 
   .compact-fields-row {
     grid-template-columns: 1fr;
+    gap: var(--spacing-sm);
   }
 
   .compact-swap-btn {
-    justify-self: center;
-    margin: var(--spacing-sm) 0;
+    display: none;
   }
 
   .compact-search-btn {
     grid-column: 1;
     width: 100%;
     justify-content: center;
+    padding: var(--spacing-md);
+  }
+
+  .summary-route {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-xs);
+  }
+
+  .summary-divider {
+    display: none;
+  }
+
+  .summary-dates,
+  .summary-travellers {
+    font-size: var(--fs-sm);
+  }
+
+  .compact-expanded {
+    padding: var(--spacing-md);
   }
 
   .compact-travellers-dropdown {
