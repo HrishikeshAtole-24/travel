@@ -60,6 +60,7 @@ export default function AirportAutocomplete({
 
   // Handle input blur (with delay for click handling)
   const handleBlur = () => {
+    console.log('Input blurred');
     setTimeout(() => {
       setIsOpen(false);
     }, 300); // Increased delay from 200 to 300ms
