@@ -15,6 +15,7 @@ const authRoutes = require('./auth.routes');
 const bookingRoutes = require('./booking.routes');
 const airportRoutes = require('./airport.routes');
 const keepAliveRoutes = require('../activateService/keepAlive.routes');
+const chatRoutes = require('./chat.routes');
 
 // ═══════════════════════════════════════════════════════════════
 // 🏥 HEALTH CHECK
@@ -33,7 +34,8 @@ router.get('/health', (req, res) => {
       airports: '/api/airports',
       reference: '/api/reference',
       analytics: '/api/analytics',
-      keepAlive: '/api/keep-active-service'
+      keepAlive: '/api/keep-active-service',
+      chat: '/api/chat'
     }
   });
 });
@@ -68,5 +70,8 @@ router.use('/analytics', analyticsRoutes);
 
 // Keep-Alive (Prevents Supabase/Render from sleeping)
 router.use('/keep-active-service', keepAliveRoutes);
+
+// AI Chat (SkyBot assistant)
+router.use('/chat', chatRoutes);
 
 module.exports = router;
