@@ -663,49 +663,112 @@
     font-size: var(--fs-xs);
   }
 
+  /* Mobile: Keep classic web view style */
   .flight-route {
-    grid-template-columns: 1fr;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
     gap: var(--spacing-md);
+    align-items: center;
     padding: var(--spacing-md) 0;
     border-bottom: 1px solid var(--gray-200);
   }
 
+  /* Route segments - same as desktop */
   .route-segment {
-    display: grid;
-    grid-template-columns: auto 1fr;
-    gap: var(--spacing-md);
-    text-align: left;
-    align-items: center;
+    text-align: center;
   }
 
   .route-segment:first-child {
-    margin-bottom: var(--spacing-sm);
+    order: unset;
+    margin-bottom: 0;
+  }
+  
+  /* Remove mobile arrow */
+  .route-segment:first-child::after {
+    display: none;
+  }
+  
+  .route-segment:last-child {
+    order: unset;
   }
 
   .route-time {
     font-size: var(--fs-xl);
-    margin-bottom: 0;
+    font-weight: 700;
+    margin-bottom: var(--spacing-xs);
   }
 
   .route-airport {
-    align-items: flex-start;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    font-weight: 500;
+    color: var(--gray-700);
+    font-size: var(--fs-sm);
   }
 
+  /* Route info - middle section like desktop */
   .route-info {
-    width: 100%;
-    padding: var(--spacing-sm) 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-xs);
+    min-width: 100px;
+    padding: 0;
+    flex-basis: auto;
+    justify-content: center;
+    order: unset;
   }
 
+  /* Show the dotted line like desktop */
   .route-line {
-    justify-content: center;
+    display: flex;
+    align-items: center;
+    width: 100%;
+  }
+
+  .route-dot {
+    display: block;
+    width: 6px;
+    height: 6px;
+  }
+
+  .route-path {
+    flex: 1;
+    height: 2px;
+    background: var(--gray-300);
+    position: relative;
+  }
+
+  .route-path::before {
+    display: block;
+  }
+
+  .stop-indicator {
+    position: absolute;
+    top: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 10px;
+    color: var(--warning-color);
+    background: var(--white);
+    padding: 0 4px;
+    white-space: nowrap;
   }
 
   .route-duration {
     font-size: var(--fs-xs);
+    background: none;
+    padding: 0;
+    border-radius: 0;
   }
 
   .route-stops {
-    font-size: 10px;
+    font-size: var(--fs-xs);
+  }
+
+  .nonstop-badge {
+    font-size: var(--fs-xs);
   }
 
   .flight-price-section {
@@ -790,11 +853,7 @@
     font-size: 10px;
   }
 
-  .route-segment {
-    grid-template-columns: 1fr;
-    gap: var(--spacing-xs);
-  }
-
+  /* Smaller classic layout for 480px */
   .route-time {
     font-size: var(--fs-lg);
   }
@@ -808,12 +867,20 @@
     padding: 2px 4px;
   }
 
-  .route-info {
-    padding: var(--spacing-xs) 0;
-  }
-
   .route-duration {
     font-size: 10px;
+  }
+  
+  .stop-indicator {
+    font-size: 9px;
+  }
+
+  .route-stops {
+    font-size: 10px;
+  }
+
+  .route-info {
+    min-width: 70px;
   }
 
   .price-amount {
