@@ -24,6 +24,7 @@ function SearchContent() {
     departureTime: 'any',
     airlines: []
   });
+  const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
 
   // Fetch airport info for displaying city names
   useEffect(() => {
@@ -320,6 +321,10 @@ function SearchContent() {
     setSortBy(e.target.value);
   };
 
+  const toggleMobileFilter = () => {
+    setMobileFilterOpen(!mobileFilterOpen);
+  };
+
   return (
     <>
       <Header />
@@ -329,15 +334,28 @@ function SearchContent() {
           <SearchWidgetCompact onSearch={() => setLoading(true)} />
           
           <div className="search-layout">
-            {/* Filters Sidebar */}
-            <aside className="search-sidebar">
-              <SearchFilters 
-                filters={filters}
-                priceRange={priceRange}
-                onApplyFilters={applyFilters}
-                onResetFilters={handleResetFilters}
-              />
-            </aside>
+            {/* Mobile Overlay */}
+            {mobileFilterOpen && (
+              <div className="mobile-filter-overlay" onClick={toggleMobileFilter}></div>
+            )}
+
+            {/* Mobile Filter Wrapper (contains tab + sidebar) */}
+            <div className={`mobile-filter-wrapper ${mobileFilterOpen ? 'open' : ''}`}>
+              {/* Pull Tab */}
+              <div className="mobile-filter-tab" onClick={toggleMobileFilter}>
+                <span>›</span>
+              </div>
+              
+              {/* Filters Sidebar */}
+              <aside className="search-sidebar">
+                <SearchFilters 
+                  filters={filters}
+                  priceRange={priceRange}
+                  onApplyFilters={applyFilters}
+                  onResetFilters={handleResetFilters}
+                />
+              </aside>
+            </div>
 
             {/* Results Section */}
             <section className="search-results">
