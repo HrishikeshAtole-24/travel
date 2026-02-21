@@ -27,7 +27,7 @@ function PaymentSuccessContent() {
 
   const fetchBookingDetails = async () => {
     try {
-      const response = await fetch(`http://localhost:5000/api/bookings/reference/${bookingReference}`);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/bookings/reference/${bookingReference}`);
       const data = await response.json();
       if (data.success) {
         setBookingDetails(data.booking);
