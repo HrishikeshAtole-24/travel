@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { API_ENDPOINTS } from '@/lib/api/config';
 import './Chatbot.css';
 
 export default function Chatbot() {
@@ -31,16 +32,7 @@ export default function Chatbot() {
     scrollToBottom();
   }, [messages]);
 
-  const dummyResponses = [
-    "I can help you find the best flight deals! What's your destination?",
-    "Let me check available flights for you. Where would you like to travel?",
-    "I can assist with flight bookings, hotel reservations, and travel tips. What do you need?",
-    "Great question! I'm here to make your travel planning easier.",
-    "I can help you with flight bookings, hotel searches, and travel recommendations.",
-    "Looking for the best deals? Tell me your travel dates and destination!",
-  ];
-
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!inputValue.trim()) return;
 
     const userMessage = {
@@ -50,21 +42,41 @@ export default function Chatbot() {
       time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
     };
 
-    setMessages([...messages, userMessage]);
+    setMessages(prev => [...prev, userMessage]);
+    const userInput = inputValue;
     setInputValue('');
     setIsTyping(true);
 
-    // Simulate bot typing and response
-    setTimeout(() => {
+    try {
+      const response = await fetch(API_ENDPOINTS.CHAT.SEND, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ message: userInput }),
+      });
+
+      const data = await response.json();
+
       const botMessage = {
         id: messages.length + 2,
-        text: dummyResponses[Math.floor(Math.random() * dummyResponses.length)],
+        text: data.success ? data.reply : "I'm having trouble connecting. Please try again!",
         sender: 'bot',
         time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
       };
       setMessages(prev => [...prev, botMessage]);
+    } catch (error) {
+      console.error('Chat API error:', error);
+      const errorMessage = {
+        id: messages.length + 2,
+        text: "Sorry, I'm having connection issues. Please try again in a moment!",
+        sender: 'bot',
+        time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+      };
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
       setIsTyping(false);
-    }, 1500);
+    }
   };
 
   const handleKeyPress = (e) => {

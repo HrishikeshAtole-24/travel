@@ -47,6 +47,12 @@ export const API_ENDPOINTS = {
     AIRPORTS: (code) => `${API_BASE_URL}/reference/airports/${code}`,
     AIRLINES: (code) => `${API_BASE_URL}/reference/airlines/${code}`,
   },
+
+  // AI Chat
+  CHAT: {
+    SEND: `${API_BASE_URL}/chat`,
+    TRAVEL_TIPS: `${API_BASE_URL}/chat/travel-tips`,
+  },
 };
 
 export default API_BASE_URL;
