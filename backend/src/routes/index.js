@@ -14,6 +14,7 @@ const paymentPageRoutes = require('./payment-page.routes');
 const authRoutes = require('./auth.routes');
 const bookingRoutes = require('./booking.routes');
 const airportRoutes = require('./airport.routes');
+const keepAliveRoutes = require('../activateService/keepAlive.routes');
 
 // ═══════════════════════════════════════════════════════════════
 // 🏥 HEALTH CHECK
@@ -31,7 +32,8 @@ router.get('/health', (req, res) => {
       payments: '/api/payments',
       airports: '/api/airports',
       reference: '/api/reference',
-      analytics: '/api/analytics'
+      analytics: '/api/analytics',
+      keepAlive: '/api/keep-active-service'
     }
   });
 });
@@ -63,5 +65,8 @@ router.use('/reference', referenceRoutes);
 
 // Analytics & insights (cheapest dates, destinations)
 router.use('/analytics', analyticsRoutes);
+
+// Keep-Alive (Prevents Supabase/Render from sleeping)
+router.use('/keep-active-service', keepAliveRoutes);
 
 module.exports = router;
