@@ -61,6 +61,118 @@ const verifyPayment = AsyncHandler(async (req, res) => {
 });
 
 /**
+ * Verify Razorpay Payment (called from EJS payment page)
+ * POST /api/payments/verify
+ * Returns JSON for frontend to handle redirect
+ */
+const verifyRazorpayPayment = AsyncHandler(async (req, res) => {
+  const { razorpay_payment_id, razorpay_order_id, razorpay_signature, bookingReference } = req.body;
+
+  logger.info(`[VerifyPayment] Received: payment_id=${razorpay_payment_id}, order_id=${razorpay_order_id}`);
+
+  if (!razorpay_payment_id || !razorpay_order_id || !razorpay_signature) {
+    return res.status(400).json({
+      success: false,
+      message: 'Missing required payment parameters'
+    });
+  }
+
+  const { getPool } = require('../config/database');
+  const crypto = require('crypto');
+  const pool = getPool();
+
+  try {
+    // Find payment by order_id
+    const result = await pool.query(
+      `SELECT p.*, b.booking_reference, b.id as booking_id
+       FROM payments p
+       JOIN bookings b ON p.booking_id = b.id
+       WHERE p.acquirer_order_id = $1`,
+      [razorpay_order_id]
+    );
+
+    if (result.rows.length === 0) {
+      logger.error(`[VerifyPayment] Payment not found for order_id: ${razorpay_order_id}`);
+      return res.status(404).json({
+        success: false,
+        message: 'Payment not found'
+      });
+    }
+
+    const payment = result.rows[0];
+
+    // Verify signature
+    const signatureString = `${razorpay_order_id}|${razorpay_payment_id}`;
+    const expectedSignature = crypto
+      .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
+      .update(signatureString)
+      .digest('hex');
+
+    if (expectedSignature !== razorpay_signature) {
+      logger.warn(`[VerifyPayment] Signature mismatch for payment: ${razorpay_payment_id}`);
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid payment signature'
+      });
+    }
+
+    logger.info(`[VerifyPayment] Signature verified for payment: ${razorpay_payment_id}`);
+
+    // Update payment status to SUCCESS
+    await pool.query(
+      `UPDATE payments 
+       SET status = $1, 
+           acquirer_transaction_id = $2,
+           updated_at = CURRENT_TIMESTAMP
+       WHERE id = $3`,
+      [PaymentStatus.SUCCESS, razorpay_payment_id, payment.id]
+    );
+
+    // Update booking status to confirmed
+    await pool.query(
+      `UPDATE bookings SET status = 'confirmed', updated_at = CURRENT_TIMESTAMP WHERE id = $1`,
+      [payment.booking_id]
+    );
+
+    logger.info(`[VerifyPayment] Payment ${payment.payment_reference} verified successfully, booking ${payment.booking_reference} confirmed`);
+
+    // Send confirmation email asynchronously
+    try {
+      const emailService = require('../services/email.service');
+      const bookingService = require('../services/booking.service');
+      
+      // Get full booking details for email
+      const bookingDetails = await bookingService.getBookingByReference(payment.booking_reference);
+      if (bookingDetails.success && bookingDetails.booking) {
+        const booking = bookingDetails.booking;
+        await emailService.sendBookingConfirmation({
+          ...booking,
+          flight_data: booking.flightData
+        }, booking.contactEmail);
+        logger.info(`[VerifyPayment] Confirmation email sent for ${payment.booking_reference}`);
+      }
+    } catch (emailError) {
+      // Don't fail the payment if email fails
+      logger.error('[VerifyPayment] Failed to send confirmation email:', emailError.message);
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Payment verified successfully',
+      paymentReference: payment.payment_reference,
+      bookingReference: payment.booking_reference
+    });
+
+  } catch (error) {
+    logger.error('[VerifyPayment] Error:', error.message);
+    return res.status(500).json({
+      success: false,
+      message: 'Payment verification failed: ' + error.message
+    });
+  }
+});
+
+/**
  * Get Payment Status
  * GET /api/payments/:paymentReference/status
  */
@@ -349,6 +461,7 @@ const handlePaymentCallback = AsyncHandler(async (req, res) => {
 module.exports = {
   createPayment,
   verifyPayment,
+  verifyRazorpayPayment,
   getPaymentStatus,
   processRefund,
   razorpayWebhook,

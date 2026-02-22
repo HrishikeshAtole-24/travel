@@ -1,7 +1,7 @@
 .payment-failed-page {
-  min-height: 80vh;
-  padding: 60px 20px;
-  background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
+  min-height: 100vh;
+  padding: 40px 20px 80px;
+  background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 50%, #0f172a 100%);
 }
 
 .payment-failed-page .container {
@@ -13,7 +13,7 @@
   background: white;
   border-radius: 20px;
   padding: 50px 40px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
   text-align: center;
   animation: slideUp 0.5s ease-out;
 }
@@ -204,23 +204,23 @@
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #0066FF 0%, #0052CC 100%);
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
   color: white;
 }
 
 .btn-primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(0, 102, 255, 0.4);
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.4);
 }
 
 .btn-secondary {
   background: white;
-  color: #0066FF;
-  border: 2px solid #0066FF;
+  color: #2563eb;
+  border: 2px solid #2563eb;
 }
 
 .btn-secondary:hover {
-  background: #0066FF;
+  background: #2563eb;
   color: white;
   transform: translateY(-2px);
 }
@@ -234,7 +234,7 @@
 }
 
 .link-btn {
-  color: #0066FF;
+  color: #2563eb;
   text-decoration: none;
   font-size: 14px;
   font-weight: 500;
@@ -245,7 +245,7 @@
 }
 
 .link-btn:hover {
-  color: #0052CC;
+  color: #1d4ed8;
   text-decoration: underline;
 }
 

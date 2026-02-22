@@ -69,9 +69,11 @@ class RazorpayNonSeamlessClient extends IAcquirerClient {
       // Razorpay expects amount in smallest currency unit (paise for INR)
       const amountInPaise = Math.round(amount * 100);
 
+      // NOTE: Hardcoding INR as Razorpay India accounts only support INR
+      // For multi-currency support, you need Razorpay International account
       const orderPayload = {
         amount: amountInPaise,
-        currency: currency || 'INR',
+        currency: 'INR',
         receipt: paymentReference,
         notes: {
           payment_reference: paymentReference,
@@ -80,6 +82,7 @@ class RazorpayNonSeamlessClient extends IAcquirerClient {
           customer_phone: customerPhone,
           customer_name: customerName,
           description: description || 'Flight Booking Payment',
+          original_currency: currency || 'INR', // Store original currency in notes
           ...metadata
         }
       };

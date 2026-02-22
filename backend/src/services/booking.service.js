@@ -75,29 +75,61 @@ const createBooking = async (bookingData, userId = null) => {
     // Calculate expiration time (industry standard: 30 minutes for flight bookings)
     const expiresAt = getBookingExpirationTime();
 
-    // Create booking record
-    const bookingResult = await client.query(
-      `INSERT INTO bookings (
-        booking_reference, user_id, flight_id, flight_data,
-        total_price, currency, status,
-        contact_email, contact_phone, special_requests,
-        expires_at, created_at, updated_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-      RETURNING *`,
-      [
-        bookingReference,
-        userId,
-        flightId || null,
-        JSON.stringify(flightData),
-        totalPrice,
-        currency || 'INR',
-        'pending',
-        contactEmail,
-        contactPhone,
-        specialRequests || null,
-        expiresAt
-      ]
-    );
+    // Check if expires_at column exists
+    const columnCheck = await client.query(`
+      SELECT column_name FROM information_schema.columns 
+      WHERE table_name = 'bookings' AND column_name = 'expires_at'
+    `);
+    const hasExpiresAt = columnCheck.rows.length > 0;
+
+    // Create booking record (with or without expires_at)
+    let bookingResult;
+    if (hasExpiresAt) {
+      bookingResult = await client.query(
+        `INSERT INTO bookings (
+          booking_reference, user_id, flight_id, flight_data,
+          total_price, currency, status,
+          contact_email, contact_phone, special_requests,
+          expires_at, created_at, updated_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        RETURNING *`,
+        [
+          bookingReference,
+          userId,
+          flightId || null,
+          JSON.stringify(flightData),
+          totalPrice,
+          currency || 'INR',
+          'pending',
+          contactEmail,
+          contactPhone,
+          specialRequests || null,
+          expiresAt
+        ]
+      );
+    } else {
+      bookingResult = await client.query(
+        `INSERT INTO bookings (
+          booking_reference, user_id, flight_id, flight_data,
+          total_price, currency, status,
+          contact_email, contact_phone, special_requests,
+          created_at, updated_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        RETURNING *`,
+        [
+          bookingReference,
+          userId,
+          flightId || null,
+          JSON.stringify(flightData),
+          totalPrice,
+          currency || 'INR',
+          'pending',
+          contactEmail,
+          contactPhone,
+          specialRequests || null
+        ]
+      );
+    }
 
     const booking = bookingResult.rows[0];
 
@@ -287,26 +319,36 @@ const getBookingByReference = async (bookingReference, contactEmail = null) => {
 
 /**
  * Get user's bookings
- * Also auto-expires any stale bookings
+ * Works with or without expires_at column
  */
 const getUserBookings = async (userId) => {
   try {
     const pool = getPool();
     
-    // First, auto-expire any stale bookings for this user
-    await pool.query(
-      `UPDATE bookings 
-       SET status = 'expired', updated_at = CURRENT_TIMESTAMP
-       WHERE user_id = $1 
-       AND status IN ('pending', 'payment_initiated')
-       AND expires_at IS NOT NULL
-       AND expires_at < NOW()`,
-      [userId]
-    );
+    // Check if expires_at column exists (for backwards compatibility)
+    const columnCheck = await pool.query(`
+      SELECT column_name FROM information_schema.columns 
+      WHERE table_name = 'bookings' AND column_name = 'expires_at'
+    `);
+    const hasExpiresAt = columnCheck.rows.length > 0;
     
+    // Only run expiration query if column exists
+    if (hasExpiresAt) {
+      await pool.query(
+        `UPDATE bookings 
+         SET status = 'expired', updated_at = CURRENT_TIMESTAMP
+         WHERE user_id = $1 
+         AND status IN ('pending', 'payment_initiated')
+         AND expires_at IS NOT NULL
+         AND expires_at < NOW()`,
+        [userId]
+      );
+    }
+    
+    // Select query without expires_at for compatibility
     const result = await pool.query(
       `SELECT id, booking_reference, status, total_price, currency, 
-              contact_email, pnr, ticket_number, flight_data, created_at, expires_at
+              contact_email, pnr, ticket_number, flight_data, created_at
        FROM bookings 
        WHERE user_id = $1 
        ORDER BY created_at DESC`,
@@ -315,7 +357,6 @@ const getUserBookings = async (userId) => {
 
     return {
       bookings: result.rows.map(booking => {
-        const isExpired = booking.expires_at && new Date() > new Date(booking.expires_at);
         return {
           id: booking.id,
           bookingReference: booking.booking_reference,
@@ -327,8 +368,8 @@ const getUserBookings = async (userId) => {
           ticketNumber: booking.ticket_number,
           flightData: booking.flight_data,
           createdAt: booking.created_at,
-          expiresAt: booking.expires_at,
-          isExpired: isExpired && ['pending', 'payment_initiated'].includes(booking.status)
+          expiresAt: null,
+          isExpired: false
         };
       })
     };
