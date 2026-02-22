@@ -3,247 +3,574 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Payment - <%= bookingReference %></title>
+    <title>Payment - <%= bookingReference %> | SkyWings</title>
     <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
+        
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0f172a;
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 20px;
+            padding: 24px;
         }
-        .payment-container {
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            max-width: 500px;
+
+        /* Back Button */
+        .back-btn {
+            position: fixed;
+            top: 24px;
+            left: 24px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: #94a3b8;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            padding: 10px 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #e2e8f0;
+        }
+
+        /* Card */
+        .card {
+            background: #fff;
+            border-radius: 16px;
             width: 100%;
+            max-width: 420px;
             overflow: hidden;
         }
-        .payment-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 30px;
-            text-align: center;
+
+        /* Card Header */
+        .card-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid #f1f5f9;
         }
-        .payment-header h1 {
-            font-size: 28px;
-            margin-bottom: 10px;
+
+        .header-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
         }
-        .payment-header p {
-            font-size: 16px;
-            opacity: 0.9;
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
-        .payment-body {
-            padding: 30px;
+
+        .brand-logo {
+            width: 32px;
+            height: 32px;
+            color: #2563eb;
         }
-        .booking-info {
-            background: #f7f9fc;
-            border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 25px;
+
+        .brand-logo svg {
+            width: 100%;
+            height: 100%;
         }
+
+        .brand-name {
+            font-size: 20px;
+            font-weight: 700;
+            color: #2563eb;
+            letter-spacing: -0.5px;
+        }
+
+        .secure-badge {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 12px;
+            color: #22c55e;
+            background: #f0fdf4;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-weight: 500;
+        }
+
+        .secure-badge i {
+            font-size: 10px;
+        }
+
+        .trust-info {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            padding: 12px 24px;
+            background: #f8fafc;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .trust-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            color: #64748b;
+        }
+
+        .trust-item i {
+            font-size: 12px;
+            color: #2563eb;
+        }
+
+        /* Card Body */
+        .card-body {
+            padding: 20px 24px;
+        }
+
+        .info-grid {
+            display: grid;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
         .info-row {
             display: flex;
             justify-content: space-between;
+            align-items: center;
             padding: 10px 0;
-            border-bottom: 1px solid #e0e6ed;
+            border-bottom: 1px solid #f1f5f9;
         }
+
         .info-row:last-child {
             border-bottom: none;
         }
+
         .info-label {
+            font-size: 13px;
             color: #64748b;
-            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
+
+        .info-label i {
+            width: 16px;
+            color: #2563eb;
+            font-size: 12px;
+        }
+
         .info-value {
-            color: #1e293b;
+            font-size: 13px;
             font-weight: 600;
-            font-size: 14px;
+            color: #1e293b;
+            text-align: right;
+            max-width: 180px;
+            word-break: break-word;
         }
-        .amount-section {
-            background: #fff7ed;
-            border: 2px solid #fb923c;
+
+        /* Amount Box */
+        .amount-box {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
             border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 25px;
+            padding: 16px;
             text-align: center;
+            margin-bottom: 20px;
         }
+
         .amount-label {
+            font-size: 11px;
+            font-weight: 600;
             color: #64748b;
-            font-size: 14px;
-            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
         }
+
         .amount-value {
-            font-size: 42px;
-            font-weight: bold;
-            color: #ea580c;
+            font-size: 28px;
+            font-weight: 700;
+            color: #2563eb;
         }
-        .pay-button {
+
+        .amount-value span {
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        /* Buttons */
+        .btn-primary {
             width: 100%;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            background: #2563eb;
+            color: #fff;
             border: none;
-            padding: 18px;
-            font-size: 18px;
+            padding: 14px;
+            font-size: 14px;
             font-weight: 600;
             border-radius: 10px;
             cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
         }
-        .pay-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+
+        .btn-primary:hover {
+            background: #1d4ed8;
         }
-        .pay-button:active {
-            transform: translateY(0);
-        }
-        .secure-badge {
-            text-align: center;
-            margin-top: 20px;
+
+        .btn-secondary {
+            width: 100%;
+            background: transparent;
             color: #64748b;
+            border: 1px solid #e2e8f0;
+            padding: 12px;
             font-size: 13px;
+            font-weight: 500;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            margin-top: 10px;
         }
-        .secure-badge::before {
-            content: "🔒";
-            margin-right: 5px;
+
+        .btn-secondary:hover {
+            background: #f8fafc;
+            border-color: #cbd5e1;
         }
+
+        /* Card Footer */
+        .card-footer {
+            padding: 16px 24px;
+            background: #f8fafc;
+            border-top: 1px solid #f1f5f9;
+        }
+
+        .payment-methods {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+
+        .payment-methods i {
+            font-size: 20px;
+            color: #94a3b8;
+        }
+
+        .footer-info {
+            text-align: center;
+            font-size: 11px;
+            color: #94a3b8;
+        }
+
+        .footer-info .secure-line {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            margin-bottom: 6px;
+        }
+
+        .footer-info .secure-line i {
+            color: #22c55e;
+            font-size: 10px;
+        }
+
+        .footer-info .copyright {
+            margin-bottom: 4px;
+        }
+
+        .footer-info .links a {
+            color: #94a3b8;
+            text-decoration: none;
+            margin: 0 6px;
+        }
+
+        .footer-info .links a:hover {
+            color: #64748b;
+        }
+
+        /* Loader */
         .loader {
             display: none;
             text-align: center;
-            padding: 20px;
+            padding: 10px 0;
         }
+
         .loader.active {
             display: block;
         }
+
         .spinner {
-            border: 4px solid #f3f4f6;
-            border-top: 4px solid #667eea;
+            border: 2px solid #e2e8f0;
+            border-top: 2px solid #2563eb;
             border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
+            width: 28px;
+            height: 28px;
+            animation: spin 0.7s linear infinite;
             margin: 0 auto;
         }
+
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+
+        .loader p {
+            margin-top: 8px;
+            color: #64748b;
+            font-size: 12px;
+        }
+
+
+
+        /* Mobile */
+        @media (max-width: 480px) {
+            body {
+                padding: 16px;
+                align-items: flex-start;
+                padding-top: 72px;
+            }
+
+            .back-btn {
+                top: 16px;
+                left: 16px;
+                padding: 8px 12px;
+                font-size: 13px;
+            }
+
+            .card {
+                border-radius: 12px;
+            }
+
+            .card-header, .card-body {
+                padding: 20px;
+            }
+
+            .card-footer {
+                padding: 14px 20px;
+            }
+
+            .amount-value {
+                font-size: 24px;
+            }
+
+
+        }
     </style>
 </head>
 <body>
-    <div class="payment-container">
-        <div class="payment-header">
-            <h1>Complete Your Payment</h1>
-            <p>Secure & Fast Checkout</p>
+    <a href="javascript:history.back()" class="back-btn">
+        <i class="fas fa-arrow-left"></i>
+        Go Back
+    </a>
+
+    <div class="card">
+        <div class="card-header">
+            <div class="header-top">
+                <div class="brand">
+                    <div class="brand-logo">
+                        <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+                            <path d="M16 2L3 9L16 16L29 9L16 2Z" fill="currentColor"></path>
+                            <path d="M3 23L16 30L29 23V9L16 16L3 9V23Z" fill="currentColor" opacity="0.6"></path>
+                        </svg>
+                    </div>
+                    <span class="brand-name">SkyWings</span>
+                </div>
+                <div class="secure-badge">
+                    <i class="fas fa-shield-halved"></i>
+                    Secure
+                </div>
+            </div>
         </div>
-        
-        <div class="payment-body">
-            <div class="booking-info">
+
+        <div class="trust-info">
+            <div class="trust-item">
+                <i class="fas fa-lock"></i>
+                256-bit SSL
+            </div>
+            <div class="trust-item">
+                <i class="fas fa-credit-card"></i>
+                PCI Compliant
+            </div>
+            <div class="trust-item">
+                <i class="fas fa-shield-halved"></i>
+                100% Safe
+            </div>
+        </div>
+
+        <div class="card-body">
+            <div class="info-grid">
                 <div class="info-row">
-                    <span class="info-label">Booking Reference</span>
+                    <span class="info-label">
+                        <i class="fas fa-hashtag"></i>
+                        Booking Reference
+                    </span>
                     <span class="info-value"><%= bookingReference %></span>
                 </div>
                 <div class="info-row">
-                    <span class="info-label">Customer Name</span>
+                    <span class="info-label">
+                        <i class="fas fa-user"></i>
+                        Customer Name
+                    </span>
                     <span class="info-value"><%= customerName %></span>
                 </div>
                 <div class="info-row">
-                    <span class="info-label">Email</span>
+                    <span class="info-label">
+                        <i class="fas fa-envelope"></i>
+                        Email
+                    </span>
                     <span class="info-value"><%= customerEmail %></span>
                 </div>
                 <div class="info-row">
-                    <span class="info-label">Description</span>
+                    <span class="info-label">
+                        <i class="fas fa-plane-departure"></i>
+                        Description
+                    </span>
                     <span class="info-value"><%= description %></span>
                 </div>
             </div>
 
-            <div class="amount-section">
+            <div class="amount-box">
                 <div class="amount-label">Total Amount</div>
-                <div class="amount-value"><%= currency %> <%= amount %></div>
+                <div class="amount-value"><span><%= currency %></span> <%= amount %></div>
             </div>
 
-            <button class="pay-button" onclick="initiatePayment()">
-                Pay Now with Razorpay
-            </button>
+            <div id="paymentContent">
+                <button class="btn-primary" onclick="startPayment()">
+                    <i class="fas fa-lock"></i>
+                    Pay Securely Now
+                </button>
+                <button class="btn-secondary" onclick="cancelPayment()">
+                    <i class="fas fa-times"></i>
+                    Cancel Payment
+                </button>
+            </div>
 
             <div class="loader" id="loader">
                 <div class="spinner"></div>
-                <p style="margin-top: 10px; color: #64748b;">Processing...</p>
+                <p>Processing payment...</p>
             </div>
+        </div>
 
-            <div class="secure-badge">
-                Secured by Razorpay
+        <div class="card-footer">
+            <div class="payment-methods">
+                <i class="fab fa-cc-visa"></i>
+                <i class="fab fa-cc-mastercard"></i>
+                <i class="fab fa-cc-amex"></i>
+                <i class="fab fa-google-pay"></i>
+                <i class="fab fa-apple-pay"></i>
+            </div>
+            <div class="footer-info">
+                <div class="secure-line">
+                    <i class="fas fa-lock"></i>
+                    Secured by Razorpay | 256-bit SSL Encryption
+                </div>
+                <div class="copyright">&copy; 2026 SkyWings. All rights reserved.</div>
+                <div class="links">
+                    <a href="/terms">Terms</a> • <a href="/privacy">Privacy</a> • <a href="/support">Support</a>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
         const paymentData = {
-            key: '<%= razorpayKey %>',
-            order_id: '<%= orderId %>',
+            razorpayKey: '<%= razorpayKey %>',
+            orderId: '<%= orderId %>',
             amount: <%= amountInPaise %>,
             currency: '<%= currency %>',
-            name: 'Travel Booking',
-            description: '<%= description %>',
-            image: 'https://cdn.razorpay.com/logos/travel_logo.png',
-            prefill: {
-                name: '<%= customerName %>',
-                email: '<%= customerEmail %>',
-                contact: '<%= customerPhone %>'
-            },
-            notes: <%- JSON.stringify(notes) %>,
-            theme: {
-                color: '#667eea'
-            }
+            bookingReference: '<%= bookingReference %>',
+            customerName: '<%= customerName %>',
+            customerEmail: '<%= customerEmail %>',
+            customerPhone: '<%= customerPhone %>'
         };
 
-        function initiatePayment() {
-            const loader = document.getElementById('loader');
-            loader.classList.add('active');
-
+        function startPayment() {
             const options = {
-                ...paymentData,
-                handler: function(response) {
-                    // Payment successful
-                    window.location.href = '<%= callbackUrl %>?payment_id=' + response.razorpay_payment_id + 
-                                           '&order_id=' + response.razorpay_order_id + 
-                                           '&signature=' + response.razorpay_signature +
-                                           '&status=success';
+                key: paymentData.razorpayKey,
+                amount: paymentData.amount,
+                currency: paymentData.currency,
+                name: 'SkyWings',
+                description: 'Flight Booking Payment',
+                order_id: paymentData.orderId,
+                handler: function (response) {
+                    document.getElementById('paymentContent').style.display = 'none';
+                    document.getElementById('loader').classList.add('active');
+                    
+                    fetch('/api/payments/verify', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            razorpay_payment_id: response.razorpay_payment_id,
+                            razorpay_order_id: response.razorpay_order_id,
+                            razorpay_signature: response.razorpay_signature,
+                            bookingReference: paymentData.bookingReference
+                        }),
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            const frontendUrl = window.location.hostname === 'localhost' 
+                                ? 'http://localhost:3000' 
+                                : 'https://travel-chi-rust.vercel.app';
+                            window.location.href = `${frontendUrl}/payment-success?booking=${paymentData.bookingReference}&payment=${response.razorpay_payment_id}`;
+                        } else {
+                            window.location.href = `/api/payment-error?error=Verification Failed&message=${encodeURIComponent(data.message || 'Payment verification failed')}`;
+                        }
+                    })
+                    .catch(error => {
+                        window.location.href = `/api/payment-error?error=Error&message=${encodeURIComponent(error.message)}`;
+                    });
+                },
+                prefill: {
+                    name: paymentData.customerName,
+                    email: paymentData.customerEmail,
+                    contact: paymentData.customerPhone
+                },
+                theme: {
+                    color: '#2563eb'
                 },
                 modal: {
                     ondismiss: function() {
-                        loader.classList.remove('active');
+                        console.log('Payment cancelled by user');
                     }
                 }
             };
 
             const rzp = new Razorpay(options);
-            
-            rzp.on('payment.failed', function(response) {
-                // Payment failed
-                window.location.href = '<%= callbackUrl %>?order_id=<%= orderId %>&status=failed&reason=' + 
-                                       encodeURIComponent(response.error.description);
+            rzp.on('payment.failed', function (response) {
+                window.location.href = `/api/payment-error?error=Payment Failed&message=${encodeURIComponent(response.error.description)}`;
             });
-
             rzp.open();
-            loader.classList.remove('active');
         }
 
-        // Auto-initiate payment on page load
-        window.onload = function() {
-            setTimeout(() => {
-                initiatePayment();
-            }, 500);
-        };
+        function cancelPayment() {
+            if (confirm('Are you sure you want to cancel this payment?')) {
+                history.back();
+            }
+        }
     </script>
 </body>
 </html>

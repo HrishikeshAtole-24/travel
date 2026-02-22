@@ -5,10 +5,12 @@ import { useRouter } from 'next/navigation';
 import Header from '../components/Header/Header';
 import Footer from '../components/Footer/Footer';
 import apiClient from '@/lib/api/client';
+import { useAuth } from '@/app/contexts/AuthContext';
 import './booking.css';
 
 export default function BookingPage() {
   const router = useRouter();
+  const { user, isLoggedIn, isLoading: authLoading } = useAuth();
   const [flight, setFlight] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -38,39 +40,28 @@ export default function BookingPage() {
     if (flightData) {
       const parsedFlight = JSON.parse(flightData);
       setFlight(parsedFlight);
-      
-      // Pre-fill contact details if user is logged in
-      const token = apiClient.getToken();
-      if (token) {
-        fetchUserProfile();
-      }
     } else {
       router.push('/search');
     }
-  }, []);
+  }, [router]);
 
-  const fetchUserProfile = async () => {
-    try {
-      const response = await apiClient.get('/auth/profile');
-      if (response.success && response.data?.user) {
-        const user = response.data.user;
-        setContactDetails({
-          email: user.email || '',
-          phone: user.phone || ''
-        });
-        // Pre-fill first traveler with user info
-        setTravelers([{
-          ...travelers[0],
-          firstName: user.firstName || '',
-          lastName: user.lastName || '',
-          email: user.email || '',
-          phone: user.phone || ''
-        }]);
-      }
-    } catch (error) {
-      console.error('Failed to fetch user profile:', error);
+  // Pre-fill contact details from user profile
+  useEffect(() => {
+    if (!authLoading && isLoggedIn && user) {
+      setContactDetails({
+        email: user.email || '',
+        phone: user.phone || ''
+      });
+      // Pre-fill first traveler with user info
+      setTravelers(prev => [{
+        ...prev[0],
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+        email: user.email || '',
+        phone: user.phone || ''
+      }]);
     }
-  };
+  }, [authLoading, isLoggedIn, user]);
 
   const handleTravelerChange = (index, field, value) => {
     const updatedTravelers = [...travelers];

@@ -285,7 +285,7 @@ const handlePaymentCallback = AsyncHandler(async (req, res) => {
     if (result.rows.length === 0) {
       // No payment found - redirect to generic failure
       logger.error(`[PaymentCallback] Payment not found for order_id: ${order_id}`);
-      return res.redirect('/payment-error?reason=Payment not found');
+      return res.redirect('/api/payment-error?error=Payment%20Not%20Found&message=The payment reference could not be found');
     }
 
     const payment = result.rows[0];
@@ -342,7 +342,7 @@ const handlePaymentCallback = AsyncHandler(async (req, res) => {
   } catch (error) {
     logger.error('[PaymentCallback] Error:', error);
     // Redirect to generic error page
-    return res.redirect('/payment-error?reason=Internal server error');
+    return res.redirect('/api/payment-error?error=Server%20Error&message=An internal error occurred. Please try again.');
   }
 });
 

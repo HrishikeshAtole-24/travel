@@ -162,6 +162,16 @@ class ApiClient {
   async cancelBooking(bookingId, reason) {
     return this.post(`/bookings/${bookingId}/cancel`, { reason });
   }
+
+  /**
+   * Initiate payment for a booking
+   * @param {string|number} bookingId - Booking ID
+   * @param {Object} options - Payment options (customerEmail, customerName, customerPhone)
+   * @returns {Promise} Payment response with checkoutUrl
+   */
+  async initiatePayment(bookingId, options = {}) {
+    return this.post('/payments/create', { bookingId, ...options });
+  }
 }
 
 // Export singleton instance

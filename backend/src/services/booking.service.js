@@ -8,6 +8,9 @@ const ApiError = require('../core/ApiError');
 const logger = require('../config/winstonLogger');
 const paymentService = require('../payments/payment.service');
 
+// Industry standard: Flight bookings expire in 30 minutes if unpaid
+const BOOKING_EXPIRY_MINUTES = 30;
+
 /**
  * Generate booking reference (e.g., BK-20241212-XXXXX)
  */
@@ -16,6 +19,23 @@ function generateBookingReference() {
   const dateStr = date.toISOString().split('T')[0].replace(/-/g, '');
   const random = Math.floor(10000 + Math.random() * 90000);
   return `BK-${dateStr}-${random}`;
+}
+
+/**
+ * Calculate booking expiration time
+ */
+function getBookingExpirationTime() {
+  const expiresAt = new Date();
+  expiresAt.setMinutes(expiresAt.getMinutes() + BOOKING_EXPIRY_MINUTES);
+  return expiresAt;
+}
+
+/**
+ * Check if a booking has expired
+ */
+function isBookingExpired(booking) {
+  if (!booking.expires_at) return false;
+  return new Date() > new Date(booking.expires_at);
 }
 
 /**
@@ -51,6 +71,9 @@ const createBooking = async (bookingData, userId = null) => {
 
     // Generate booking reference
     const bookingReference = generateBookingReference();
+    
+    // Calculate expiration time (industry standard: 30 minutes for flight bookings)
+    const expiresAt = getBookingExpirationTime();
 
     // Create booking record
     const bookingResult = await client.query(
@@ -58,8 +81,8 @@ const createBooking = async (bookingData, userId = null) => {
         booking_reference, user_id, flight_id, flight_data,
         total_price, currency, status,
         contact_email, contact_phone, special_requests,
-        created_at, updated_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        expires_at, created_at, updated_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
       RETURNING *`,
       [
         bookingReference,
@@ -71,7 +94,8 @@ const createBooking = async (bookingData, userId = null) => {
         'pending',
         contactEmail,
         contactPhone,
-        specialRequests || null
+        specialRequests || null,
+        expiresAt
       ]
     );
 
@@ -104,7 +128,7 @@ const createBooking = async (bookingData, userId = null) => {
 
     await client.query('COMMIT');
 
-    logger.info(`[Booking] Created: ${bookingReference}, User: ${userId || 'guest'}`);
+    logger.info(`[Booking] Created: ${bookingReference}, User: ${userId || 'guest'}, Expires: ${expiresAt.toISOString()}`);
 
     return {
       success: true,
@@ -115,7 +139,9 @@ const createBooking = async (bookingData, userId = null) => {
       currency: booking.currency,
       contactEmail: booking.contact_email,
       contactPhone: booking.contact_phone,
-      createdAt: booking.created_at
+      createdAt: booking.created_at,
+      expiresAt: booking.expires_at,
+      expiryMinutes: BOOKING_EXPIRY_MINUTES
     };
   } catch (error) {
     await client.query('ROLLBACK');
@@ -147,6 +173,18 @@ const getBookingById = async (bookingId, userId = null) => {
     }
 
     const booking = result.rows[0];
+    
+    // Check if booking has expired (and update status if needed)
+    const expired = isBookingExpired(booking);
+    if (expired && ['pending', 'payment_initiated'].includes(booking.status)) {
+      // Auto-expire the booking
+      await pool.query(
+        'UPDATE bookings SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+        ['expired', booking.id]
+      );
+      booking.status = 'expired';
+      logger.info(`[Booking] Auto-expired: ${booking.booking_reference}`);
+    }
 
     // Get travelers
     const travelersResult = await pool.query(
@@ -175,6 +213,8 @@ const getBookingById = async (bookingId, userId = null) => {
         ticketNumber: booking.ticket_number,
         createdAt: booking.created_at,
         updatedAt: booking.updated_at,
+        expiresAt: booking.expires_at,
+        isExpired: expired,
         travelers: travelersResult.rows,
         payments: paymentsResult.rows
       }
@@ -247,13 +287,26 @@ const getBookingByReference = async (bookingReference, contactEmail = null) => {
 
 /**
  * Get user's bookings
+ * Also auto-expires any stale bookings
  */
 const getUserBookings = async (userId) => {
   try {
     const pool = getPool();
+    
+    // First, auto-expire any stale bookings for this user
+    await pool.query(
+      `UPDATE bookings 
+       SET status = 'expired', updated_at = CURRENT_TIMESTAMP
+       WHERE user_id = $1 
+       AND status IN ('pending', 'payment_initiated')
+       AND expires_at IS NOT NULL
+       AND expires_at < NOW()`,
+      [userId]
+    );
+    
     const result = await pool.query(
       `SELECT id, booking_reference, status, total_price, currency, 
-              contact_email, pnr, ticket_number, flight_data, created_at
+              contact_email, pnr, ticket_number, flight_data, created_at, expires_at
        FROM bookings 
        WHERE user_id = $1 
        ORDER BY created_at DESC`,
@@ -261,18 +314,23 @@ const getUserBookings = async (userId) => {
     );
 
     return {
-      bookings: result.rows.map(booking => ({
-        id: booking.id,
-        bookingReference: booking.booking_reference,
-        status: booking.status,
-        totalPrice: parseFloat(booking.total_price),
-        currency: booking.currency,
-        contactEmail: booking.contact_email,
-        pnr: booking.pnr,
-        ticketNumber: booking.ticket_number,
-        flightData: booking.flight_data,
-        createdAt: booking.created_at
-      }))
+      bookings: result.rows.map(booking => {
+        const isExpired = booking.expires_at && new Date() > new Date(booking.expires_at);
+        return {
+          id: booking.id,
+          bookingReference: booking.booking_reference,
+          status: booking.status,
+          totalPrice: parseFloat(booking.total_price),
+          currency: booking.currency,
+          contactEmail: booking.contact_email,
+          pnr: booking.pnr,
+          ticketNumber: booking.ticket_number,
+          flightData: booking.flight_data,
+          createdAt: booking.created_at,
+          expiresAt: booking.expires_at,
+          isExpired: isExpired && ['pending', 'payment_initiated'].includes(booking.status)
+        };
+      })
     };
   } catch (error) {
     logger.error('[Booking] Get user bookings failed:', error.message);
@@ -288,23 +346,35 @@ const updateBookingStatus = async (bookingId, status, additionalData = {}) => {
     const pool = getPool();
 
     const updates = ['status = $1', 'updated_at = CURRENT_TIMESTAMP'];
-    const params = [status, bookingId];
-    let paramIndex = 2;
+    const params = [status];
+    let paramIndex = 1;
 
     if (additionalData.pnr) {
-      updates.push(`pnr = $${++paramIndex}`);
-      params.splice(paramIndex - 1, 0, additionalData.pnr);
+      paramIndex++;
+      updates.push(`pnr = $${paramIndex}`);
+      params.push(additionalData.pnr);
     }
 
     if (additionalData.ticketNumber) {
-      updates.push(`ticket_number = $${++paramIndex}`);
-      params.splice(paramIndex - 1, 0, additionalData.ticketNumber);
+      paramIndex++;
+      updates.push(`ticket_number = $${paramIndex}`);
+      params.push(additionalData.ticketNumber);
     }
+
+    if (additionalData.cancellationReason) {
+      paramIndex++;
+      updates.push(`special_requests = COALESCE(special_requests, '') || $${paramIndex}`);
+      params.push(`\n[CANCELLED: ${new Date().toISOString()}] Reason: ${additionalData.cancellationReason}`);
+    }
+
+    // Add booking ID as the last parameter
+    paramIndex++;
+    params.push(bookingId);
 
     const query = `
       UPDATE bookings 
       SET ${updates.join(', ')}
-      WHERE id = $${paramIndex + 1}
+      WHERE id = $${paramIndex}
       RETURNING *
     `;
 
@@ -331,5 +401,7 @@ module.exports = {
   getBookingById,
   getBookingByReference,
   getUserBookings,
-  updateBookingStatus
+  updateBookingStatus,
+  isBookingExpired,
+  BOOKING_EXPIRY_MINUTES
 };
