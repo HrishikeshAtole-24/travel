@@ -7,7 +7,7 @@ import './Chatbot.css';
 // Quick Action Buttons - Clean Gen Z Style
 const QUICK_ACTIONS = [
   { icon: 'fa-plane', label: 'Flights', prompt: 'Find me the cheapest flights this week' },
-  { icon: 'fa-bed', label: 'Hotels', prompt: 'Suggest best budget hotels under ₹3000/night' },
+  { icon: 'fa-hotel', label: 'Hotels', prompt: 'Suggest best budget hotels under ₹3000/night' },
   { icon: 'fa-map-marked-alt', label: 'Trip', prompt: 'Plan a 5-day budget trip for me' },
   { icon: 'fa-compass', label: 'Explore', prompt: 'Where should I travel this season?' },
 ];
