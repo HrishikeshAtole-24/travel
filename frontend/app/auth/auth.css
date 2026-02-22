@@ -659,3 +659,45 @@
     font-size: var(--fs-2xl);
   }
 }
+
+/* Session Expired Message */
+.session-expired-message {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 18px;
+  background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+  border: 1px solid #ffc107;
+  border-radius: 10px;
+  color: #856404;
+  font-size: 14px;
+  margin-bottom: 20px;
+  animation: slideIn 0.3s ease;
+}
+
+.session-expired-message i {
+  font-size: 18px;
+  color: #d39e00;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Auth Loading State */
+.auth-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0066FF 0%, #004bb5 100%);
+  color: white;
+  font-size: 18px;
+}

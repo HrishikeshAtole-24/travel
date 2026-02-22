@@ -304,6 +304,17 @@ export default function Chatbot() {
               <i className="fas fa-paper-plane"></i>
             </button>
           </div>
+
+          {/* Powered by Groq */}
+          <div className="chatbot-powered-by">
+            <span>Powered by</span>
+            <img 
+              src="https://www.ciscoinvestments.com/assets/logos/groq-logo.png" 
+              alt="Groq" 
+              className="groq-logo"
+            />
+            {/* <span className="groq-text">Groq AI</span> */}
+          </div>
         </div>
       )}
     </>

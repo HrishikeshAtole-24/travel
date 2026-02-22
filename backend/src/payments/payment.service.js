@@ -6,6 +6,7 @@
 const acquirerFactory = require('./acquirers/AcquirerFactory');
 const paymentModel = require('../models/payment.model');
 const bookingModel = require('../models/booking.model');
+const { isBookingExpired, BOOKING_EXPIRY_MINUTES } = require('../services/booking.service');
 const { PaymentStatus, PaymentError, isValidStatusTransition } = require('../core/PaymentStatusCodes');
 const ApiError = require('../core/ApiError');
 const { StatusCodes } = require('../core/StatusCodes');
@@ -35,6 +36,8 @@ function getAcquirerCredentials(acquirer) {
 
 /**
  * Initialize payment for a booking
+ * Industry standard: Creates a NEW payment transaction each time user retries
+ * This allows proper tracking of payment attempts and handles expired payments
  */
 const initiatePayment = async (bookingId, paymentOptions = {}) => {
   try {
@@ -52,10 +55,49 @@ const initiatePayment = async (bookingId, paymentOptions = {}) => {
 
     const booking = bookingResult.rows[0];
 
-    // Validate booking status
-    if (booking.status !== 'pending') {
+    // Check if booking has expired
+    if (booking.expires_at && new Date() > new Date(booking.expires_at)) {
+      // Auto-expire the booking if not already expired
+      if (['pending', 'payment_initiated'].includes(booking.status)) {
+        await pool.query(
+          'UPDATE bookings SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+          ['expired', booking.id]
+        );
+        logger.info(`[Payment] Booking auto-expired: ${booking.booking_reference}`);
+      }
+      
+      throw ApiError.badRequest(
+        `Booking has expired. Flight seats are only held for ${BOOKING_EXPIRY_MINUTES} minutes. Please create a new booking to ensure seat availability.`
+      );
+    }
+
+    // Check if booking is in a confirming/completed state
+    if (booking.status === 'confirmed') {
+      throw ApiError.badRequest('This booking is already confirmed and paid');
+    }
+
+    if (booking.status === 'cancelled') {
+      throw ApiError.badRequest('This booking has been cancelled');
+    }
+
+    if (booking.status === 'expired') {
+      throw ApiError.badRequest(
+        `Booking has expired. Flight seats are only held for ${BOOKING_EXPIRY_MINUTES} minutes. Please create a new booking to ensure seat availability.`
+      );
+    }
+
+    // Validate booking status - allow pending or payment_initiated (for retries)
+    if (!['pending', 'payment_initiated'].includes(booking.status)) {
       throw ApiError.badRequest('Booking is not in a valid state for payment');
     }
+
+    // Cancel any existing pending payments for this booking (to avoid duplicate charges)
+    await pool.query(
+      `UPDATE payments SET status = 'CANCELLED', updated_at = CURRENT_TIMESTAMP 
+       WHERE booking_id = $1 AND status IN ('CREATED', 'PENDING')`,
+      [booking.id]
+    );
+    logger.info(`[Payment] Cancelled pending payments for booking ${bookingId} before creating new one`);
 
     // Select acquirer (default to Razorpay, can be based on amount, user preference, etc.)
     const acquirer = paymentOptions.acquirer || 'RAZORPAY';

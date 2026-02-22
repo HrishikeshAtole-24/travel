@@ -18,6 +18,7 @@ export default function BookingDetailsPage() {
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
   const [cancelling, setCancelling] = useState(false);
+  const [paymentLoading, setPaymentLoading] = useState(false);
 
   useEffect(() => {
     if (bookingId) {
@@ -93,13 +94,44 @@ export default function BookingDetailsPage() {
     }
   };
 
-  const getStatusInfo = (status) => {
+  const handleCompletePayment = async () => {
+    try {
+      setPaymentLoading(true);
+      
+      // Initiate payment via backend API
+      const response = await apiClient.initiatePayment(bookingId, {
+        customerEmail: booking?.contactEmail,
+        customerName: booking?.travelers?.[0]?.firstName || 'Customer',
+        customerPhone: booking?.contactPhone
+      });
+      
+      if (response.success && response.data?.checkoutUrl) {
+        // Redirect to backend payment page
+        window.location.href = response.data.checkoutUrl;
+      } else {
+        alert('Failed to initiate payment. Please try again.');
+      }
+    } catch (err) {
+      console.error('Payment error:', err);
+      alert(err.message || 'Failed to initiate payment. Please try again.');
+    } finally {
+      setPaymentLoading(false);
+    }
+  };
+
+  const getStatusInfo = (status, isExpired = false) => {
+    // Handle expired bookings
+    if (isExpired || status === 'expired') {
+      return { label: 'Expired', class: 'status-expired', icon: 'fa-clock-rotate-left' };
+    }
+    
     const statusMap = {
       confirmed: { label: 'Confirmed', class: 'status-confirmed', icon: 'fa-circle-check' },
-      pending: { label: 'Pending', class: 'status-pending', icon: 'fa-clock' },
+      pending: { label: 'Payment Pending', class: 'status-payment', icon: 'fa-credit-card' },
       cancelled: { label: 'Cancelled', class: 'status-cancelled', icon: 'fa-circle-xmark' },
       completed: { label: 'Completed', class: 'status-completed', icon: 'fa-check-double' },
-      payment_initiated: { label: 'Payment Pending', class: 'status-payment', icon: 'fa-credit-card' }
+      payment_initiated: { label: 'Payment Pending', class: 'status-payment', icon: 'fa-credit-card' },
+      expired: { label: 'Expired', class: 'status-expired', icon: 'fa-clock-rotate-left' }
     };
     return statusMap[status?.toLowerCase()] || statusMap.pending;
   };
@@ -164,8 +196,10 @@ export default function BookingDetailsPage() {
     );
   }
 
-  const statusInfo = getStatusInfo(booking.status);
+  const statusInfo = getStatusInfo(booking.status, booking.isExpired);
   const flightData = booking.flightData || {};
+  const canPay = ['pending', 'payment_initiated'].includes(booking.status) && !booking.isExpired && booking.status !== 'expired';
+  const isExpired = booking.isExpired || booking.status === 'expired';
 
   return (
     <>
@@ -362,12 +396,17 @@ export default function BookingDetailsPage() {
                   <div className="no-payments">
                     <i className="fas fa-credit-card"></i>
                     <p>No payment records found</p>
-                    {booking.status === 'payment_initiated' && (
+                    {canPay && (
                       <button 
                         className="btn btn-primary"
-                        onClick={() => router.push(`/payment?bookingId=${booking.id}`)}
+                        onClick={handleCompletePayment}
+                        disabled={paymentLoading}
                       >
-                        <i className="fas fa-lock"></i> Complete Payment
+                        {paymentLoading ? (
+                          <><i className="fas fa-spinner fa-spin"></i> Processing...</>
+                        ) : (
+                          <><i className="fas fa-lock"></i> Complete Payment</>
+                        )}
                       </button>
                     )}
                   </div>
@@ -442,19 +481,38 @@ export default function BookingDetailsPage() {
                 </button>
               </>
             )}
-            {booking.status === 'payment_initiated' && (
+            {canPay && (
               <>
                 <button 
                   className="btn btn-primary btn-action"
-                  onClick={() => router.push(`/payment?bookingId=${booking.id}`)}
+                  onClick={handleCompletePayment}
+                  disabled={paymentLoading}
                 >
-                  <i className="fas fa-lock"></i> Complete Payment
+                  {paymentLoading ? (
+                    <><i className="fas fa-spinner fa-spin"></i> Processing...</>
+                  ) : (
+                    <><i className="fas fa-lock"></i> Complete Payment</>
+                  )}
                 </button>
                 <button 
                   className="btn btn-danger btn-action"
                   onClick={() => setShowCancelModal(true)}
                 >
                   <i className="fas fa-times-circle"></i> Cancel Booking
+                </button>
+              </>
+            )}
+            {isExpired && (
+              <>
+                <div className="expired-notice">
+                  <i className="fas fa-exclamation-triangle"></i>
+                  <span>This booking has expired. Flight seats are only held for 30 minutes.</span>
+                </div>
+                <button 
+                  className="btn btn-primary btn-action"
+                  onClick={() => router.push('/')}
+                >
+                  <i className="fas fa-redo"></i> Book Again
                 </button>
               </>
             )}

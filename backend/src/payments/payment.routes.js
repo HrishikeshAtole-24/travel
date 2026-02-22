@@ -16,6 +16,14 @@ const paymentController = require('./payment.controller');
 router.post('/create', paymentController.createPayment);
 
 /**
+ * @route   POST /api/payments/verify
+ * @desc    Verify Razorpay payment (called from EJS payment page)
+ * @access  Public
+ * @body    { razorpay_payment_id, razorpay_order_id, razorpay_signature, bookingReference }
+ */
+router.post('/verify', paymentController.verifyRazorpayPayment);
+
+/**
  * @route   POST /api/payments/callback
  * @desc    Handle payment callback/verification
  * @access  Public (called by payment gateway)

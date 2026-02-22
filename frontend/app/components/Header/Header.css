@@ -29,7 +29,7 @@
 .header-content {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 6px;
   padding: var(--spacing-lg) 0;
   transition: padding var(--transition-base);
 }
@@ -64,7 +64,6 @@
   align-items: center;
   gap: 6px;
   margin-left: auto;
-  margin-right: var(--spacing-md);
 }
 
 .business-link {

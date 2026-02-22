@@ -129,4 +129,20 @@ router.get('/payment-page/:paymentReference', async (req, res) => {
   }
 });
 
+/**
+ * GET /payment-error
+ * Render payment error page
+ */
+router.get('/payment-error', async (req, res) => {
+  const { error, message, reason, payment_reference } = req.query;
+  
+  logger.info(`[PaymentError] Rendering error page: ${error || reason}`);
+  
+  res.render('payment-error', {
+    error: error || 'Payment Failed',
+    message: message || reason || 'Something went wrong with your payment. Please try again or contact support.',
+    paymentReference: payment_reference || null
+  });
+});
+
 module.exports = router;

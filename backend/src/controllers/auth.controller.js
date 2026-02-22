@@ -166,6 +166,22 @@ const logout = AsyncHandler(async (req, res) => {
   );
 });
 
+/**
+ * Get Session Configuration
+ * GET /api/auth/session-config
+ * Returns session timeout settings for frontend
+ */
+const getSessionConfig = AsyncHandler(async (req, res) => {
+  const config = authService.getSessionConfig();
+  
+  return ApiResponse.success(
+    res,
+    config,
+    'Session configuration retrieved',
+    StatusCodes.OK
+  );
+});
+
 module.exports = {
   signUp,
   login,
@@ -174,5 +190,6 @@ module.exports = {
   resendEmailOTP,
   resendPhoneOTP,
   getProfile,
-  logout
+  logout,
+  getSessionConfig
 };

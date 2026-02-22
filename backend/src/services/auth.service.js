@@ -15,6 +15,8 @@ const { sendOTPEmail, sendWelcomeEmail } = require('../utils/emailService');
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
 const OTP_EXPIRY_MINUTES = 10;
+const SESSION_TIMEOUT_MINUTES = parseInt(process.env.SESSION_TIMEOUT_MINUTES) || 60;
+const PAYMENT_EXTENSION_MINUTES = parseInt(process.env.PAYMENT_EXTENSION_MINUTES) || 20;
 
 /**
  * Generate OTP (6 digits)
@@ -24,14 +26,28 @@ function generateOTP() {
 }
 
 /**
- * Generate JWT token
+ * Generate JWT token with login timestamp for session management
  */
 function generateToken(userId, email) {
   return jwt.sign(
-    { userId, email },
+    { 
+      userId, 
+      email,
+      loginTime: Date.now() // Track session start time
+    },
     JWT_SECRET,
     { expiresIn: JWT_EXPIRES_IN }
   );
+}
+
+/**
+ * Get session configuration
+ */
+function getSessionConfig() {
+  return {
+    sessionTimeoutMinutes: SESSION_TIMEOUT_MINUTES,
+    paymentExtensionMinutes: PAYMENT_EXTENSION_MINUTES
+  };
 }
 
 /**
@@ -519,5 +535,6 @@ module.exports = {
   resendEmailOTP,
   resendPhoneOTP,
   getUserProfile,
-  generateToken
+  generateToken,
+  getSessionConfig
 };

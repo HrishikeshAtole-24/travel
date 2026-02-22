@@ -1,14 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import Header from '../components/Header/Header';
 import Footer from '../components/Footer/Footer';
 import apiClient from '@/lib/api/client';
+import { useAuth } from '@/app/contexts/AuthContext';
 import './profile.css';
 
 export default function ProfilePage() {
-  const router = useRouter();
+  const { user, isLoggedIn, isLoading: authLoading, fetchUserProfile } = useAuth();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -21,13 +21,10 @@ export default function ProfilePage() {
   });
 
   useEffect(() => {
-    const token = apiClient.getToken();
-    if (!token) {
-      router.push('/auth/login');
-      return;
+    if (!authLoading && isLoggedIn) {
+      fetchProfile();
     }
-    fetchProfile();
-  }, []);
+  }, [authLoading, isLoggedIn]);
 
   const fetchProfile = async () => {
     try {

@@ -10,7 +10,14 @@ const createBookingTable = async () => {
   const query = `
     -- Create booking status enum type
     DO $$ BEGIN
-      CREATE TYPE booking_status AS ENUM ('pending', 'confirmed', 'cancelled', 'payment_initiated');
+      CREATE TYPE booking_status AS ENUM ('pending', 'confirmed', 'cancelled', 'payment_initiated', 'expired');
+    EXCEPTION
+      WHEN duplicate_object THEN null;
+    END $$;
+
+    -- Add 'expired' to existing enum if not present
+    DO $$ BEGIN
+      ALTER TYPE booking_status ADD VALUE IF NOT EXISTS 'expired';
     EXCEPTION
       WHEN duplicate_object THEN null;
     END $$;
@@ -29,15 +36,24 @@ const createBookingTable = async () => {
       special_requests TEXT,
       pnr VARCHAR(20),
       ticket_number VARCHAR(50),
+      expires_at TIMESTAMP,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     );
 
+    -- Add expires_at column if it doesn't exist (migration)
+    DO $$ BEGIN
+      ALTER TABLE bookings ADD COLUMN IF NOT EXISTS expires_at TIMESTAMP;
+    EXCEPTION
+      WHEN duplicate_column THEN null;
+    END $$;
+
     -- Create indexes for faster lookups
     CREATE INDEX IF NOT EXISTS idx_bookings_user_id ON bookings(user_id);
     CREATE INDEX IF NOT EXISTS idx_bookings_reference ON bookings(booking_reference);
     CREATE INDEX IF NOT EXISTS idx_bookings_status ON bookings(status);
+    CREATE INDEX IF NOT EXISTS idx_bookings_expires_at ON bookings(expires_at);
 
     -- Create trigger for updated_at timestamp
     DROP TRIGGER IF EXISTS update_bookings_updated_at ON bookings;

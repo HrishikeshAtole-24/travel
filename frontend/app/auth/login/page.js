@@ -1,13 +1,17 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import apiClient from '@/lib/api/client';
+import { useAuth } from '@/app/contexts/AuthContext';
 import '../auth.css';
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const { login, isLoggedIn } = useAuth();
+  
   const [authMethod, setAuthMethod] = useState('email');
   const [formData, setFormData] = useState({
     email: '',
@@ -17,6 +21,20 @@ export default function LoginPage() {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [sessionExpiredMsg, setSessionExpiredMsg] = useState(false);
+
+  useEffect(() => {
+    // Check if redirected due to session expiry
+    if (searchParams.get('reason') === 'session_expired') {
+      setSessionExpiredMsg(true);
+    }
+    
+    // Redirect if already logged in
+    if (isLoggedIn) {
+      const returnUrl = searchParams.get('returnUrl') || '/';
+      router.push(decodeURIComponent(returnUrl));
+    }
+  }, [isLoggedIn, searchParams, router]);
 
   const handleChange = (e) => {
     setFormData(prev => ({
@@ -28,6 +46,7 @@ export default function LoginPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setSessionExpiredMsg(false);
     setLoading(true);
 
     try {
@@ -37,8 +56,9 @@ export default function LoginPage() {
       });
       
       if (response.success && response.data?.token) {
-        apiClient.setToken(response.data.token);
-        router.push('/');
+        await login(response.data.token);
+        const returnUrl = searchParams.get('returnUrl') || '/';
+        router.push(decodeURIComponent(returnUrl));
       }
     } catch (err) {
       setError(err.message || 'Login failed. Please try again.');
@@ -103,6 +123,13 @@ export default function LoginPage() {
             <h2>Sign In</h2>
             <p>Continue your journey with us</p>
           </div>
+
+          {sessionExpiredMsg && (
+            <div className="session-expired-message">
+              <i className="fas fa-clock"></i>
+              Your session has expired. Please sign in again.
+            </div>
+          )}
 
           {error && (
             <div className="error-message-modern">
@@ -272,5 +299,13 @@ export default function LoginPage() {
         </Link>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="auth-loading">Loading...</div>}>
+      <LoginForm />
+    </Suspense>
   );
 }

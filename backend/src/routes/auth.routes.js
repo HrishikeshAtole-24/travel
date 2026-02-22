@@ -70,4 +70,11 @@ router.get('/profile', authenticateToken, authController.getProfile);
  */
 router.post('/logout', authenticateToken, authController.logout);
 
+/**
+ * @route   GET /api/auth/session-config
+ * @desc    Get session timeout configuration
+ * @access  Public (needed before login to know timeout settings)
+ */
+router.get('/session-config', authController.getSessionConfig);
+
 module.exports = router;

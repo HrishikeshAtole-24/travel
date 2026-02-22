@@ -37,7 +37,21 @@ router.get('/my-bookings', authenticateToken, bookingController.getMyBookings);
  * @access  Public
  * @query   ?email=xxx
  */
-router.get('/reference/:bookingReference',authenticateToken, bookingController.getBookingByReference);
+router.get('/reference/:bookingReference', optionalAuth, bookingController.getBookingByReference);
+
+/**
+ * @route   GET /api/bookings/:bookingReference/ticket
+ * @desc    Download e-ticket PDF for a booking
+ * @access  Public with optional auth
+ */
+router.get('/:bookingReference/ticket', optionalAuth, bookingController.downloadTicket);
+
+/**
+ * @route   POST /api/bookings/:bookingReference/send-confirmation
+ * @desc    Send/resend confirmation email for a booking
+ * @access  Public with optional auth
+ */
+router.post('/:bookingReference/send-confirmation', optionalAuth, bookingController.sendConfirmationEmail);
 
 /**
  * @route   GET /api/bookings/:bookingId
