@@ -35,7 +35,7 @@ export default function FlagshipHotels() {
     <section className="flagship-hotels">
       <div className="container">
         <div className="flagship-hotels-header">
-          <h2 className="section-title">Flagship Hotel Stores on SkyWings</h2>
+          <h2 className="section-title">Flagship Hotel Brands on SkyWings</h2>
         </div>
         <div className="flagship-hotels-grid">
           {hotels.map((hotel, index) => (
