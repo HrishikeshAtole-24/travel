@@ -8,6 +8,7 @@
  * 3. Analytics & Insights
  */
 const amadeusFlightAPI = require('./amadeus.flight');
+const amadeusHotelAPI = require('./amadeus.hotel');
 
 module.exports = {
   // ═══════════════════════════════════════════════════════════════
@@ -127,4 +128,61 @@ module.exports = {
    * Check API health and connection
    */
   healthCheck: () => amadeusFlightAPI.healthCheck(),
+
+  // ═══════════════════════════════════════════════════════════════
+  // 🏨 HOTEL APIs
+  // ═══════════════════════════════════════════════════════════════
+
+  /**
+   * Search hotels by city code
+   * @param {Object} params - { cityCode, radius, radiusUnit, chainCodes, amenities, ratings, hotelSource }
+   */
+  searchHotelsByCity: (params) => amadeusHotelAPI.searchHotelsByCity(params),
+
+  /**
+   * Search hotels by geocode (latitude/longitude)
+   * @param {Object} params - { latitude, longitude, radius, radiusUnit, ... }
+   */
+  searchHotelsByGeocode: (params) => amadeusHotelAPI.searchHotelsByGeocode(params),
+
+  /**
+   * Search hotels by hotel IDs
+   * @param {string} hotelIds - Comma-separated Amadeus hotel IDs
+   */
+  searchHotelsByIds: (hotelIds) => amadeusHotelAPI.searchHotelsByIds(hotelIds),
+
+  /**
+   * Hotel name autocomplete
+   * @param {Object} params - { keyword, subType, countryCode, lang, max }
+   */
+  autocompleteHotels: (params) => amadeusHotelAPI.autocompleteHotels(params),
+
+  /**
+   * Get hotel ratings / sentiments
+   * @param {string} hotelIds - Comma-separated Amadeus hotel IDs (max 3)
+   */
+  getHotelRatings: (hotelIds) => amadeusHotelAPI.getHotelRatings(hotelIds),
+
+  /**
+   * Search hotel offers (availability & pricing) - v3
+   * @param {Object} params - { hotelIds, adults, checkInDate, checkOutDate, roomQuantity, ... }
+   */
+  searchHotelOffers: (params) => amadeusHotelAPI.searchHotelOffers(params),
+
+  /**
+   * Get specific hotel offer by ID (price validation)
+   * @param {string} offerId - Hotel offer ID
+   */
+  getHotelOfferById: (offerId) => amadeusHotelAPI.getHotelOfferById(offerId),
+
+  /**
+   * Create hotel booking
+   * @param {Object} bookingData - { offerId, guests, payments, rooms }
+   */
+  createHotelBooking: (bookingData) => amadeusHotelAPI.createHotelBooking(bookingData),
+
+  /**
+   * Hotel API health check
+   */
+  hotelHealthCheck: () => amadeusHotelAPI.healthCheck(),
 };

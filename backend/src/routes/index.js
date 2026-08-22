@@ -16,6 +16,8 @@ const bookingRoutes = require('./booking.routes');
 const airportRoutes = require('./airport.routes');
 const keepAliveRoutes = require('../activateService/keepAlive.routes');
 const chatRoutes = require('./chat.routes');
+const hotelRoutes = require('./hotel.routes');
+const hotelBookingRoutes = require('./hotel-booking.routes');
 
 // ═══════════════════════════════════════════════════════════════
 // 🏥 HEALTH CHECK
@@ -29,7 +31,9 @@ router.get('/health', (req, res) => {
     endpoints: {
       auth: '/api/auth',
       flights: '/api/flights',
+      hotels: '/api/hotels',
       bookings: '/api/bookings',
+      hotelBookings: '/api/hotel-bookings',
       payments: '/api/payments',
       airports: '/api/airports',
       reference: '/api/reference',
@@ -73,5 +77,11 @@ router.use('/keep-active-service', keepAliveRoutes);
 
 // AI Chat (SkyBot assistant)
 router.use('/chat', chatRoutes);
+
+// Hotel search, offers, ratings, autocomplete
+router.use('/hotels', hotelRoutes);
+
+// Hotel booking management
+router.use('/hotel-bookings', hotelBookingRoutes);
 
 module.exports = router;
