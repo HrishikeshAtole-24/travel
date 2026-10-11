@@ -130,13 +130,16 @@ function transformToAmadeusFormat(flight) {
  */
 export async function validateFlightPrice(flightOffer) {
   try {
-    // Transform to Amadeus format if needed
-    const amadeusOffer = transformToAmadeusFormat(flightOffer);
-    
-    console.log('🔄 Transformed offer for validation:', amadeusOffer);
+    const supplier = flightOffer?.source?.supplier;
+
+    // Standard offers (e.g. Duffel) are re-priced server-side by supplier offer ID,
+    // so only the identifiers are sent. Legacy Amadeus offers need the Amadeus shape.
+    const payload = supplier && supplier !== 'amadeus'
+      ? { id: flightOffer.id, source: { supplier, supplierOfferId: flightOffer.source.supplierOfferId } }
+      : transformToAmadeusFormat(flightOffer);
 
     const response = await apiClient.post('/flights/price', {
-      flightOffer: amadeusOffer
+      flightOffer: payload
     });
     
     return response;

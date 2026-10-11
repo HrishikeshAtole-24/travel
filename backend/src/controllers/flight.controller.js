@@ -4,6 +4,7 @@
  */
 const flightService = require('../services/flight.service');
 const ApiResponse = require('../core/ApiResponse');
+const ApiError = require('../core/ApiError');
 const { StatusCodes } = require('../core/StatusCodes');
 const AsyncHandler = require('../core/AsyncHandler');
 
@@ -22,6 +23,7 @@ class FlightController {
       children,
       infants,
       cabin,
+      cabinClass, // the search page sends cabinClass
       nonStopOnly,
       sortBy,
       page,
@@ -42,7 +44,7 @@ class FlightController {
       adults: adults || 1,
       children: children || 0,
       infants: infants || 0,
-      cabin: cabin || 'ECONOMY',
+      cabin: String(cabin || cabinClass || 'ECONOMY').toUpperCase(),
       nonStopOnly: nonStopOnly === 'true'
     };
 
@@ -87,7 +89,7 @@ class FlightController {
     const { flightOffer } = req.body;
 
     if (!flightOffer) {
-      return ApiResponse.error(res, 'Flight offer is required', StatusCodes.BAD_REQUEST);
+      throw ApiError.badRequest('Flight offer is required');
     }
 
     const result = await flightService.priceFlights(flightOffer);

@@ -40,6 +40,9 @@ const createTravelerTable = async () => {
       CONSTRAINT fk_booking FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE CASCADE
     );
 
+    -- Supplier passenger slot this traveler fills (e.g. Duffel pas_...)
+    ALTER TABLE travelers ADD COLUMN IF NOT EXISTS supplier_passenger_id VARCHAR(100);
+
     -- Create index for faster booking lookups
     CREATE INDEX IF NOT EXISTS idx_travelers_booking_id ON travelers(booking_id);
     CREATE INDEX IF NOT EXISTS idx_travelers_passport ON travelers(passport_number);

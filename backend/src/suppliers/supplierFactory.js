@@ -1,5 +1,7 @@
 // Supplier Factory - Dynamic Supplier Selection
 const Amadeus = require('./amadeus');
+const Duffel = require('./duffel');
+const LiteApi = require('./liteapi');
 const logger = require('../config/winstonLogger');
 
 /**
@@ -8,18 +10,20 @@ const logger = require('../config/winstonLogger');
  * @param {string} supplierName - Name of the supplier (amadeus, sabre, travelport, etc.)
  * @returns {Object} Supplier instance
  */
-const supplierFactory = (supplierName = 'amadeus') => {
+const supplierFactory = (supplierName = 'duffel') => {
   const suppliers = {
+    duffel: Duffel,
+    liteapi: LiteApi,
     amadeus: Amadeus,
     // sabre: Sabre,        // Future suppliers
     // travelport: Travelport,
   };
 
-  const supplier = suppliers[supplierName.toLowerCase()];
+  const supplier = suppliers[String(supplierName).toLowerCase()];
 
   if (!supplier) {
-    logger.warn(`Supplier '${supplierName}' not found. Defaulting to Amadeus.`);
-    return suppliers.amadeus;
+    // Never silently fall back to another supplier - offer IDs are supplier-specific
+    throw new Error(`Unknown supplier: ${supplierName}`);
   }
 
   logger.info(`Using supplier: ${supplierName}`);

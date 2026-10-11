@@ -7,6 +7,7 @@ import Footer from '../components/Footer/Footer';
 import apiClient from '@/lib/api/client';
 import { useAuth } from '@/app/contexts/AuthContext';
 import './my-bookings.css';
+import MyHotelBookings from './MyHotelBookings';
 
 export default function MyBookingsPage() {
   const router = useRouter();
@@ -15,6 +16,7 @@ export default function MyBookingsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('all');
+  const [product, setProduct] = useState('flights'); // 'flights' | 'hotels'
   const [paymentLoading, setPaymentLoading] = useState(null);
 
   useEffect(() => {
@@ -169,7 +171,7 @@ export default function MyBookingsPage() {
           <div className="page-header-section">
             <div className="page-header-content">
               <h1><i className="fas fa-ticket"></i> My Bookings</h1>
-              <p>Manage and track all your flight bookings in one place</p>
+              <p>Manage and track all your flight and hotel bookings in one place</p>
             </div>
             <button 
               className="btn btn-primary btn-book-new"
@@ -179,6 +181,25 @@ export default function MyBookingsPage() {
             </button>
           </div>
 
+          {/* Flights / Hotels */}
+          <div className="booking-tabs-container">
+            <div className="booking-tabs" role="tablist" aria-label="Booking type">
+              {[['flights', 'Flights', 'fa-plane'], ['hotels', 'Hotels', 'fa-hotel']].map(([id, label, icon]) => (
+                <button
+                  key={id}
+                  role="tab"
+                  aria-selected={product === id}
+                  className={`tab-btn ${product === id ? 'active' : ''}`}
+                  onClick={() => setProduct(id)}
+                >
+                  <i className={`fas ${icon}`}></i>
+                  <span className="tab-label">{label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {product === 'hotels' ? <MyHotelBookings /> : (<>
           {/* Tabs */}
           <div className="booking-tabs-container">
             <div className="booking-tabs">
@@ -424,6 +445,8 @@ export default function MyBookingsPage() {
               </div>
             </div>
           )}
+
+          </>)}
 
           {/* Trust Indicators */}
           <div className="trust-section">

@@ -1373,7 +1373,7 @@
 							},
 							{
 								"key": "Authorization",
-								"value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjgsImVtYWlsIjoieW9nYXJ1ZGhhamluYUBnbWFpbC5jb20iLCJpYXQiOjE3NjU2MzIzODUsImV4cCI6MTc2NjIzNzE4NX0.VKhKCzv5nXnofcYqaYazY-gbAFuxEumPE5jtVItSSIg"
+								"value": "Bearer {{authToken}}"
 							}
 						],
 						"body": {
@@ -1412,7 +1412,7 @@
 									},
 									{
 										"key": "Authorization",
-										"value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjgsImVtYWlsIjoieW9nYXJ1ZGhhamluYUBnbWFpbC5jb20iLCJpYXQiOjE3NjU2MzIzODUsImV4cCI6MTc2NjIzNzE4NX0.VKhKCzv5nXnofcYqaYazY-gbAFuxEumPE5jtVItSSIg"
+										"value": "Bearer {{authToken}}"
 									}
 								],
 								"body": {
@@ -1751,7 +1751,7 @@
 								}
 							],
 							"cookie": [],
-							"body": "{\n    \"success\": true,\n    \"statusCode\": 201,\n    \"message\": \"Payment initiated successfully\",\n    \"data\": {\n        \"success\": true,\n        \"paymentReference\": \"PAY-20251227-QL44P\",\n        \"acquirer\": \"RAZORPAY\",\n        \"amount\": \"128.95\",\n        \"currency\": \"EUR\",\n        \"checkoutUrl\": \"http://localhost:5000/api/payment-page/PAY-20251227-QL44P\",\n        \"checkoutData\": {\n            \"key\": \"rzp_test_Au81TcFRZWcmJD\",\n            \"order_id\": \"order_Rwl5yHugUCLkeu\",\n            \"amount\": 12895,\n            \"currency\": \"EUR\",\n            \"name\": \"Travel Booking\",\n            \"description\": \"Flight booking payment for booking #BK-20251227-66246\",\n            \"prefill\": {\n                \"name\": \"Hrishikesh Atole\",\n                \"email\": \"yogarudhajina@gmail.com\",\n                \"contact\": \"+917045215685\"\n            },\n            \"notes\": {\n                \"payment_reference\": \"PAY-20251227-QL44P\",\n                \"booking_id\": 15,\n                \"customer_email\": \"yogarudhajina@gmail.com\",\n                \"customer_phone\": \"+917045215685\",\n                \"customer_name\": \"Hrishikesh Atole\",\n                \"description\": \"Flight booking payment for booking #BK-20251227-66246\",\n                \"booking_reference\": \"BK-20251227-66246\",\n                \"flight_id\": null,\n                \"success_url\": \"https://www.google.com\",\n                \"failure_url\": \"https://www.youtube.com\"\n            }\n        },\n        \"expiresAt\": \"2025-12-27T20:10:14.293Z\"\n    },\n    \"timestamp\": \"2025-12-27T19:55:20.435Z\"\n}"
+							"body": "{\n    \"success\": true,\n    \"statusCode\": 201,\n    \"message\": \"Payment initiated successfully\",\n    \"data\": {\n        \"success\": true,\n        \"paymentReference\": \"PAY-20251227-QL44P\",\n        \"acquirer\": \"RAZORPAY\",\n        \"amount\": \"128.95\",\n        \"currency\": \"EUR\",\n        \"checkoutUrl\": \"http://localhost:5000/api/payment-page/PAY-20251227-QL44P\",\n        \"checkoutData\": {\n            \"key\": \"rzp_test_xxxxxxxxxxxxxx\",\n            \"order_id\": \"order_Rwl5yHugUCLkeu\",\n            \"amount\": 12895,\n            \"currency\": \"EUR\",\n            \"name\": \"Travel Booking\",\n            \"description\": \"Flight booking payment for booking #BK-20251227-66246\",\n            \"prefill\": {\n                \"name\": \"Hrishikesh Atole\",\n                \"email\": \"yogarudhajina@gmail.com\",\n                \"contact\": \"+917045215685\"\n            },\n            \"notes\": {\n                \"payment_reference\": \"PAY-20251227-QL44P\",\n                \"booking_id\": 15,\n                \"customer_email\": \"yogarudhajina@gmail.com\",\n                \"customer_phone\": \"+917045215685\",\n                \"customer_name\": \"Hrishikesh Atole\",\n                \"description\": \"Flight booking payment for booking #BK-20251227-66246\",\n                \"booking_reference\": \"BK-20251227-66246\",\n                \"flight_id\": null,\n                \"success_url\": \"https://www.google.com\",\n                \"failure_url\": \"https://www.youtube.com\"\n            }\n        },\n        \"expiresAt\": \"2025-12-27T20:10:14.293Z\"\n    },\n    \"timestamp\": \"2025-12-27T19:55:20.435Z\"\n}"
 						}
 					]
 				},

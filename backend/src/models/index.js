@@ -7,11 +7,12 @@ const { getPool } = require('../config/database');
 const { createUserTable } = require('./user.model');
 const { createBookingTable } = require('./booking.model');
 const { createTravelerTable } = require('./traveler.model');
-const {createPaymentTable} = require("./payment.model");
+const { createPaymentTable, addHotelPaymentSupport } = require('./payment.model');
 const { createAcquirerTable } = require('./acquirer.model');
 const { createStandardStatusTable } = require('./standard-status.model');
 const { createAcquirerStatusMappingTable } = require('./acquirer-status-mapping.model');
 const { createAirportTable } = require('./airport.model');
+const { createHotelBookingTable } = require('./hotel-booking.model');
 const logger = require('../config/winstonLogger');
 
 const initializeDatabase = async () => {
@@ -43,6 +44,12 @@ const initializeDatabase = async () => {
     // 7. Acquirer status mapping table (depends on acquirers and standard_status_codes)
     await createAcquirerStatusMappingTable();
 
+    // 8. Hotel bookings & guests tables (depends on users)
+    await createHotelBookingTable();
+
+    // 9. Let payments reference hotel bookings (depends on payments & hotel_bookings)
+    await addHotelPaymentSupport();
+
     logger.info('✅ Database initialization completed successfully!');
     logger.info('📊 All tables created/verified:');
     logger.info('   - users');
@@ -53,6 +60,8 @@ const initializeDatabase = async () => {
     logger.info('   - acquirers');
     logger.info('   - standard_status_codes');
     logger.info('   - acquirer_status_mapping');
+    logger.info('   - hotel_bookings');
+    logger.info('   - hotel_guests');
 
     return true;
   } catch (error) {

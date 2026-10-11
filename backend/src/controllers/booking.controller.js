@@ -12,6 +12,18 @@ const ApiResponse = require('../core/ApiResponse');
 const ApiError = require('../core/ApiError');
 const { StatusCodes } = require('../core/StatusCodes');
 const logger = require('../config/winstonLogger');
+const ticketingService = require('../services/ticketing.service');
+
+/**
+ * Identity the caller can prove: JWT user and/or the booking contact email
+ * (query string for GET, body for POST)
+ */
+function getBookingAccess(req) {
+  return {
+    userId: req.user?.userId || null,
+    email: req.query?.email || req.body?.email || null
+  };
+}
 
 /**
  * Create Booking
@@ -25,9 +37,8 @@ const createBooking = AsyncHandler(async (req, res) => {
     travelers,
     contactEmail,
     contactPhone,
-    totalPrice,
-    currency,
-    specialRequests
+    specialRequests,
+    validatedFlightOffer
   } = req.body;
 
   // Get user ID from token (if logged in)
@@ -40,9 +51,8 @@ const createBooking = AsyncHandler(async (req, res) => {
     travelers,
     contactEmail,
     contactPhone,
-    totalPrice,
-    currency,
-    specialRequests
+    specialRequests,
+    validatedFlightOffer
   }, userId);
 
   return ApiResponse.success(
@@ -64,9 +74,8 @@ const createBookingAndInitiatePayment = AsyncHandler(async (req, res) => {
     travelers,
     contactEmail,
     contactPhone,
-    totalPrice,
-    currency,
     specialRequests,
+    validatedFlightOffer,
     paymentAcquirer,
     successUrl,
     failureUrl
@@ -81,15 +90,15 @@ const createBookingAndInitiatePayment = AsyncHandler(async (req, res) => {
     travelers,
     contactEmail,
     contactPhone,
-    totalPrice,
-    currency,
-    specialRequests
+    specialRequests,
+    validatedFlightOffer
   }, userId);
 
   // Step 2: Initiate payment
   const paymentResult = await paymentService.initiatePayment(
     bookingResult.bookingId,
     {
+      access: null, // trusted: booking was created in this same request
       acquirer: paymentAcquirer || 'RAZORPAY',
       customerEmail: contactEmail,
       customerPhone: contactPhone,
@@ -118,9 +127,8 @@ const createBookingAndInitiatePayment = AsyncHandler(async (req, res) => {
  */
 const getBooking = AsyncHandler(async (req, res) => {
   const { bookingId } = req.params;
-  const userId = req.user?.userId || null;
 
-  const result = await bookingService.getBookingById(bookingId, userId);
+  const result = await bookingService.getBookingById(bookingId, { userId: req.user.userId });
 
   return ApiResponse.success(
     res,
@@ -137,9 +145,8 @@ const getBooking = AsyncHandler(async (req, res) => {
  */
 const getBookingByReference = AsyncHandler(async (req, res) => {
   const { bookingReference } = req.params;
-  const { email } = req.query;
 
-  const result = await bookingService.getBookingByReference(bookingReference, email);
+  const result = await bookingService.getBookingByReference(bookingReference, getBookingAccess(req));
 
   return ApiResponse.success(
     res,
@@ -174,13 +181,12 @@ const getMyBookings = AsyncHandler(async (req, res) => {
 const cancelBooking = AsyncHandler(async (req, res) => {
   const { bookingId } = req.params;
   const { reason } = req.body;
-  const userId = req.user?.userId || null;
 
-  // Update booking status to cancelled
-  const result = await bookingService.updateBookingStatus(
+  // Only the owner can cancel by numeric ID (IDs are sequential)
+  const result = await bookingService.cancelBooking(
     bookingId,
-    'cancelled',
-    { cancellationReason: reason }
+    { userId: req.user.userId },
+    reason
   );
 
   return ApiResponse.success(
@@ -198,8 +204,8 @@ const cancelBooking = AsyncHandler(async (req, res) => {
 const downloadTicket = AsyncHandler(async (req, res) => {
   const { bookingReference } = req.params;
 
-  // Get booking details
-  const result = await bookingService.getBookingByReference(bookingReference);
+  // Get booking details (owner or contact email only)
+  const result = await bookingService.getBookingByReference(bookingReference, getBookingAccess(req));
   
   if (!result.success || !result.booking) {
     throw ApiError.notFound('Booking not found');
@@ -245,8 +251,8 @@ const downloadTicket = AsyncHandler(async (req, res) => {
 const sendConfirmationEmail = AsyncHandler(async (req, res) => {
   const { bookingReference } = req.params;
 
-  // Get booking details
-  const result = await bookingService.getBookingByReference(bookingReference);
+  // Get booking details (owner or contact email only)
+  const result = await bookingService.getBookingByReference(bookingReference, getBookingAccess(req));
   
   if (!result.success || !result.booking) {
     throw ApiError.notFound('Booking not found');
@@ -284,7 +290,30 @@ const sendConfirmationEmail = AsyncHandler(async (req, res) => {
   }
 });
 
+/**
+ * Retry airline ticketing for a paid booking whose ticketing FAILED
+ * POST /api/bookings/:bookingId/retry-ticketing
+ * Admin only (X-Admin-Key)
+ */
+const retryTicketing = AsyncHandler(async (req, res) => {
+  const { bookingId } = req.params;
+
+  const result = await ticketingService.issueFlightTickets(bookingId, { retry: true });
+
+  if (result.status === 'SKIPPED') {
+    throw ApiError.badRequest('Booking is not paid or is not awaiting ticketing');
+  }
+
+  return ApiResponse.success(
+    res,
+    result,
+    result.success ? 'Tickets issued' : 'Ticketing failed',
+    StatusCodes.OK
+  );
+});
+
 module.exports = {
+  retryTicketing,
   createBooking,
   createBookingAndInitiatePayment,
   getBooking,

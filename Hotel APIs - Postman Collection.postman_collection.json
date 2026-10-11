@@ -1,0 +1,663 @@
+{
+  "info": {
+    "name": "SkyWings - Hotel APIs Collection",
+    "_postman_id": "hotel-apis-collection",
+    "description": "Complete Hotel APIs for SkyWings Travel Platform.\n\nIncludes:\n1. Hotel List Search (by city, geocode)\n2. Hotel Name Autocomplete\n3. Hotel Ratings/Sentiments\n4. Hotel Offers (Availability & Pricing)\n5. Hotel Offer Price Validation\n6. Hotel Booking (Create, Get, Cancel)\n7. Hotel Booking + Payment Flow\n\nBase URL: {{baseUrl}} (default: http://localhost:5000/api)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000/api",
+      "type": "string"
+    },
+    {
+      "key": "authToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "hotelId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "offerId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "bookingReference",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "bookingId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "🔐 Auth",
+      "description": "Authentication endpoints for getting auth token",
+      "item": [
+        {
+          "name": "Login (Get Auth Token)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.data && response.data.token) {",
+                  "        pm.collectionVariables.set('authToken', response.data.token);",
+                  "        console.log('Auth token saved!');",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "🏨 1. Hotel List Search",
+      "description": "Search hotels by city code or geocode. Returns list of available hotels.",
+      "item": [
+        {
+          "name": "Search Hotels by City",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.data && response.data.length > 0) {",
+                  "        pm.collectionVariables.set('hotelId', response.data[0].hotelId);",
+                  "        console.log('First hotelId saved: ' + response.data[0].hotelId);",
+                  "    }",
+                  "    pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "    pm.test('Has data array', () => pm.expect(response.data).to.be.an('array'));",
+                  "    pm.test('Has meta', () => pm.expect(response.meta).to.exist);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/hotels/search/city?cityCode=PAR&ratings=4,5&radius=10&radiusUnit=KM&hotelSource=ALL",
+              "host": ["{{baseUrl}}"],
+              "path": ["hotels", "search", "city"],
+              "query": [
+                { "key": "cityCode", "value": "PAR", "description": "IATA city code (required)" },
+                { "key": "ratings", "value": "4,5", "description": "Star ratings filter (1-5)" },
+                { "key": "radius", "value": "10", "description": "Search radius" },
+                { "key": "radiusUnit", "value": "KM", "description": "KM or MILE" },
+                { "key": "hotelSource", "value": "ALL", "description": "ALL, BEDBANK, DIRECTCHAIN" },
+                { "key": "amenities", "value": "", "description": "SWIMMING_POOL,WIFI,etc", "disabled": true },
+                { "key": "chainCodes", "value": "", "description": "Hotel chain codes (HL, HY, MC)", "disabled": true },
+                { "key": "page", "value": "1", "description": "Page number", "disabled": true },
+                { "key": "pageSize", "value": "20", "description": "Results per page", "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Search Hotels by City - Mumbai",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/hotels/search/city?cityCode=BOM&ratings=3,4,5",
+              "host": ["{{baseUrl}}"],
+              "path": ["hotels", "search", "city"],
+              "query": [
+                { "key": "cityCode", "value": "BOM" },
+                { "key": "ratings", "value": "3,4,5" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Search Hotels by City - London",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/hotels/search/city?cityCode=LON&ratings=4,5&radius=5",
+              "host": ["{{baseUrl}}"],
+              "path": ["hotels", "search", "city"],
+              "query": [
+                { "key": "cityCode", "value": "LON" },
+                { "key": "ratings", "value": "4,5" },
+                { "key": "radius", "value": "5" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Search Hotels by Geocode",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/hotels/search/geocode?latitude=48.8566&longitude=2.3522&radius=5&radiusUnit=KM",
+              "host": ["{{baseUrl}}"],
+              "path": ["hotels", "search", "geocode"],
+              "query": [
+                { "key": "latitude", "value": "48.8566", "description": "Latitude (required)" },
+                { "key": "longitude", "value": "2.3522", "description": "Longitude (required)" },
+                { "key": "radius", "value": "5", "description": "Search radius" },
+                { "key": "radiusUnit", "value": "KM", "description": "KM or MILE" },
+                { "key": "ratings", "value": "", "description": "Star ratings", "disabled": true },
+                { "key": "amenities", "value": "", "description": "Amenities filter", "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Search Hotels by Geocode - Mumbai",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/hotels/search/geocode?latitude=19.0760&longitude=72.8777&radius=10&radiusUnit=KM",
+              "host": ["{{baseUrl}}"],
+              "path": ["hotels", "search", "geocode"],
+              "query": [
+                { "key": "latitude", "value": "19.0760" },
+                { "key": "longitude", "value": "72.8777" },
+                { "key": "radius", "value": "10" },
+                { "key": "radiusUnit", "value": "KM" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "🔍 2. Hotel Autocomplete",
+      "description": "Hotel name autocomplete for search suggestions",
+      "item": [
+        {
+          "name": "Autocomplete - Hilton",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/hotels/autocomplete?keyword=hilton&subType=HOTEL_LEISURE",
+              "host": ["{{baseUrl}}"],
+              "path": ["hotels", "autocomplete"],
+              "query": [
+                { "key": "keyword", "value": "hilton", "description": "Search keyword (min 3 chars)" },
+                { "key": "subType", "value": "HOTEL_LEISURE", "description": "HOTEL_LEISURE or HOTEL_GDS" },
+                { "key": "countryCode", "value": "", "description": "ISO country code filter", "disabled": true },
+                { "key": "lang", "value": "", "description": "Language (EN, FR, etc)", "disabled": true },
+                { "key": "max", "value": "", "description": "Max results", "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Autocomplete - Marriott",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/hotels/autocomplete?keyword=marriott&subType=HOTEL_LEISURE",
+              "host": ["{{baseUrl}}"],
+              "path": ["hotels", "autocomplete"],
+              "query": [
+                { "key": "keyword", "value": "marriott" },
+                { "key": "subType", "value": "HOTEL_LEISURE" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Autocomplete - Taj (India)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/hotels/autocomplete?keyword=taj&subType=HOTEL_LEISURE&countryCode=IN",
+              "host": ["{{baseUrl}}"],
+              "path": ["hotels", "autocomplete"],
+              "query": [
+                { "key": "keyword", "value": "taj" },
+                { "key": "subType", "value": "HOTEL_LEISURE" },
+                { "key": "countryCode", "value": "IN" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "⭐ 3. Hotel Ratings",
+      "description": "Get hotel ratings and guest sentiments",
+      "item": [
+        {
+          "name": "Get Hotel Ratings",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/hotels/ratings?hotelIds={{hotelId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["hotels", "ratings"],
+              "query": [
+                { "key": "hotelIds", "value": "{{hotelId}}", "description": "Comma-separated hotel IDs (max 3)" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Hotel Ratings - Multiple",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/hotels/ratings?hotelIds=MCLONGHM,HILONDON",
+              "host": ["{{baseUrl}}"],
+              "path": ["hotels", "ratings"],
+              "query": [
+                { "key": "hotelIds", "value": "MCLONGHM,HILONDON" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "💰 4. Hotel Offers (Pricing)",
+      "description": "Get real-time hotel offers with pricing and availability",
+      "item": [
+        {
+          "name": "Search Hotel Offers",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.data && response.data.length > 0) {",
+                  "        const firstOffer = response.data[0];",
+                  "        pm.collectionVariables.set('offerId', firstOffer.source.supplierOfferId);",
+                  "        console.log('First offerId saved: ' + firstOffer.source.supplierOfferId);",
+                  "    }",
+                  "    pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "    pm.test('Has offers', () => pm.expect(response.data).to.be.an('array'));",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/hotels/offers?hotelIds={{hotelId}}&adults=2&checkInDate=2025-09-01&checkOutDate=2025-09-03&roomQuantity=1",
+              "host": ["{{baseUrl}}"],
+              "path": ["hotels", "offers"],
+              "query": [
+                { "key": "hotelIds", "value": "{{hotelId}}", "description": "Hotel IDs (required)" },
+                { "key": "adults", "value": "2", "description": "Number of adults" },
+                { "key": "checkInDate", "value": "2025-09-01", "description": "Check-in date (YYYY-MM-DD)" },
+                { "key": "checkOutDate", "value": "2025-09-03", "description": "Check-out date (YYYY-MM-DD)" },
+                { "key": "roomQuantity", "value": "1", "description": "Number of rooms (1-9)" },
+                { "key": "currency", "value": "", "description": "Currency code (EUR, USD, INR)", "disabled": true },
+                { "key": "priceRange", "value": "", "description": "Price range (e.g., 100-300)", "disabled": true },
+                { "key": "boardType", "value": "", "description": "ROOM_ONLY, BREAKFAST, etc", "disabled": true },
+                { "key": "paymentPolicy", "value": "", "description": "NONE, GUARANTEE, DEPOSIT", "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Search Hotel Offers - With Currency",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/hotels/offers?hotelIds={{hotelId}}&adults=1&checkInDate=2025-09-15&checkOutDate=2025-09-17&currency=INR",
+              "host": ["{{baseUrl}}"],
+              "path": ["hotels", "offers"],
+              "query": [
+                { "key": "hotelIds", "value": "{{hotelId}}" },
+                { "key": "adults", "value": "1" },
+                { "key": "checkInDate", "value": "2025-09-15" },
+                { "key": "checkOutDate", "value": "2025-09-17" },
+                { "key": "currency", "value": "INR" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Validate Hotel Offer (Get by ID)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/hotels/offers/{{offerId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["hotels", "offers", "{{offerId}}"]
+            },
+            "description": "Validate and get latest price for a specific hotel offer. Use an offer ID from the hotel search results."
+          }
+        }
+      ]
+    },
+    {
+      "name": "🎫 5. Hotel Booking",
+      "description": "Create and manage hotel bookings",
+      "item": [
+        {
+          "name": "Create Hotel Booking",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.data) {",
+                  "        pm.collectionVariables.set('bookingReference', response.data.bookingReference);",
+                  "        pm.collectionVariables.set('bookingId', response.data.bookingId.toString());",
+                  "        console.log('Booking reference saved: ' + response.data.bookingReference);",
+                  "        console.log('Booking ID saved: ' + response.data.bookingId);",
+                  "    }",
+                  "    pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "    pm.test('Has bookingReference', () => pm.expect(response.data.bookingReference).to.exist);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{authToken}}", "description": "Optional - for registered users" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"hotelId\": \"{{hotelId}}\",\n  \"offerId\": \"{{offerId}}\",\n  \"hotelName\": \"Test Hotel\",\n  \"hotelData\": {\n    \"hotelId\": \"{{hotelId}}\",\n    \"name\": \"Test Hotel\",\n    \"chainCode\": \"MC\"\n  },\n  \"offerData\": {\n    \"offerId\": \"{{offerId}}\",\n    \"room\": { \"type\": \"STANDARD\" }\n  },\n  \"checkInDate\": \"2025-09-01\",\n  \"checkOutDate\": \"2025-09-03\",\n  \"roomQuantity\": 1,\n  \"adults\": 2,\n  \"guests\": [\n    {\n      \"title\": \"MR\",\n      \"firstName\": \"John\",\n      \"lastName\": \"Doe\",\n      \"email\": \"john.doe@example.com\",\n      \"phone\": \"+919876543210\"\n    },\n    {\n      \"title\": \"MS\",\n      \"firstName\": \"Jane\",\n      \"lastName\": \"Doe\",\n      \"email\": \"jane.doe@example.com\"\n    }\n  ],\n  \"contactEmail\": \"john.doe@example.com\",\n  \"contactPhone\": \"+919876543210\",\n  \"totalPrice\": 250.00,\n  \"currency\": \"USD\",\n  \"specialRequests\": \"Early check-in if possible\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/hotel-bookings/create",
+              "host": ["{{baseUrl}}"],
+              "path": ["hotel-bookings", "create"]
+            }
+          }
+        },
+        {
+          "name": "Create Hotel Booking + Pay (Combined)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.data && response.data.booking) {",
+                  "        pm.collectionVariables.set('bookingReference', response.data.booking.bookingReference);",
+                  "        pm.collectionVariables.set('bookingId', response.data.booking.bookingId.toString());",
+                  "        console.log('Booking + Payment created!');",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{authToken}}", "description": "Optional" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"hotelId\": \"{{hotelId}}\",\n  \"offerId\": \"{{offerId}}\",\n  \"hotelName\": \"Test Hotel\",\n  \"hotelData\": {\n    \"hotelId\": \"{{hotelId}}\",\n    \"name\": \"Test Hotel\"\n  },\n  \"offerData\": {\n    \"offerId\": \"{{offerId}}\"\n  },\n  \"checkInDate\": \"2025-09-01\",\n  \"checkOutDate\": \"2025-09-03\",\n  \"roomQuantity\": 1,\n  \"adults\": 2,\n  \"guests\": [\n    {\n      \"title\": \"MR\",\n      \"firstName\": \"John\",\n      \"lastName\": \"Doe\",\n      \"email\": \"john.doe@example.com\",\n      \"phone\": \"+919876543210\"\n    }\n  ],\n  \"contactEmail\": \"john.doe@example.com\",\n  \"contactPhone\": \"+919876543210\",\n  \"totalPrice\": 250.00,\n  \"currency\": \"USD\",\n  \"specialRequests\": \"Non-smoking room\",\n  \"paymentAcquirer\": \"RAZORPAY\",\n  \"successUrl\": \"http://localhost:3000/booking/success\",\n  \"failureUrl\": \"http://localhost:3000/booking/failure\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/hotel-bookings/create-and-pay",
+              "host": ["{{baseUrl}}"],
+              "path": ["hotel-bookings", "create-and-pay"]
+            }
+          }
+        },
+        {
+          "name": "Get Hotel Booking by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{authToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/hotel-bookings/{{bookingId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["hotel-bookings", "{{bookingId}}"]
+            }
+          }
+        },
+        {
+          "name": "Get Hotel Booking by Reference",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/hotel-bookings/reference/{{bookingReference}}?email=john.doe@example.com",
+              "host": ["{{baseUrl}}"],
+              "path": ["hotel-bookings", "reference", "{{bookingReference}}"],
+              "query": [
+                { "key": "email", "value": "john.doe@example.com", "description": "Email for guest verification" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get My Hotel Bookings",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{authToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/hotel-bookings/my-bookings",
+              "host": ["{{baseUrl}}"],
+              "path": ["hotel-bookings", "my-bookings"]
+            }
+          }
+        },
+        {
+          "name": "Confirm Hotel Booking",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{authToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"paymentDetails\": {\n    \"providerConfirmationId\": \"CONF123456\",\n    \"amadeusOrderId\": \"ORD789012\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/hotel-bookings/{{bookingId}}/confirm",
+              "host": ["{{baseUrl}}"],
+              "path": ["hotel-bookings", "{{bookingId}}", "confirm"]
+            }
+          }
+        },
+        {
+          "name": "Cancel Hotel Booking",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{authToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Plans changed\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/hotel-bookings/{{bookingId}}/cancel",
+              "host": ["{{baseUrl}}"],
+              "path": ["hotel-bookings", "{{bookingId}}", "cancel"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "🧪 Complete Flow Test",
+      "description": "End-to-end flow: Search City → Get Hotels → Get Offers → Validate Offer → Book → Pay",
+      "item": [
+        {
+          "name": "Step 1: Search Hotels in Paris",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.data && response.data.length > 0) {",
+                  "        pm.collectionVariables.set('hotelId', response.data[0].hotelId);",
+                  "        console.log('Hotel ID for next step: ' + response.data[0].hotelId);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/hotels/search/city?cityCode=PAR&ratings=4,5",
+              "host": ["{{baseUrl}}"],
+              "path": ["hotels", "search", "city"],
+              "query": [
+                { "key": "cityCode", "value": "PAR" },
+                { "key": "ratings", "value": "4,5" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Step 2: Get Hotel Offers",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.data && response.data.length > 0) {",
+                  "        const offer = response.data[0];",
+                  "        pm.collectionVariables.set('offerId', offer.source.supplierOfferId);",
+                  "        console.log('Offer ID for next step: ' + offer.source.supplierOfferId);",
+                  "        console.log('Price: ' + offer.pricing.totalCurrency + ' ' + offer.pricing.totalAmount);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/hotels/offers?hotelIds={{hotelId}}&adults=2&checkInDate=2025-09-01&checkOutDate=2025-09-03",
+              "host": ["{{baseUrl}}"],
+              "path": ["hotels", "offers"],
+              "query": [
+                { "key": "hotelIds", "value": "{{hotelId}}" },
+                { "key": "adults", "value": "2" },
+                { "key": "checkInDate", "value": "2025-09-01" },
+                { "key": "checkOutDate", "value": "2025-09-03" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Step 3: Validate Offer Price",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/hotels/offers/{{offerId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["hotels", "offers", "{{offerId}}"]
+            }
+          }
+        },
+        {
+          "name": "Step 4: Create Booking + Payment",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.data && response.data.booking) {",
+                  "        pm.collectionVariables.set('bookingReference', response.data.booking.bookingReference);",
+                  "        pm.collectionVariables.set('bookingId', response.data.booking.bookingId.toString());",
+                  "        console.log('Booking created: ' + response.data.booking.bookingReference);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"hotelId\": \"{{hotelId}}\",\n  \"offerId\": \"{{offerId}}\",\n  \"hotelName\": \"Paris Hotel\",\n  \"checkInDate\": \"2025-09-01\",\n  \"checkOutDate\": \"2025-09-03\",\n  \"roomQuantity\": 1,\n  \"adults\": 2,\n  \"guests\": [\n    {\n      \"title\": \"MR\",\n      \"firstName\": \"John\",\n      \"lastName\": \"Doe\",\n      \"email\": \"john.doe@example.com\",\n      \"phone\": \"+919876543210\"\n    }\n  ],\n  \"contactEmail\": \"john.doe@example.com\",\n  \"contactPhone\": \"+919876543210\",\n  \"totalPrice\": 250.00,\n  \"currency\": \"EUR\",\n  \"paymentAcquirer\": \"RAZORPAY\",\n  \"successUrl\": \"http://localhost:3000/booking/success\",\n  \"failureUrl\": \"http://localhost:3000/booking/failure\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/hotel-bookings/create-and-pay",
+              "host": ["{{baseUrl}}"],
+              "path": ["hotel-bookings", "create-and-pay"]
+            }
+          }
+        },
+        {
+          "name": "Step 5: Get Booking Status",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/hotel-bookings/reference/{{bookingReference}}?email=john.doe@example.com",
+              "host": ["{{baseUrl}}"],
+              "path": ["hotel-bookings", "reference", "{{bookingReference}}"],
+              "query": [
+                { "key": "email", "value": "john.doe@example.com" }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

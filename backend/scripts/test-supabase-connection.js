@@ -5,11 +5,11 @@ const { Pool } = require('pg');
 
 // Supabase connection - using individual params to handle special chars in password
 const pool = new Pool({
-  host: 'db.bbaxhfbntnfkpiqlnqiy.supabase.co',
+  host: process.env.SUPABASE_DB_HOST,
   port: 5432,
   database: 'postgres',
   user: 'postgres',
-  password: 'Hrishikesh@$%2406',  // Original password with special chars
+  password: process.env.SUPABASE_DB_PASSWORD,  // Original password with special chars
   ssl: { rejectUnauthorized: false },
   connectionTimeoutMillis: 15000
 });

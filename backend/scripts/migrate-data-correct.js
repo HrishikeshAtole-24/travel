@@ -7,17 +7,17 @@
 const { Pool } = require('pg');
 
 const neonPool = new Pool({
-  connectionString: 'postgresql://neondb_owner:npg_DPpTY3JEC9zx@ep-spring-recipe-ah71u1rn-pooler.c-3.us-east-1.aws.neon.tech/neondb?sslmode=require',
+  connectionString: process.env.NEON_DATABASE_URL, // e.g. postgresql://user:pass@host/neondb?sslmode=require
   ssl: { rejectUnauthorized: false },
   connectionTimeoutMillis: 30000
 });
 
 const supabasePool = new Pool({
-  host: 'db.bbaxhfbntnfkpiqlnqiy.supabase.co',
+  host: process.env.SUPABASE_DB_HOST,
   port: 5432,
   database: 'postgres',
   user: 'postgres',
-  password: 'Hrishikesh@$%2406',
+  password: process.env.SUPABASE_DB_PASSWORD,
   ssl: { rejectUnauthorized: false },
   connectionTimeoutMillis: 30000
 });

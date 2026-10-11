@@ -279,8 +279,8 @@ From logs (`PAY-20260111-SHR0T`):
 
 Your `.env` file shows test credentials:
 ```
-RAZORPAY_KEY_ID=rzp_test_Au81TcFRZWcmJD
-RAZORPAY_KEY_SECRET=2Oi1Xf1iafgNBE1QDb1ACSIn
+RAZORPAY_KEY_ID=rzp_test_xxxxxxxxxxxxxx
+RAZORPAY_KEY_SECRET=<razorpay-key-secret>
 ```
 
 This is **TEST mode** ✅ - Safe for testing

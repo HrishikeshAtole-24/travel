@@ -96,7 +96,11 @@ export default function FlightCard({ flight }) {
         {/* Airline Info */}
         <div className="flight-airline">
           <div className="airline-logo">
-            {segment.airlineCode || 'XX'}
+            {segment.airlineLogo ? (
+              <img src={segment.airlineLogo} alt={segment.airlineName || segment.airlineCode} />
+            ) : (
+              segment.airlineCode || 'XX'
+            )}
           </div>
           <div className="airline-info">
             <div className="airline-name">{segment.airlineName || 'Airline'}</div>
@@ -167,10 +171,15 @@ export default function FlightCard({ flight }) {
         {/* Price & Action */}
         <div className="flight-price-section">
           <div className="price-info">
+            {flight.source?.supplierName && (
+              <div className="supplier-badge" title={`Fare supplied by ${flight.source.supplierName}`}>
+                via <strong>{flight.source.supplierName}</strong>
+              </div>
+            )}
             <div className="price-amount">
               {currencySymbol}{price.total?.toLocaleString() || '0'}
             </div>
-            <div className="price-label">per person</div>
+            <div className="price-label">total for all travellers</div>
           </div>
           <button 
             className={`btn btn-primary select-flight-btn ${isValidating ? 'loading' : ''}`}

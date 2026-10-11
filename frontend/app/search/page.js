@@ -130,6 +130,7 @@ function SearchContent() {
             operatingAirlineCode: seg.operatingAirlineCode || seg.marketingAirlineCode,
             airlineName: response.dictionaries?.airlines?.[seg.marketingAirlineCode]?.name || 
                         seg.airlineName || 'Unknown Airline',
+            airlineLogo: seg.marketingAirlineLogo || response.dictionaries?.airlines?.[seg.marketingAirlineCode]?.logo || null,
             flightNumber: `${seg.marketingAirlineCode || ''}${seg.flightNumber || ''}`.trim(),
             aircraftCode: seg.aircraftCode || null,
             aircraftName: seg.aircraftCode ? (response.dictionaries?.aircraft?.[seg.aircraftCode]?.name || seg.aircraftCode) : null,
@@ -167,6 +168,8 @@ function SearchContent() {
               airlineName: response.dictionaries?.airlines?.[flight.validatingAirlineCode]?.name || 
                           response.dictionaries?.airlines?.[firstSegment.marketingAirlineCode]?.name || 
                           'Unknown Airline',
+              airlineLogo: firstSegment.marketingAirlineLogo ||
+                          response.dictionaries?.airlines?.[firstSegment.marketingAirlineCode]?.logo || null,
               flightNumber: `${firstSegment.marketingAirlineCode || ''}${firstSegment.flightNumber || ''}`.trim(),
               aircraftCode: firstSegment.aircraftCode || null,
               aircraftName: firstSegment.aircraftCode ? 

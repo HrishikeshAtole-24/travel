@@ -5,24 +5,45 @@
 
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const crypto = require('crypto');
 const { getPool } = require('../config/database');
 const ApiError = require('../core/ApiError');
 const { StatusCodes } = require('../core/StatusCodes');
 const logger = require('../config/winstonLogger');
 const { sendOTPEmail, sendWelcomeEmail } = require('../utils/emailService');
+const { JWT_SECRET, JWT_EXPIRES_IN } = require('../config/jwt');
+const { generateOTP, safeEqual } = require('../utils/security');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
 const OTP_EXPIRY_MINUTES = 10;
+const MAX_OTP_ATTEMPTS = 5;
+const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 const SESSION_TIMEOUT_MINUTES = parseInt(process.env.SESSION_TIMEOUT_MINUTES) || 60;
 const PAYMENT_EXTENSION_MINUTES = parseInt(process.env.PAYMENT_EXTENSION_MINUTES) || 20;
 
 /**
- * Generate OTP (6 digits)
+ * Log an OTP for local development only - never in production logs
  */
-function generateOTP() {
-  return Math.floor(100000 + Math.random() * 900000).toString();
+function logDevOTP(channel, destination, otp) {
+  if (!IS_PRODUCTION) {
+    logger.info(`[OTP][dev] ${channel} OTP for ${destination}: ${otp}`);
+  }
+}
+
+/**
+ * Check an OTP, counting failed attempts. After MAX_OTP_ATTEMPTS the OTP is
+ * invalidated and the user must request a new one (prevents brute force).
+ */
+async function checkOTPAttempt(pool, user, storedOtp, providedOtp) {
+  if ((user.otp_attempts || 0) >= MAX_OTP_ATTEMPTS || !storedOtp) {
+    throw ApiError.badRequest('Too many invalid attempts. Please request a new OTP.');
+  }
+
+  if (!safeEqual(String(providedOtp || ''), storedOtp)) {
+    await pool.query(
+      'UPDATE users SET otp_attempts = COALESCE(otp_attempts, 0) + 1 WHERE id = $1',
+      [user.id]
+    );
+    throw ApiError.badRequest('Invalid OTP');
+  }
 }
 
 /**
@@ -76,15 +97,13 @@ async function sendEmailOTP(email, otp) {
       logger.info(`✅ Email OTP sent to ${email}`);
     } else {
       logger.warn(`⚠️  Failed to send email OTP to ${email}: ${result.error || result.message}`);
-      // Still log for development
-      logger.info(`[OTP] Email OTP for ${email}: ${otp}`);
+      logDevOTP('Email', email, otp);
     }
     
     return result;
   } catch (error) {
     logger.error(`❌ Error sending email OTP to ${email}:`, error.message);
-    // Fallback: log OTP for development
-    logger.info(`[OTP] Email OTP for ${email}: ${otp}`);
+    logDevOTP('Email', email, otp);
     return { success: false, error: error.message };
   }
 }
@@ -94,7 +113,7 @@ async function sendEmailOTP(email, otp) {
  */
 async function sendPhoneOTP(phone, otp) {
   // TODO: Integrate with SMS service (Twilio, AWS SNS, MSG91, etc.)
-  logger.info(`[OTP] Phone OTP for ${phone}: ${otp}`);
+  logDevOTP('Phone', phone, otp);
   
   // For now, just log. In production, send actual SMS:
   // await sendSMS({
@@ -275,7 +294,7 @@ const verifyEmailOTP = async (email, otp) => {
     const pool = getPool();
 
     const result = await pool.query(
-      `SELECT id, email_otp, otp_expires_at, email_verified 
+      `SELECT id, email_otp, otp_expires_at, email_verified, otp_attempts
        FROM users WHERE email = $1`,
       [email]
     );
@@ -298,15 +317,13 @@ const verifyEmailOTP = async (email, otp) => {
       throw ApiError.badRequest('OTP expired. Please request a new one.');
     }
 
-    // Verify OTP
-    if (user.email_otp !== otp) {
-      throw ApiError.badRequest('Invalid OTP');
-    }
+    // Verify OTP (attempt-limited)
+    await checkOTPAttempt(pool, user, user.email_otp, otp);
 
     // Update verification status
     await pool.query(
       `UPDATE users 
-       SET email_verified = true, email_otp = NULL 
+       SET email_verified = true, email_otp = NULL, otp_attempts = 0
        WHERE id = $1`,
       [user.id]
     );
@@ -344,7 +361,7 @@ const verifyPhoneOTP = async (phone, otp) => {
     const pool = getPool();
 
     const result = await pool.query(
-      `SELECT id, phone_otp, otp_expires_at, phone_verified 
+      `SELECT id, phone_otp, otp_expires_at, phone_verified, otp_attempts
        FROM users WHERE phone = $1`,
       [phone]
     );
@@ -367,15 +384,13 @@ const verifyPhoneOTP = async (phone, otp) => {
       throw ApiError.badRequest('OTP expired. Please request a new one.');
     }
 
-    // Verify OTP
-    if (user.phone_otp !== otp) {
-      throw ApiError.badRequest('Invalid OTP');
-    }
+    // Verify OTP (attempt-limited)
+    await checkOTPAttempt(pool, user, user.phone_otp, otp);
 
     // Update verification status
     await pool.query(
       `UPDATE users 
-       SET phone_verified = true, phone_otp = NULL 
+       SET phone_verified = true, phone_otp = NULL, otp_attempts = 0
        WHERE id = $1`,
       [user.id]
     );
@@ -420,7 +435,7 @@ const resendEmailOTP = async (email) => {
 
     // Update OTP
     await pool.query(
-      'UPDATE users SET email_otp = $1, otp_expires_at = $2 WHERE id = $3',
+      'UPDATE users SET email_otp = $1, otp_expires_at = $2, otp_attempts = 0 WHERE id = $3',
       [emailOTP, otpExpiresAt, user.id]
     );
 
@@ -467,7 +482,7 @@ const resendPhoneOTP = async (phone) => {
 
     // Update OTP
     await pool.query(
-      'UPDATE users SET phone_otp = $1, otp_expires_at = $2 WHERE id = $3',
+      'UPDATE users SET phone_otp = $1, otp_expires_at = $2, otp_attempts = 0 WHERE id = $3',
       [phoneOTP, otpExpiresAt, user.id]
     );
 

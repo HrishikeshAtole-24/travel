@@ -207,6 +207,25 @@ class DictionariesManager {
     const airportCodes = new Set();
     const aircraftCodes = new Set();
 
+    // Names supplied by the supplier itself (e.g. Duffel), used when our static tables lack a code
+    const supplierAirlines = {};
+    const supplierAirports = {};
+    const supplierAircraft = {};
+
+    const collectAirport = (point) => {
+      if (!point?.airportCode) return;
+      airportCodes.add(point.airportCode);
+      if (point.airportName && !supplierAirports[point.airportCode]) {
+        supplierAirports[point.airportCode] = {
+          cityCode: point.airportCode,
+          cityName: point.cityName || null,
+          countryCode: point.countryCode || 'XX',
+          name: point.airportName,
+          ...(point.timeZone ? { timezone: point.timeZone } : {})
+        };
+      }
+    };
+
     offers.forEach(offer => {
       // Extract from itinerary
       if (offer.itinerary && offer.itinerary.slices) {
@@ -215,25 +234,49 @@ class DictionariesManager {
             // Airlines
             if (segment.marketingAirlineCode) airlineCodes.add(segment.marketingAirlineCode);
             if (segment.operatingAirlineCode) airlineCodes.add(segment.operatingAirlineCode);
+            if (segment.marketingAirlineCode && segment.marketingAirlineName) {
+              supplierAirlines[segment.marketingAirlineCode] = {
+                name: segment.marketingAirlineName,
+                ...(segment.marketingAirlineLogo ? { logo: segment.marketingAirlineLogo } : {})
+              };
+            }
 
             // Airports
-            if (segment.departure?.airportCode) airportCodes.add(segment.departure.airportCode);
-            if (segment.arrival?.airportCode) airportCodes.add(segment.arrival.airportCode);
+            collectAirport(segment.departure);
+            collectAirport(segment.arrival);
 
             // Aircraft
-            if (segment.aircraftCode) aircraftCodes.add(segment.aircraftCode);
+            if (segment.aircraftCode) {
+              aircraftCodes.add(segment.aircraftCode);
+              if (segment.aircraftName) supplierAircraft[segment.aircraftCode] = { name: segment.aircraftName };
+            }
           });
         });
       }
 
       // Also add validating airline
-      if (offer.validatingAirlineCode) airlineCodes.add(offer.validatingAirlineCode);
+      if (offer.validatingAirlineCode) {
+        airlineCodes.add(offer.validatingAirlineCode);
+        if (offer.validatingAirlineName && !supplierAirlines[offer.validatingAirlineCode]) {
+          supplierAirlines[offer.validatingAirlineCode] = { name: offer.validatingAirlineName };
+        }
+      }
     });
 
+    const preferKnown = (code, staticTable, supplierTable, fallback) =>
+      staticTable[code] || supplierTable[code] || fallback;
+
     return {
-      airlines: this.getAirlines([...airlineCodes]),
-      airports: this.getAirports([...airportCodes]),
-      aircraft: this.getAircrafts([...aircraftCodes])
+      // Static names win, but a real supplier logo beats our placeholder logo URLs
+      airlines: Object.fromEntries([...airlineCodes].map(code => [code, {
+        ...(supplierAirlines[code] || this.getAirline(code)),
+        ...(AIRLINES[code] || {}),
+        ...(supplierAirlines[code]?.logo ? { logo: supplierAirlines[code].logo } : {})
+      }])),
+      airports: Object.fromEntries([...airportCodes].map(code =>
+        [code, preferKnown(code, AIRPORTS, supplierAirports, this.getAirport(code))])),
+      aircraft: Object.fromEntries([...aircraftCodes].map(code =>
+        [code, preferKnown(code, AIRCRAFT, supplierAircraft, this.getAircraft(code))]))
     };
   }
 }

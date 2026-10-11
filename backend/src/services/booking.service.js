@@ -6,19 +6,62 @@
 const { getPool } = require('../config/database');
 const ApiError = require('../core/ApiError');
 const logger = require('../config/winstonLogger');
-const paymentService = require('../payments/payment.service');
+const flightService = require('./flight.service');
+const { generateReference } = require('../utils/security');
+const { validateTravelersForOffer } = require('../utils/passengerValidation');
+const ticketingService = require('./ticketing.service');
 
 // Industry standard: Flight bookings expire in 30 minutes if unpaid
 const BOOKING_EXPIRY_MINUTES = 30;
 
+// Bookings in these states can still be cancelled
+const CANCELLABLE_STATUSES = ['pending', 'payment_initiated', 'confirmed'];
+
 /**
- * Generate booking reference (e.g., BK-20241212-XXXXX)
+ * Generate unguessable booking reference (e.g., BK-20241212-7KQ4M9XA2C)
  */
 function generateBookingReference() {
-  const date = new Date();
-  const dateStr = date.toISOString().split('T')[0].replace(/-/g, '');
-  const random = Math.floor(10000 + Math.random() * 90000);
-  return `BK-${dateStr}-${random}`;
+  return generateReference('BK');
+}
+
+/**
+ * Check whether the caller may access a booking row.
+ * - Logged-in owner (user_id match), or
+ * - Anyone who knows the contact email (guest bookings / email links)
+ * @param {Object} booking - DB row with user_id and contact_email
+ * @param {Object} access - { userId, email }
+ */
+function canAccessBooking(booking, { userId = null, email = null } = {}) {
+  if (userId && booking.user_id && Number(booking.user_id) === Number(userId)) {
+    return true;
+  }
+  if (email && booking.contact_email) {
+    return booking.contact_email.trim().toLowerCase() === String(email).trim().toLowerCase();
+  }
+  return false;
+}
+
+/**
+ * Re-price the flight offer with the supplier and return the authoritative price.
+ * Never trust a price sent by the client.
+ * @param {Object} flightOffer - Flight offer (as returned by search/pricing)
+ * @returns {{ totalPrice: number, currency: string, pricedOffer: Object }}
+ */
+async function resolveFlightPrice(flightOffer) {
+  if (!flightOffer || typeof flightOffer !== 'object') {
+    throw ApiError.badRequest('A validated flight offer is required to create a booking');
+  }
+
+  const pricing = await flightService.priceFlights(flightOffer);
+  const pricedOffer = pricing?.data?.flightOffers?.[0];
+  const price = pricedOffer?.price || {};
+  const totalPrice = parseFloat(price.grandTotal || price.total);
+
+  if (!Number.isFinite(totalPrice) || totalPrice <= 0) {
+    throw ApiError.badRequest('Unable to confirm flight price. Please search again.');
+  }
+
+  return { totalPrice, currency: price.currency || 'INR', pricedOffer };
 }
 
 /**
@@ -43,107 +86,122 @@ function isBookingExpired(booking) {
  * Called after user confirms passenger details
  */
 const createBooking = async (bookingData, userId = null) => {
+  const {
+    flightId,
+    flightData, // Flight summary for display / tickets
+    validatedFlightOffer, // Supplier flight offer, re-priced server-side
+    travelers,
+    contactEmail,
+    contactPhone,
+    specialRequests
+  } = bookingData;
+
+  // Validate required fields
+  if (!flightData || !travelers || !contactEmail || !contactPhone) {
+    throw ApiError.badRequest('Flight data, travelers, and contact info are required');
+  }
+
+  if (!Array.isArray(travelers) || travelers.length === 0) {
+    throw ApiError.badRequest('At least one traveler is required');
+  }
+
+  // Authoritative price from the supplier (client-submitted price is ignored).
+  // Done before opening the transaction so no DB connection is held during the API call.
+  const { totalPrice: quotedPrice, currency, pricedOffer } = await resolveFlightPrice(validatedFlightOffer);
+
+  // Validate passengers against what the airline needs to ticket - BEFORE taking payment
+  const validTravelers = validateTravelersForOffer(travelers, pricedOffer, {
+    email: contactEmail,
+    phone: contactPhone
+  });
+
+  // Suppliers like LiteAPI hold the seats now (before payment); the held price is final
+  const hold = await ticketingService.holdFlight({
+    pricedOffer,
+    travelers: validTravelers,
+    contactEmail,
+    contactPhone
+  });
+
+  if (hold && (hold.currency !== currency || hold.price > quotedPrice + 1)) {
+    throw ApiError.badRequest(
+      `The fare changed to ${hold.currency} ${hold.price} while holding your seats. Please search again.`
+    );
+  }
+
+  const totalPrice = hold ? hold.price : quotedPrice;
+
+  // Supplier details needed to place the airline order after payment
+  const supplierInfo = pricedOffer?.source?.supplier ? {
+    supplier: pricedOffer.source.supplier,
+    supplierOfferId: pricedOffer.source.supplierOfferId,
+    supplierHoldId: hold?.holdId || null,
+    supplierAmount: hold ? hold.price : (pricedOffer.pricing?.supplierPrice?.totalAmount ?? pricedOffer.pricing?.totalAmount),
+    supplierCurrency: hold ? hold.currency : (pricedOffer.pricing?.supplierPrice?.currency ?? pricedOffer.pricing?.totalCurrency)
+  } : null;
+
   const pool = getPool();
   const client = await pool.connect();
 
   try {
     await client.query('BEGIN');
 
-    const {
-      flightId,
-      flightData, // Complete flight offer from search
-      travelers,
-      contactEmail,
-      contactPhone,
-      totalPrice,
-      currency,
-      specialRequests
-    } = bookingData;
-
-    // Validate required fields
-    if (!flightData || !travelers || !contactEmail || !contactPhone) {
-      throw ApiError.badRequest('Flight data, travelers, and contact info are required');
-    }
-
-    if (!travelers || travelers.length === 0) {
-      throw ApiError.badRequest('At least one traveler is required');
-    }
-
     // Generate booking reference
     const bookingReference = generateBookingReference();
     
-    // Calculate expiration time (industry standard: 30 minutes for flight bookings)
-    const expiresAt = getBookingExpirationTime();
-
-    // Check if expires_at column exists
-    const columnCheck = await client.query(`
-      SELECT column_name FROM information_schema.columns 
-      WHERE table_name = 'bookings' AND column_name = 'expires_at'
-    `);
-    const hasExpiresAt = columnCheck.rows.length > 0;
-
-    // Create booking record (with or without expires_at)
-    let bookingResult;
-    if (hasExpiresAt) {
-      bookingResult = await client.query(
-        `INSERT INTO bookings (
-          booking_reference, user_id, flight_id, flight_data,
-          total_price, currency, status,
-          contact_email, contact_phone, special_requests,
-          expires_at, created_at, updated_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-        RETURNING *`,
-        [
-          bookingReference,
-          userId,
-          flightId || null,
-          JSON.stringify(flightData),
-          totalPrice,
-          currency || 'INR',
-          'pending',
-          contactEmail,
-          contactPhone,
-          specialRequests || null,
-          expiresAt
-        ]
-      );
-    } else {
-      bookingResult = await client.query(
-        `INSERT INTO bookings (
-          booking_reference, user_id, flight_id, flight_data,
-          total_price, currency, status,
-          contact_email, contact_phone, special_requests,
-          created_at, updated_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-        RETURNING *`,
-        [
-          bookingReference,
-          userId,
-          flightId || null,
-          JSON.stringify(flightData),
-          totalPrice,
-          currency || 'INR',
-          'pending',
-          contactEmail,
-          contactPhone,
-          specialRequests || null
-        ]
-      );
+    // Calculate expiration time (industry standard: 30 minutes for flight bookings),
+    // never later than the seat hold / supplier offer expiry - an expired offer can't be ticketed
+    let expiresAt = getBookingExpirationTime();
+    const supplierDeadline = hold?.expiresAt || pricedOffer?.source?.expiresAt;
+    const offerExpiresAt = supplierDeadline ? new Date(supplierDeadline) : null;
+    if (offerExpiresAt && !isNaN(offerExpiresAt) && offerExpiresAt < expiresAt) {
+      expiresAt = offerExpiresAt;
     }
+
+    // Create booking record (expires_at always exists - added by booking.model migration)
+    const bookingResult = await client.query(
+      `INSERT INTO bookings (
+        booking_reference, user_id, flight_id, flight_data,
+        total_price, currency, status,
+        contact_email, contact_phone, special_requests,
+        expires_at, supplier, supplier_offer_id, supplier_amount, supplier_currency,
+        ticketing_status, supplier_hold_id, created_at, updated_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      RETURNING *`,
+      [
+        bookingReference,
+        userId,
+        flightId || null,
+        JSON.stringify(flightData),
+        totalPrice,
+        currency || 'INR',
+        'pending',
+        contactEmail,
+        contactPhone,
+        specialRequests || null,
+        expiresAt,
+        supplierInfo?.supplier || null,
+        supplierInfo?.supplierOfferId || null,
+        supplierInfo?.supplierAmount ?? null,
+        supplierInfo?.supplierCurrency || null,
+        supplierInfo ? 'PENDING' : null,
+        supplierInfo?.supplierHoldId || null
+      ]
+    );
 
     const booking = bookingResult.rows[0];
 
     // Create traveler records
-    for (const traveler of travelers) {
+    for (const traveler of validTravelers) {
       await client.query(
         `INSERT INTO travelers (
           booking_id, traveler_type, title, first_name, last_name,
           date_of_birth, gender, passport_number, passport_expiry,
-          nationality, email, phone
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
+          nationality, email, phone, supplier_passenger_id
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
         [
           booking.id,
-          traveler.type || 'ADULT',
+          String(traveler.type || 'ADULT').toUpperCase(),
           traveler.title || null,
           traveler.firstName,
           traveler.lastName,
@@ -153,7 +211,8 @@ const createBooking = async (bookingData, userId = null) => {
           traveler.documentExpiry || traveler.passportExpiry || null,
           traveler.nationality,
           traveler.email || contactEmail,
-          traveler.phone || contactPhone
+          traveler.phone || contactPhone,
+          traveler.supplierPassengerId || null
         ]
       );
     }
@@ -186,21 +245,16 @@ const createBooking = async (bookingData, userId = null) => {
 
 /**
  * Get booking by ID
+ * @param {number} bookingId
+ * @param {Object} access - { userId, email } of the caller (see canAccessBooking)
  */
-const getBookingById = async (bookingId, userId = null) => {
+const getBookingById = async (bookingId, access = {}) => {
   try {
     const pool = getPool();
-    let query = 'SELECT * FROM bookings WHERE id = $1';
-    const params = [bookingId];
+    const result = await pool.query('SELECT * FROM bookings WHERE id = $1', [bookingId]);
 
-    // If user is logged in, verify ownership
-    if (userId) {
-      query += ' AND user_id = $2';
-      params.push(userId);
-    }
-
-    const result = await pool.query(query, params);
-    if (result.rows.length === 0) {
+    // Same 404 for "missing" and "not yours" so IDs can't be probed
+    if (result.rows.length === 0 || !canAccessBooking(result.rows[0], access)) {
       throw ApiError.notFound('Booking not found');
     }
 
@@ -243,6 +297,7 @@ const getBookingById = async (bookingId, userId = null) => {
         specialRequests: booking.special_requests,
         pnr: booking.pnr,
         ticketNumber: booking.ticket_number,
+        ticketingStatus: booking.ticketing_status || null,
         createdAt: booking.created_at,
         updatedAt: booking.updated_at,
         expiresAt: booking.expires_at,
@@ -259,23 +314,20 @@ const getBookingById = async (bookingId, userId = null) => {
 
 /**
  * Get booking by reference
+ * @param {string} bookingReference
+ * @param {Object|null} access - { userId, email } of the caller. Pass null ONLY for
+ *   trusted internal callers (e.g. after a verified payment), never from a route.
  */
-const getBookingByReference = async (bookingReference, contactEmail = null) => {
+const getBookingByReference = async (bookingReference, access = {}) => {
   try {
     const pool = getPool();
 
-    let query = 'SELECT * FROM bookings WHERE booking_reference = $1';
-    const params = [bookingReference];
+    const result = await pool.query(
+      'SELECT * FROM bookings WHERE booking_reference = $1',
+      [bookingReference]
+    );
 
-    // Optionally verify contact email for guest bookings
-    if (contactEmail) {
-      query += ' AND contact_email = $2';
-      params.push(contactEmail);
-    }
-
-    const result = await pool.query(query, params);
-
-    if (result.rows.length === 0) {
+    if (result.rows.length === 0 || (access !== null && !canAccessBooking(result.rows[0], access))) {
       throw ApiError.notFound('Booking not found');
     }
 
@@ -306,6 +358,7 @@ const getBookingByReference = async (bookingReference, contactEmail = null) => {
         contactPhone: booking.contact_phone,
         pnr: booking.pnr,
         ticketNumber: booking.ticket_number,
+        ticketingStatus: booking.ticketing_status || null,
         createdAt: booking.created_at,
         travelers: travelersResult.rows,
         payments: paymentsResult.rows
@@ -348,7 +401,7 @@ const getUserBookings = async (userId) => {
     // Select query without expires_at for compatibility
     const result = await pool.query(
       `SELECT id, booking_reference, status, total_price, currency, 
-              contact_email, pnr, ticket_number, flight_data, created_at
+              contact_email, pnr, ticket_number, ticketing_status, flight_data, created_at
        FROM bookings 
        WHERE user_id = $1 
        ORDER BY created_at DESC`,
@@ -366,6 +419,7 @@ const getUserBookings = async (userId) => {
           contactEmail: booking.contact_email,
           pnr: booking.pnr,
           ticketNumber: booking.ticket_number,
+          ticketingStatus: booking.ticketing_status || null,
           flightData: booking.flight_data,
           createdAt: booking.created_at,
           expiresAt: null,
@@ -437,12 +491,36 @@ const updateBookingStatus = async (bookingId, status, additionalData = {}) => {
   }
 };
 
+/**
+ * Cancel a booking the caller has access to
+ * @param {number} bookingId
+ * @param {Object} access - { userId, email }
+ * @param {string} reason
+ */
+const cancelBooking = async (bookingId, access, reason) => {
+  const pool = getPool();
+  const result = await pool.query('SELECT * FROM bookings WHERE id = $1', [bookingId]);
+
+  if (result.rows.length === 0 || !canAccessBooking(result.rows[0], access)) {
+    throw ApiError.notFound('Booking not found');
+  }
+
+  const booking = result.rows[0];
+  if (!CANCELLABLE_STATUSES.includes(booking.status)) {
+    throw ApiError.badRequest(`Cannot cancel booking with status: ${booking.status}`);
+  }
+
+  return updateBookingStatus(bookingId, 'cancelled', { cancellationReason: reason || 'Cancelled by customer' });
+};
+
 module.exports = {
   createBooking,
   getBookingById,
   getBookingByReference,
   getUserBookings,
   updateBookingStatus,
+  cancelBooking,
+  canAccessBooking,
   isBookingExpired,
   BOOKING_EXPIRY_MINUTES
 };

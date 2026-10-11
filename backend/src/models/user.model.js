@@ -154,6 +154,9 @@ const createUserTable = async () => {
       BEFORE UPDATE ON users
       FOR EACH ROW
       EXECUTE FUNCTION update_updated_at_column();
+
+    -- Failed OTP attempt counter (brute-force protection)
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS otp_attempts INTEGER DEFAULT 0;
   `;
   
   try {

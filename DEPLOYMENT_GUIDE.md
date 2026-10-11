@@ -89,7 +89,7 @@ Add these:
 ```env
 NEXT_PUBLIC_API_BASE_URL=http://localhost:5000/api
 NEXT_PUBLIC_APP_URL=http://localhost:3000
-NEXT_PUBLIC_RAZORPAY_KEY_ID=rzp_test_Au81TcFRZWcmJD
+NEXT_PUBLIC_RAZORPAY_KEY_ID=rzp_test_xxxxxxxxxxxxxx
 ```
 
 **Note**: For production, update `API_BASE_URL` to your deployed backend URL.

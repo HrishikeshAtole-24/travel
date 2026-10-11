@@ -46,7 +46,7 @@ NEXT_PUBLIC_APP_URL=https://your-app.vercel.app
 (You'll update this after deployment with your actual Vercel URL)
 
 ```
-NEXT_PUBLIC_RAZORPAY_KEY_ID=rzp_test_Au81TcFRZWcmJD
+NEXT_PUBLIC_RAZORPAY_KEY_ID=rzp_test_xxxxxxxxxxxxxx
 ```
 
 7. Click **"Deploy"**
@@ -83,7 +83,7 @@ vercel env add NEXT_PUBLIC_API_BASE_URL
 # Paste: https://travel-booking-api-j4op.onrender.com/api
 
 vercel env add NEXT_PUBLIC_RAZORPAY_KEY_ID  
-# Paste: rzp_test_Au81TcFRZWcmJD
+# Paste: rzp_test_xxxxxxxxxxxxxx
 ```
 
 Then redeploy:
@@ -210,7 +210,7 @@ Should load the homepage!
 ```
 NEXT_PUBLIC_API_BASE_URL=https://travel-booking-api-j4op.onrender.com/api
 NEXT_PUBLIC_APP_URL=https://your-vercel-url.vercel.app
-NEXT_PUBLIC_RAZORPAY_KEY_ID=rzp_test_Au81TcFRZWcmJD
+NEXT_PUBLIC_RAZORPAY_KEY_ID=rzp_test_xxxxxxxxxxxxxx
 ```
 
 ### **Render (Backend) - Already Set:**
@@ -218,15 +218,15 @@ NEXT_PUBLIC_RAZORPAY_KEY_ID=rzp_test_Au81TcFRZWcmJD
 PORT=5000
 NODE_ENV=production
 DATABASE_URL=postgresql://postgres.bbaxhfbntnfkpiqlnqiy:TravelApp2026SecurePass@aws-1-ap-northeast-1.pooler.supabase.com:5432/postgres
-AMADEUS_API_KEY=Lhrlj073vKfxA5EB9ai52h1I82o7F7S9
-AMADEUS_API_SECRET=oePorCGvIjGLEBPv
+AMADEUS_API_KEY=<amadeus-api-key>
+AMADEUS_API_SECRET=<amadeus-api-secret>
 AMADEUS_API_URL=https://test.api.amadeus.com
-JWT_SECRET=skywings_prod_jwt_secret_key_2026_secure_token
+JWT_SECRET=<generate-a-long-random-secret>
 EMAIL_USER=rishiatole4545@gmail.com
-EMAIL_PASSWORD=uyxyfotrnchmwozb
+EMAIL_PASSWORD=<gmail-app-password>
 EMAIL_FROM=rishiatole4545@gmail.com
-RAZORPAY_KEY_ID=rzp_test_Au81TcFRZWcmJD
-RAZORPAY_KEY_SECRET=2Oi1Xf1iafgNBE1QDb1ACSIn
+RAZORPAY_KEY_ID=rzp_test_xxxxxxxxxxxxxx
+RAZORPAY_KEY_SECRET=<razorpay-key-secret>
 RAZORPAY_WEBHOOK_SECRET=razorpay_webhook_secret
 LOG_LEVEL=info
 NODE_OPTIONS=--dns-result-order=ipv4first

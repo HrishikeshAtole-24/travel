@@ -11,13 +11,44 @@ const logger = require('../config/winstonLogger');
  * with a table: suppliers (id, name, code, is_active, api_key, base_url, config)
  */
 const SUPPLIERS_CONFIG = {
+  duffel: {
+    name: 'Duffel',
+    code: 'duffel',
+    products: ['flights'],
+    // Active whenever a Duffel token is configured
+    isActive: Boolean(process.env.DUFFEL_ACCESS_TOKEN),
+    distributionChannel: 'NDC',
+    timeout: 20000, // Duffel waits up to 15s on airlines (supplier_timeout) + network
+    priority: 1, // Lower number = higher priority
+    config: {
+      accessToken: process.env.DUFFEL_ACCESS_TOKEN,
+      baseUrl: process.env.DUFFEL_BASE_URL || 'https://api.duffel.com'
+    }
+  },
+  liteapi: {
+    name: 'Nuitée',
+    code: 'liteapi',
+    products: ['flights', 'hotels'],
+    // Active whenever a LiteAPI key is configured; flights can be switched off separately
+    isActive: Boolean(process.env.LITEAPI_API_KEY),
+    flightsEnabled: process.env.LITEAPI_FLIGHTS_ENABLED !== 'false',
+    distributionChannel: 'AGGREGATOR',
+    timeout: 30000, // flight search fans out to GDS/NDC/LCC providers (~10s typical)
+    priority: 2,
+    config: {
+      apiKey: process.env.LITEAPI_API_KEY
+    }
+  },
   amadeus: {
     name: 'Amadeus',
     code: 'amadeus',
-    isActive: true,
+    products: ['flights', 'hotels'],
+    // Amadeus Self-Service APIs were decommissioned on 17 July 2026.
+    // Only enable with an Amadeus Enterprise account.
+    isActive: process.env.AMADEUS_ENABLED === 'true',
     distributionChannel: 'GDS',
     timeout: 7000, // 7 seconds timeout
-    priority: 1, // Lower number = higher priority
+    priority: 3, // Lower number = higher priority
     config: {
       apiKey: process.env.AMADEUS_API_KEY,
       apiSecret: process.env.AMADEUS_API_SECRET,
@@ -51,12 +82,15 @@ const SUPPLIERS_CONFIG = {
 
 class SupplierConfigManager {
   /**
-   * Get all active suppliers
+   * Get all active suppliers for a product
+   * @param {'flights'|'hotels'} [product='flights']
    * @returns {Array<Object>} List of active suppliers
    */
-  static getActiveSuppliers() {
+  static getActiveSuppliers(product = 'flights') {
     const activeSuppliers = Object.values(SUPPLIERS_CONFIG)
       .filter(supplier => supplier.isActive)
+      .filter(supplier => (supplier.products || ['flights']).includes(product))
+      .filter(supplier => product !== 'flights' || supplier.flightsEnabled !== false)
       .sort((a, b) => a.priority - b.priority);
 
     logger.info(`Active suppliers: ${activeSuppliers.map(s => s.code).join(', ')}`);
@@ -85,6 +119,14 @@ class SupplierConfigManager {
   static isSupplierActive(supplierCode) {
     const supplier = this.getSupplier(supplierCode);
     return supplier ? supplier.isActive : false;
+  }
+
+  /**
+   * Display name shown to customers (e.g. "Duffel", "Nuitée")
+   * @param {string} supplierCode
+   */
+  static getDisplayName(supplierCode) {
+    return SUPPLIERS_CONFIG[supplierCode]?.name || supplierCode;
   }
 
   /**

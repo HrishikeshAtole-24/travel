@@ -17,7 +17,8 @@ export default function DatePicker({
   onBothDatesSelected,
   isOpen = false,
   onToggle,
-  onClose
+  onClose,
+  showPrices = true // flight calendars show fares; hotel calendars don't
 }) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(value ? new Date(value) : null);
@@ -145,7 +146,7 @@ export default function DatePicker({
           isMinDate,
           isInRange,
           isEndpoint,
-          price: flightPrices[dateStr]
+          price: showPrices ? flightPrices[dateStr] : undefined
         });
         
         current.setDate(current.getDate() + 1);
@@ -363,7 +364,7 @@ export default function DatePicker({
             </div>
 
             <div className="calendar-footer">
-              <span className="price-note">Showing our lowest prices in ₹</span>
+              {showPrices && <span className="price-note">Showing our lowest prices in ₹</span>}
             </div>
           </div>
         )}

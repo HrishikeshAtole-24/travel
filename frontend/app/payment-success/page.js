@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import Header from '../components/Header/Header';
 import Footer from '../components/Footer/Footer';
 import './payment-success.css';
+import HotelConfirmation from './HotelConfirmation';
 
 function PaymentSuccessContent() {
   const searchParams = useSearchParams();
@@ -28,6 +29,22 @@ function PaymentSuccessContent() {
     }
   }, [bookingReference]);
 
+  // Guests prove access with the contact email used at booking time
+  // (saved in sessionStorage by the booking page before redirecting to payment)
+  const getContactEmail = () => {
+    try {
+      const saved = JSON.parse(sessionStorage.getItem('bookingData') || '{}');
+      return saved.contactEmail || '';
+    } catch {
+      return '';
+    }
+  };
+
+  const withEmail = (url) => {
+    const email = getContactEmail();
+    return email ? `${url}?email=${encodeURIComponent(email)}` : url;
+  };
+
   const showNotification = (message, type = 'success') => {
     setNotification({ message, type });
     setTimeout(() => setNotification(null), 4000);
@@ -38,15 +55,17 @@ function PaymentSuccessContent() {
       const token = localStorage.getItem('token');
       const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000/api';
       const response = await fetch(
-        `${baseUrl}/bookings/reference/${bookingReference}`,
+        withEmail(`${baseUrl}/bookings/reference/${bookingReference}`),
         {
           headers: token ? { 'Authorization': `Bearer ${token}` } : {}
         }
       );
       const data = await response.json();
-      if (data.success) {
-        setBookingDetails(data.booking);
-        if (data.booking.emailSent) {
+      // API responses are wrapped: { success, data: { success, booking } }
+      const booking = data.data?.booking || data.booking;
+      if (data.success && booking) {
+        setBookingDetails(booking);
+        if (booking.emailSent) {
           setEmailSent(true);
         }
       }
@@ -65,7 +84,7 @@ function PaymentSuccessContent() {
       const token = localStorage.getItem('token');
       const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000/api';
       const response = await fetch(
-        `${baseUrl}/bookings/${bookingReference}/ticket`,
+        withEmail(`${baseUrl}/bookings/${bookingReference}/ticket`),
         {
           headers: token ? { 'Authorization': `Bearer ${token}` } : {}
         }
@@ -107,7 +126,8 @@ function PaymentSuccessContent() {
           headers: {
             'Content-Type': 'application/json',
             ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-          }
+          },
+          body: JSON.stringify({ email: getContactEmail() || undefined })
         }
       );
       
@@ -238,6 +258,24 @@ function PaymentSuccessContent() {
                     <span className="payment-id">{paymentId}</span>
                   </div>
                 )}
+
+                {/* Airline PNR (issued by the airline after payment) */}
+                {bookingDetails?.pnr ? (
+                  <div className="payment-info">
+                    <span className="payment-label">Airline PNR</span>
+                    <span className="payment-id">{bookingDetails.pnr}</span>
+                  </div>
+                ) : bookingDetails?.ticketingStatus === 'FAILED' ? (
+                  <div className="payment-info">
+                    <span className="payment-label">Ticket status</span>
+                    <span className="payment-id">Our team is confirming your ticket with the airline and will email you shortly</span>
+                  </div>
+                ) : bookingDetails?.ticketingStatus && bookingDetails.ticketingStatus !== 'ISSUED' ? (
+                  <div className="payment-info">
+                    <span className="payment-label">Ticket status</span>
+                    <span className="payment-id">Issuing your ticket…</span>
+                  </div>
+                ) : null}
               </div>
 
               {/* Flight Details */}
@@ -468,6 +506,23 @@ function PaymentSuccessContent() {
   );
 }
 
+/**
+ * Hotel bookings (HB- references) get their own confirmation view
+ */
+function PaymentSuccessRouter() {
+  const searchParams = useSearchParams();
+  const reference = searchParams.get('booking') || searchParams.get('booking_reference') || '';
+  if (reference.startsWith('HB-')) {
+    return (
+      <HotelConfirmation
+        bookingReference={reference}
+        paymentId={searchParams.get('payment') || searchParams.get('payment_reference')}
+      />
+    );
+  }
+  return <PaymentSuccessContent />;
+}
+
 export default function PaymentSuccessPage() {
   return (
     <Suspense fallback={
@@ -480,7 +535,7 @@ export default function PaymentSuccessPage() {
         </div>
       </div>
     }>
-      <PaymentSuccessContent />
+      <PaymentSuccessRouter />
     </Suspense>
   );
 }

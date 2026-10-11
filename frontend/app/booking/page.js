@@ -8,6 +8,28 @@ import apiClient from '@/lib/api/client';
 import { useAuth } from '@/app/contexts/AuthContext';
 import './booking.css';
 
+const PASSENGER_TYPE_LABELS = {
+  ADULT: 'Adult',
+  CHILD: 'Child',
+  INFANT: 'Infant (on lap)'
+};
+
+// One empty traveler form for a passenger slot on the fare
+const createTraveler = (passenger = {}) => ({
+  type: passenger.type || 'ADULT',
+  supplierPassengerId: passenger.supplierPassengerId || undefined,
+  firstName: '',
+  lastName: '',
+  dateOfBirth: '',
+  gender: 'MALE',
+  nationality: 'IN',
+  documentType: 'PASSPORT',
+  documentNumber: '',
+  documentExpiry: '',
+  email: '',
+  phone: ''
+});
+
 export default function BookingPage() {
   const router = useRouter();
   const { user, isLoggedIn, isLoading: authLoading } = useAuth();
@@ -15,18 +37,7 @@ export default function BookingPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   
-  const [travelers, setTravelers] = useState([{
-    firstName: '',
-    lastName: '',
-    dateOfBirth: '',
-    gender: 'MALE',
-    nationality: 'IN',
-    documentType: 'PASSPORT',
-    documentNumber: '',
-    documentExpiry: '',
-    email: '',
-    phone: ''
-  }]);
+  const [travelers, setTravelers] = useState([createTraveler()]);
 
   const [contactDetails, setContactDetails] = useState({
     email: '',
@@ -40,6 +51,11 @@ export default function BookingPage() {
     if (flightData) {
       const parsedFlight = JSON.parse(flightData);
       setFlight(parsedFlight);
+      // One form per passenger on the fare, in the order the airline expects
+      const passengers = parsedFlight.validatedOffer?.passengers;
+      if (Array.isArray(passengers) && passengers.length > 0) {
+        setTravelers(passengers.map(createTraveler));
+      }
     } else {
       router.push('/search');
     }
@@ -52,14 +68,14 @@ export default function BookingPage() {
         email: user.email || '',
         phone: user.phone || ''
       });
-      // Pre-fill first traveler with user info
+      // Pre-fill first traveler with user info (keep the other passengers)
       setTravelers(prev => [{
         ...prev[0],
         firstName: user.firstName || '',
         lastName: user.lastName || '',
         email: user.email || '',
         phone: user.phone || ''
-      }]);
+      }, ...prev.slice(1)]);
     }
   }, [authLoading, isLoggedIn, user]);
 
@@ -72,19 +88,26 @@ export default function BookingPage() {
     setTravelers(updatedTravelers);
   };
 
+  // Airline requires passport details for this itinerary (e.g. international)
+  const documentsRequired = Boolean(flight?.validatedOffer?.requirements?.identityDocumentsRequired);
+
   const handleContactChange = (field, value) => {
     setContactDetails(prev => ({ ...prev, [field]: value }));
   };
 
   const validateForm = () => {
-    // Check travelers
-    for (const traveler of travelers) {
+    // Check travelers (passengers after the first fall back to the contact email/phone)
+    for (const [index, traveler] of travelers.entries()) {
       if (!traveler.firstName || !traveler.lastName || !traveler.dateOfBirth || !traveler.gender) {
-        setError('Please fill in all required traveler information');
+        setError(`Please fill in all required details for passenger ${index + 1}`);
         return false;
       }
-      if (!traveler.email || !traveler.phone) {
-        setError('Please provide email and phone for all travelers');
+      if (index === 0 && (!traveler.email || !traveler.phone)) {
+        setError('Please provide email and phone for the lead passenger');
+        return false;
+      }
+      if (documentsRequired && (!traveler.documentNumber || !traveler.documentExpiry)) {
+        setError(`Passport details are required for passenger ${index + 1} on this flight`);
         return false;
       }
     }
@@ -109,10 +132,9 @@ export default function BookingPage() {
     }
 
     try {
-      // Use validated offer if available, otherwise fallback to original flight data
+      // Validated (re-priced) offer from the flight card; required to book
       const validatedOffer = flight.validatedOffer;
       const segment = flight.segments?.[0] || {};
-      const price = flight.price || {};
 
       // Build flight data object matching backend expectations
       const flightData = {
@@ -129,22 +151,23 @@ export default function BookingPage() {
         stops: flight.stops || (flight.segments?.length - 1) || 0
       };
 
-      // Use validated price if available
-      const validatedPrice = validatedOffer?.price || price;
+      if (!validatedOffer) {
+        setError('This fare could not be confirmed. Please go back and select the flight again.');
+        return;
+      }
 
+      // Price is NOT sent: the server re-prices validatedFlightOffer with the airline
       const bookingRequest = {
         flightData: flightData,
         travelers: travelers,
         contactEmail: contactDetails.email,
         contactPhone: contactDetails.phone,
-        totalPrice: validatedPrice.total || price.total || flight.totalPrice || 0,
-        currency: validatedPrice.currency || price.currency || 'INR',
         specialRequests: specialRequests || undefined,
         paymentAcquirer: 'RAZORPAY',
         successUrl: `${window.location.origin}/confirmation`,
         failureUrl: `${window.location.origin}/payment-failed`,
-        // Include validated flight offer for Amadeus booking
-        validatedFlightOffer: validatedOffer || undefined
+        // Validated flight offer - re-priced server-side and used for the Amadeus booking
+        validatedFlightOffer: validatedOffer
       };
 
       console.log('Creating booking with data:', bookingRequest);
@@ -209,18 +232,22 @@ export default function BookingPage() {
               )}
 
               <form onSubmit={handleSubmit} className="booking-form">
-                {/* Passenger Details */}
-                <div className="form-card">
-                  <h2 className="form-card-title">Passenger Details</h2>
-                  
+                {/* Passenger Details - one card per passenger on the fare */}
+                {travelers.map((traveler, index) => (
+                <div className="form-card" key={traveler.supplierPassengerId || index}>
+                  <h2 className="form-card-title">
+                    Passenger {index + 1} · {PASSENGER_TYPE_LABELS[traveler.type] || 'Adult'}
+                  </h2>
+                  <p className="form-card-subtitle">Enter names exactly as they appear on the passport / government ID</p>
+
                   <div className="form-row">
                     <div className="form-group">
                       <label className="form-label">First Name *</label>
                       <input
                         type="text"
                         className="form-input"
-                        value={travelers[0].firstName}
-                        onChange={(e) => handleTravelerChange(0, 'firstName', e.target.value)}
+                        value={traveler.firstName}
+                        onChange={(e) => handleTravelerChange(index, 'firstName', e.target.value)}
                         required
                       />
                     </div>
@@ -230,8 +257,8 @@ export default function BookingPage() {
                       <input
                         type="text"
                         className="form-input"
-                        value={travelers[0].lastName}
-                        onChange={(e) => handleTravelerChange(0, 'lastName', e.target.value)}
+                        value={traveler.lastName}
+                        onChange={(e) => handleTravelerChange(index, 'lastName', e.target.value)}
                         required
                       />
                     </div>
@@ -243,23 +270,22 @@ export default function BookingPage() {
                       <input
                         type="date"
                         className="form-input"
-                        value={travelers[0].dateOfBirth}
-                        onChange={(e) => handleTravelerChange(0, 'dateOfBirth', e.target.value)}
+                        value={traveler.dateOfBirth}
+                        onChange={(e) => handleTravelerChange(index, 'dateOfBirth', e.target.value)}
                         required
                       />
                     </div>
 
                     <div className="form-group">
-                      <label className="form-label">Gender *</label>
+                      <label className="form-label">Gender (as on passport) *</label>
                       <select
                         className="form-select"
-                        value={travelers[0].gender}
-                        onChange={(e) => handleTravelerChange(0, 'gender', e.target.value)}
+                        value={traveler.gender}
+                        onChange={(e) => handleTravelerChange(index, 'gender', e.target.value)}
                         required
                       >
                         <option value="MALE">Male</option>
                         <option value="FEMALE">Female</option>
-                        <option value="OTHER">Other</option>
                       </select>
                     </div>
                   </div>
@@ -270,8 +296,8 @@ export default function BookingPage() {
                       <input
                         type="text"
                         className="form-input"
-                        value={travelers[0].nationality}
-                        onChange={(e) => handleTravelerChange(0, 'nationality', e.target.value)}
+                        value={traveler.nationality}
+                        onChange={(e) => handleTravelerChange(index, 'nationality', e.target.value)}
                         placeholder="e.g., IN"
                         maxLength="2"
                         required
@@ -279,12 +305,11 @@ export default function BookingPage() {
                     </div>
 
                     <div className="form-group">
-                      <label className="form-label">Document Type *</label>
+                      <label className="form-label">Document Type{documentsRequired ? ' *' : ''}</label>
                       <select
                         className="form-select"
-                        value={travelers[0].documentType}
-                        onChange={(e) => handleTravelerChange(0, 'documentType', e.target.value)}
-                        required
+                        value={traveler.documentType}
+                        onChange={(e) => handleTravelerChange(index, 'documentType', e.target.value)}
                       >
                         <option value="PASSPORT">Passport</option>
                         <option value="ID_CARD">ID Card</option>
@@ -294,54 +319,55 @@ export default function BookingPage() {
 
                   <div className="form-row">
                     <div className="form-group">
-                      <label className="form-label">Document Number *</label>
+                      <label className="form-label">Document Number{documentsRequired ? ' *' : ''}</label>
                       <input
                         type="text"
                         className="form-input"
-                        value={travelers[0].documentNumber}
-                        onChange={(e) => handleTravelerChange(0, 'documentNumber', e.target.value)}
+                        value={traveler.documentNumber}
+                        onChange={(e) => handleTravelerChange(index, 'documentNumber', e.target.value)}
                         placeholder="Passport/ID number"
-                        required
+                        required={documentsRequired}
                       />
                     </div>
 
                     <div className="form-group">
-                      <label className="form-label">Document Expiry *</label>
+                      <label className="form-label">Document Expiry{documentsRequired ? ' *' : ''}</label>
                       <input
                         type="date"
                         className="form-input"
-                        value={travelers[0].documentExpiry}
-                        onChange={(e) => handleTravelerChange(0, 'documentExpiry', e.target.value)}
-                        required
+                        value={traveler.documentExpiry}
+                        onChange={(e) => handleTravelerChange(index, 'documentExpiry', e.target.value)}
+                        required={documentsRequired}
                       />
                     </div>
                   </div>
 
                   <div className="form-row">
                     <div className="form-group">
-                      <label className="form-label">Email *</label>
+                      <label className="form-label">Email{index === 0 ? ' *' : ' (optional)'}</label>
                       <input
                         type="email"
                         className="form-input"
-                        value={travelers[0].email}
-                        onChange={(e) => handleTravelerChange(0, 'email', e.target.value)}
-                        required
+                        value={traveler.email}
+                        onChange={(e) => handleTravelerChange(index, 'email', e.target.value)}
+                        required={index === 0}
                       />
                     </div>
 
                     <div className="form-group">
-                      <label className="form-label">Phone *</label>
+                      <label className="form-label">Phone{index === 0 ? ' *' : ' (optional)'}</label>
                       <input
                         type="tel"
                         className="form-input"
-                        value={travelers[0].phone}
-                        onChange={(e) => handleTravelerChange(0, 'phone', e.target.value)}
+                        value={traveler.phone}
+                        onChange={(e) => handleTravelerChange(index, 'phone', e.target.value)}
                         placeholder="+919876543210"
-                        required
+                        required={index === 0}
                       />
                     </div>
                   </div>
                 </div>
+                ))}
 
                 {/* Contact Details */}
                 <div className="form-card">
