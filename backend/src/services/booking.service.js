@@ -8,6 +8,7 @@ const ApiError = require('../core/ApiError');
 const logger = require('../config/winstonLogger');
 const flightService = require('./flight.service');
 const { generateReference } = require('../utils/security');
+const { validateTravelersForOffer } = require('../utils/passengerValidation');
 
 // Industry standard: Flight bookings expire in 30 minutes if unpaid
 const BOOKING_EXPIRY_MINUTES = 30;
@@ -43,7 +44,7 @@ function canAccessBooking(booking, { userId = null, email = null } = {}) {
  * Re-price the flight offer with the supplier and return the authoritative price.
  * Never trust a price sent by the client.
  * @param {Object} flightOffer - Flight offer (as returned by search/pricing)
- * @returns {{ totalPrice: number, currency: string }}
+ * @returns {{ totalPrice: number, currency: string, pricedOffer: Object }}
  */
 async function resolveFlightPrice(flightOffer) {
   if (!flightOffer || typeof flightOffer !== 'object') {
@@ -59,7 +60,7 @@ async function resolveFlightPrice(flightOffer) {
     throw ApiError.badRequest('Unable to confirm flight price. Please search again.');
   }
 
-  return { totalPrice, currency: price.currency || 'INR' };
+  return { totalPrice, currency: price.currency || 'INR', pricedOffer };
 }
 
 /**
@@ -105,7 +106,21 @@ const createBooking = async (bookingData, userId = null) => {
 
   // Authoritative price from the supplier (client-submitted price is ignored).
   // Done before opening the transaction so no DB connection is held during the API call.
-  const { totalPrice, currency } = await resolveFlightPrice(validatedFlightOffer);
+  const { totalPrice, currency, pricedOffer } = await resolveFlightPrice(validatedFlightOffer);
+
+  // Validate passengers against what the airline needs to ticket - BEFORE taking payment
+  const validTravelers = validateTravelersForOffer(travelers, pricedOffer, {
+    email: contactEmail,
+    phone: contactPhone
+  });
+
+  // Supplier details needed to place the airline order after payment
+  const supplierInfo = pricedOffer?.source?.supplier ? {
+    supplier: pricedOffer.source.supplier,
+    supplierOfferId: pricedOffer.source.supplierOfferId,
+    supplierAmount: pricedOffer.pricing?.supplierPrice?.totalAmount ?? pricedOffer.pricing?.totalAmount,
+    supplierCurrency: pricedOffer.pricing?.supplierPrice?.currency ?? pricedOffer.pricing?.totalCurrency
+  } : null;
 
   const pool = getPool();
   const client = await pool.connect();
@@ -116,78 +131,57 @@ const createBooking = async (bookingData, userId = null) => {
     // Generate booking reference
     const bookingReference = generateBookingReference();
     
-    // Calculate expiration time (industry standard: 30 minutes for flight bookings)
-    const expiresAt = getBookingExpirationTime();
-
-    // Check if expires_at column exists
-    const columnCheck = await client.query(`
-      SELECT column_name FROM information_schema.columns 
-      WHERE table_name = 'bookings' AND column_name = 'expires_at'
-    `);
-    const hasExpiresAt = columnCheck.rows.length > 0;
-
-    // Create booking record (with or without expires_at)
-    let bookingResult;
-    if (hasExpiresAt) {
-      bookingResult = await client.query(
-        `INSERT INTO bookings (
-          booking_reference, user_id, flight_id, flight_data,
-          total_price, currency, status,
-          contact_email, contact_phone, special_requests,
-          expires_at, created_at, updated_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-        RETURNING *`,
-        [
-          bookingReference,
-          userId,
-          flightId || null,
-          JSON.stringify(flightData),
-          totalPrice,
-          currency || 'INR',
-          'pending',
-          contactEmail,
-          contactPhone,
-          specialRequests || null,
-          expiresAt
-        ]
-      );
-    } else {
-      bookingResult = await client.query(
-        `INSERT INTO bookings (
-          booking_reference, user_id, flight_id, flight_data,
-          total_price, currency, status,
-          contact_email, contact_phone, special_requests,
-          created_at, updated_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-        RETURNING *`,
-        [
-          bookingReference,
-          userId,
-          flightId || null,
-          JSON.stringify(flightData),
-          totalPrice,
-          currency || 'INR',
-          'pending',
-          contactEmail,
-          contactPhone,
-          specialRequests || null
-        ]
-      );
+    // Calculate expiration time (industry standard: 30 minutes for flight bookings),
+    // never later than the supplier's offer expiry - an expired offer can't be ticketed
+    let expiresAt = getBookingExpirationTime();
+    const offerExpiresAt = pricedOffer?.source?.expiresAt ? new Date(pricedOffer.source.expiresAt) : null;
+    if (offerExpiresAt && !isNaN(offerExpiresAt) && offerExpiresAt < expiresAt) {
+      expiresAt = offerExpiresAt;
     }
+
+    // Create booking record (expires_at always exists - added by booking.model migration)
+    const bookingResult = await client.query(
+      `INSERT INTO bookings (
+        booking_reference, user_id, flight_id, flight_data,
+        total_price, currency, status,
+        contact_email, contact_phone, special_requests,
+        expires_at, supplier, supplier_offer_id, supplier_amount, supplier_currency,
+        ticketing_status, created_at, updated_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      RETURNING *`,
+      [
+        bookingReference,
+        userId,
+        flightId || null,
+        JSON.stringify(flightData),
+        totalPrice,
+        currency || 'INR',
+        'pending',
+        contactEmail,
+        contactPhone,
+        specialRequests || null,
+        expiresAt,
+        supplierInfo?.supplier || null,
+        supplierInfo?.supplierOfferId || null,
+        supplierInfo?.supplierAmount ?? null,
+        supplierInfo?.supplierCurrency || null,
+        supplierInfo ? 'PENDING' : null
+      ]
+    );
 
     const booking = bookingResult.rows[0];
 
     // Create traveler records
-    for (const traveler of travelers) {
+    for (const traveler of validTravelers) {
       await client.query(
         `INSERT INTO travelers (
           booking_id, traveler_type, title, first_name, last_name,
           date_of_birth, gender, passport_number, passport_expiry,
-          nationality, email, phone
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
+          nationality, email, phone, supplier_passenger_id
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
         [
           booking.id,
-          traveler.type || 'ADULT',
+          String(traveler.type || 'ADULT').toUpperCase(),
           traveler.title || null,
           traveler.firstName,
           traveler.lastName,
@@ -197,7 +191,8 @@ const createBooking = async (bookingData, userId = null) => {
           traveler.documentExpiry || traveler.passportExpiry || null,
           traveler.nationality,
           traveler.email || contactEmail,
-          traveler.phone || contactPhone
+          traveler.phone || contactPhone,
+          traveler.supplierPassengerId || null
         ]
       );
     }
@@ -282,6 +277,7 @@ const getBookingById = async (bookingId, access = {}) => {
         specialRequests: booking.special_requests,
         pnr: booking.pnr,
         ticketNumber: booking.ticket_number,
+        ticketingStatus: booking.ticketing_status || null,
         createdAt: booking.created_at,
         updatedAt: booking.updated_at,
         expiresAt: booking.expires_at,
@@ -342,6 +338,7 @@ const getBookingByReference = async (bookingReference, access = {}) => {
         contactPhone: booking.contact_phone,
         pnr: booking.pnr,
         ticketNumber: booking.ticket_number,
+        ticketingStatus: booking.ticketing_status || null,
         createdAt: booking.created_at,
         travelers: travelersResult.rows,
         payments: paymentsResult.rows
@@ -384,7 +381,7 @@ const getUserBookings = async (userId) => {
     // Select query without expires_at for compatibility
     const result = await pool.query(
       `SELECT id, booking_reference, status, total_price, currency, 
-              contact_email, pnr, ticket_number, flight_data, created_at
+              contact_email, pnr, ticket_number, ticketing_status, flight_data, created_at
        FROM bookings 
        WHERE user_id = $1 
        ORDER BY created_at DESC`,
@@ -402,6 +399,7 @@ const getUserBookings = async (userId) => {
           contactEmail: booking.contact_email,
           pnr: booking.pnr,
           ticketNumber: booking.ticket_number,
+          ticketingStatus: booking.ticketing_status || null,
           flightData: booking.flight_data,
           createdAt: booking.created_at,
           expiresAt: null,

@@ -170,7 +170,7 @@ export default function FlightCard({ flight }) {
             <div className="price-amount">
               {currencySymbol}{price.total?.toLocaleString() || '0'}
             </div>
-            <div className="price-label">per person</div>
+            <div className="price-label">total for all travellers</div>
           </div>
           <button 
             className={`btn btn-primary select-flight-btn ${isValidating ? 'loading' : ''}`}

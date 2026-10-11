@@ -49,8 +49,19 @@ const createBookingTable = async () => {
       WHEN duplicate_column THEN null;
     END $$;
 
+    -- Supplier order details (airline booking placed after payment)
+    ALTER TABLE bookings ADD COLUMN IF NOT EXISTS supplier VARCHAR(20);
+    ALTER TABLE bookings ADD COLUMN IF NOT EXISTS supplier_offer_id VARCHAR(100);
+    ALTER TABLE bookings ADD COLUMN IF NOT EXISTS supplier_order_id VARCHAR(100);
+    ALTER TABLE bookings ADD COLUMN IF NOT EXISTS supplier_amount DECIMAL(12, 2);
+    ALTER TABLE bookings ADD COLUMN IF NOT EXISTS supplier_currency VARCHAR(3);
+    -- PENDING → IN_PROGRESS → ISSUED | FAILED (FAILED needs manual follow-up / refund)
+    ALTER TABLE bookings ADD COLUMN IF NOT EXISTS ticketing_status VARCHAR(20);
+    ALTER TABLE bookings ADD COLUMN IF NOT EXISTS ticketing_error TEXT;
+
     -- Create indexes for faster lookups
     CREATE INDEX IF NOT EXISTS idx_bookings_user_id ON bookings(user_id);
+    CREATE INDEX IF NOT EXISTS idx_bookings_ticketing_status ON bookings(ticketing_status);
     CREATE INDEX IF NOT EXISTS idx_bookings_reference ON bookings(booking_reference);
     CREATE INDEX IF NOT EXISTS idx_bookings_status ON bookings(status);
     CREATE INDEX IF NOT EXISTS idx_bookings_expires_at ON bookings(expires_at);

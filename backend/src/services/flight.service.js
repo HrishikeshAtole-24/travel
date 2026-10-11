@@ -13,6 +13,14 @@ const { FlightResponseBuilder } = require('../core/FlightResponseFormat');
 const { validateSearchParams } = require('../assembly_line/validators/flight.validator');
 const ApiError = require('../core/ApiError');
 const logger = require('../config/winstonLogger');
+const currencyService = require('./currency.service');
+const { convertOffersCurrency } = require('../assembly_line/transformers/currency.transform');
+
+// Currency every offer is presented and charged in (Razorpay India charges INR)
+const CHARGE_CURRENCY = process.env.CHARGE_CURRENCY || 'INR';
+
+// Shown when a supplier no longer has the fare the customer selected
+const FARE_UNAVAILABLE_MESSAGE = 'This fare is no longer available. Please search again.';
 
 class FlightService {
   /**
@@ -69,7 +77,7 @@ class FlightService {
       // Step 8: Build industry-standard response
       const response = new FlightResponseBuilder()
         .setMeta({
-          currency: searchParams.currency || 'INR',
+          currency: CHARGE_CURRENCY,
           totalResults: aggregatedResult.pagination.totalResults,
           page: aggregatedResult.pagination.page,
           pageSize: aggregatedResult.pagination.pageSize,
@@ -138,13 +146,10 @@ class FlightService {
         timeoutPromise
       ]);
 
-      // Assembly Line: Map → Validate → Transform
-      const mappedData = mapFlightData(rawData, supplierCode);
-      const validatedData = validateFlightData(mappedData);
-      const transformedData = transformFlightData(validatedData);
+      const offers = await this.processSupplierData(rawData, supplierCode);
 
-      logger.info(`✅ ${supplierCode}: ${transformedData.length} offers fetched`);
-      return transformedData;
+      logger.info(`✅ ${supplierCode}: ${offers.length} offers fetched`);
+      return offers;
 
     } catch (error) {
       logger.error(`❌ ${supplierCode} failed:`, error.message);
@@ -152,6 +157,21 @@ class FlightService {
       // Return empty array so other suppliers can still provide results
       return [];
     }
+  }
+
+  /**
+   * Assembly Line: Map → Validate → Transform → Convert currency
+   * @param {Object} rawData - Raw supplier response
+   * @param {string} supplierCode - Supplier code
+   * @returns {Promise<Array>} Standard offers priced in CHARGE_CURRENCY
+   */
+  async processSupplierData(rawData, supplierCode) {
+    const mappedData = mapFlightData(rawData, supplierCode);
+    const validatedData = validateFlightData(mappedData);
+    const transformedData = transformFlightData(validatedData);
+
+    const rates = await currencyService.getRatesForOffers(transformedData, CHARGE_CURRENCY);
+    return convertOffersCurrency(transformedData, rates, CHARGE_CURRENCY);
   }
 
   /**
@@ -213,20 +233,56 @@ class FlightService {
    * @returns {Object} Validated flight price
    */
   async priceFlights(flightOffer) {
+    const supplierCode = flightOffer?.source?.supplier;
+
     try {
-      logger.info('💰 Validating flight price');
+      // Legacy: raw Amadeus offer (no standard source block)
+      if (!supplierCode) {
+        logger.info('💰 Validating flight price (legacy Amadeus offer)');
+        const supplier = supplierFactory('amadeus');
+        return await supplier.priceFlights(flightOffer);
+      }
 
-      // Get supplier instance (default: amadeus)
-      const supplier = supplierFactory('amadeus');
+      if (!SupplierConfigManager.isSupplierActive(supplierCode)) {
+        throw ApiError.badRequest(FARE_UNAVAILABLE_MESSAGE);
+      }
 
-      // Call pricing API
-      const pricedOffer = await supplier.priceFlights(flightOffer);
+      logger.info(`💰 Validating flight price with ${supplierCode}: ${flightOffer.source.supplierOfferId}`);
 
-      logger.info('✅ Flight price validated');
-      return pricedOffer;
+      // The supplier re-prices by its own offer ID; client-sent prices are ignored
+      const supplier = supplierFactory(supplierCode);
+      const rawData = await supplier.priceFlights(flightOffer);
+      const [pricedOffer] = await this.processSupplierData(rawData, supplierCode);
+
+      if (!pricedOffer) {
+        throw ApiError.badRequest(FARE_UNAVAILABLE_MESSAGE);
+      }
+
+      // Compact price summary (same shape the booking page and booking service read)
+      pricedOffer.price = {
+        currency: pricedOffer.pricing.totalCurrency,
+        total: String(pricedOffer.pricing.totalAmount),
+        base: String(pricedOffer.pricing.baseAmount),
+        grandTotal: String(pricedOffer.pricing.totalAmount)
+      };
+
+      logger.info(`✅ Flight price validated: ${pricedOffer.pricing.totalAmount} ${pricedOffer.pricing.totalCurrency}`);
+
+      return {
+        data: { flightOffers: [pricedOffer] },
+        dictionaries: DictionariesManager.buildFromOffers([pricedOffer])
+      };
 
     } catch (error) {
-      logger.error('❌ Price validation error:', error);
+      logger.error('❌ Price validation error:', error.message);
+
+      if (error instanceof ApiError) throw error;
+
+      // Supplier rejected the offer (expired, sold out, invalid ID)
+      if (error.status >= 400 && error.status < 500) {
+        throw ApiError.badRequest(FARE_UNAVAILABLE_MESSAGE);
+      }
+
       throw ApiError.internal('Failed to validate flight price');
     }
   }

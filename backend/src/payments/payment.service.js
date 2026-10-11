@@ -11,6 +11,7 @@ const { PaymentStatus, PaymentError } = require('../core/PaymentStatusCodes');
 const ApiError = require('../core/ApiError');
 const logger = require('../config/winstonLogger');
 const { getPool } = require('../config/database');
+const ticketingService = require('../services/ticketing.service');
 const { isAllowedRedirectUrl, getFrontendBaseUrl } = require('../utils/security');
 
 /**
@@ -245,15 +246,36 @@ const initiatePayment = async (bookingId, paymentOptions = {}) => {
 };
 
 /**
- * Mark a VERIFIED payment as successful and confirm its booking, atomically.
+ * Mark a VERIFIED payment as successful and confirm its booking, atomically,
+ * then place the airline order for flight bookings (ticketing).
  * Idempotent: a payment that is already SUCCESS is left untouched.
  * Callers MUST have verified the acquirer signature before calling this.
  *
  * @param {Object} payment - payments row
  * @param {Object} details - { acquirerPaymentId, acquirerTransactionId, paymentMethod, acquirerResponse }
- * @returns {{ alreadyProcessed: boolean, bookingType: string, bookingId: number }}
+ * @returns {{ alreadyProcessed: boolean, bookingType: string, bookingId: number, ticketing?: Object }}
  */
 const markPaymentSuccessful = async (payment, details = {}) => {
+  const result = await confirmPaymentInDatabase(payment, details);
+
+  // Ticket only once, right after the payment first succeeds. Ticketing never throws:
+  // failures are recorded on the booking (ticketing_status = FAILED) for follow-up.
+  if (!result.alreadyProcessed && result.bookingType === 'flight') {
+    try {
+      result.ticketing = await ticketingService.issueFlightTickets(result.bookingId);
+    } catch (error) {
+      logger.error(`[Payment] Ticketing error for booking ${result.bookingId}:`, error.message);
+      result.ticketing = { success: false, status: 'FAILED', error: error.message };
+    }
+  }
+
+  return result;
+};
+
+/**
+ * Payment SUCCESS + booking confirmed, in one transaction
+ */
+const confirmPaymentInDatabase = async (payment, details) => {
   const pool = getPool();
   const client = await pool.connect();
   const { bookingType, bookingId, config } = getPaymentBooking(payment);

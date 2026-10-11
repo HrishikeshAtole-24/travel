@@ -176,7 +176,9 @@ const checkNextDay = (depDate, arrDate) => {
  * @returns {Object} Price breakdown per traveler type
  */
 const calculatePricePerTraveler = (offer) => {
-  if (!offer.travelerPricing || offer.travelerPricing.length === 0) {
+  // Some suppliers (e.g. Duffel) only price the offer as a whole
+  const itemised = (offer.travelerPricing || []).every(tp => tp.price && typeof tp.price.totalAmount === 'number');
+  if (!offer.travelerPricing || offer.travelerPricing.length === 0 || !itemised) {
     return { ADULT: offer.pricing.totalAmount };
   }
 

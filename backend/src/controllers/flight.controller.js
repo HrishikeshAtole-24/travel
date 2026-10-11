@@ -23,6 +23,7 @@ class FlightController {
       children,
       infants,
       cabin,
+      cabinClass, // the search page sends cabinClass
       nonStopOnly,
       sortBy,
       page,
@@ -43,7 +44,7 @@ class FlightController {
       adults: adults || 1,
       children: children || 0,
       infants: infants || 0,
-      cabin: cabin || 'ECONOMY',
+      cabin: String(cabin || cabinClass || 'ECONOMY').toUpperCase(),
       nonStopOnly: nonStopOnly === 'true'
     };
 

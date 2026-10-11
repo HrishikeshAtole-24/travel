@@ -6,7 +6,7 @@
 const express = require('express');
 const router = express.Router();
 const bookingController = require('../controllers/booking.controller');
-const { authenticateToken, optionalAuth } = require('../middleware/auth.middleware');
+const { authenticateToken, optionalAuth, requireAdminKey } = require('../middleware/auth.middleware');
 const { bookingLimiter, lookupLimiter } = require('../middleware/rateLimit.middleware');
 
 /**
@@ -68,5 +68,12 @@ router.get('/:bookingId', authenticateToken, bookingController.getBooking);
  * @access  Protected (owner only)
  */
 router.post('/:bookingId/cancel', authenticateToken, bookingController.cancelBooking);
+
+/**
+ * @route   POST /api/bookings/:bookingId/retry-ticketing
+ * @desc    Retry the airline order for a paid booking whose ticketing failed
+ * @access  Admin (X-Admin-Key)
+ */
+router.post('/:bookingId/retry-ticketing', requireAdminKey, bookingController.retryTicketing);
 
 module.exports = router;

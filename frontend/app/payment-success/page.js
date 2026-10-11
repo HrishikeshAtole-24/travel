@@ -60,9 +60,11 @@ function PaymentSuccessContent() {
         }
       );
       const data = await response.json();
-      if (data.success) {
-        setBookingDetails(data.booking);
-        if (data.booking.emailSent) {
+      // API responses are wrapped: { success, data: { success, booking } }
+      const booking = data.data?.booking || data.booking;
+      if (data.success && booking) {
+        setBookingDetails(booking);
+        if (booking.emailSent) {
           setEmailSent(true);
         }
       }
@@ -255,6 +257,24 @@ function PaymentSuccessContent() {
                     <span className="payment-id">{paymentId}</span>
                   </div>
                 )}
+
+                {/* Airline PNR (issued by the airline after payment) */}
+                {bookingDetails?.pnr ? (
+                  <div className="payment-info">
+                    <span className="payment-label">Airline PNR</span>
+                    <span className="payment-id">{bookingDetails.pnr}</span>
+                  </div>
+                ) : bookingDetails?.ticketingStatus === 'FAILED' ? (
+                  <div className="payment-info">
+                    <span className="payment-label">Ticket status</span>
+                    <span className="payment-id">Our team is confirming your ticket with the airline and will email you shortly</span>
+                  </div>
+                ) : bookingDetails?.ticketingStatus && bookingDetails.ticketingStatus !== 'ISSUED' ? (
+                  <div className="payment-info">
+                    <span className="payment-label">Ticket status</span>
+                    <span className="payment-id">Issuing your ticket…</span>
+                  </div>
+                ) : null}
               </div>
 
               {/* Flight Details */}

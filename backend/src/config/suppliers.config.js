@@ -11,13 +11,28 @@ const logger = require('../config/winstonLogger');
  * with a table: suppliers (id, name, code, is_active, api_key, base_url, config)
  */
 const SUPPLIERS_CONFIG = {
+  duffel: {
+    name: 'Duffel',
+    code: 'duffel',
+    // Active whenever a Duffel token is configured
+    isActive: Boolean(process.env.DUFFEL_ACCESS_TOKEN),
+    distributionChannel: 'NDC',
+    timeout: 20000, // Duffel waits up to 15s on airlines (supplier_timeout) + network
+    priority: 1, // Lower number = higher priority
+    config: {
+      accessToken: process.env.DUFFEL_ACCESS_TOKEN,
+      baseUrl: process.env.DUFFEL_BASE_URL || 'https://api.duffel.com'
+    }
+  },
   amadeus: {
     name: 'Amadeus',
     code: 'amadeus',
-    isActive: true,
+    // Amadeus Self-Service APIs were decommissioned on 17 July 2026.
+    // Only enable with an Amadeus Enterprise account.
+    isActive: process.env.AMADEUS_ENABLED === 'true',
     distributionChannel: 'GDS',
     timeout: 7000, // 7 seconds timeout
-    priority: 1, // Lower number = higher priority
+    priority: 2, // Lower number = higher priority
     config: {
       apiKey: process.env.AMADEUS_API_KEY,
       apiSecret: process.env.AMADEUS_API_SECRET,

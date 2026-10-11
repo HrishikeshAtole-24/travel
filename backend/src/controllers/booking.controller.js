@@ -12,6 +12,7 @@ const ApiResponse = require('../core/ApiResponse');
 const ApiError = require('../core/ApiError');
 const { StatusCodes } = require('../core/StatusCodes');
 const logger = require('../config/winstonLogger');
+const ticketingService = require('../services/ticketing.service');
 
 /**
  * Identity the caller can prove: JWT user and/or the booking contact email
@@ -97,6 +98,7 @@ const createBookingAndInitiatePayment = AsyncHandler(async (req, res) => {
   const paymentResult = await paymentService.initiatePayment(
     bookingResult.bookingId,
     {
+      access: null, // trusted: booking was created in this same request
       acquirer: paymentAcquirer || 'RAZORPAY',
       customerEmail: contactEmail,
       customerPhone: contactPhone,
@@ -288,7 +290,30 @@ const sendConfirmationEmail = AsyncHandler(async (req, res) => {
   }
 });
 
+/**
+ * Retry airline ticketing for a paid booking whose ticketing FAILED
+ * POST /api/bookings/:bookingId/retry-ticketing
+ * Admin only (X-Admin-Key)
+ */
+const retryTicketing = AsyncHandler(async (req, res) => {
+  const { bookingId } = req.params;
+
+  const result = await ticketingService.issueFlightTickets(bookingId, { retry: true });
+
+  if (result.status === 'SKIPPED') {
+    throw ApiError.badRequest('Booking is not paid or is not awaiting ticketing');
+  }
+
+  return ApiResponse.success(
+    res,
+    result,
+    result.success ? 'Tickets issued' : 'Ticketing failed',
+    StatusCodes.OK
+  );
+});
+
 module.exports = {
+  retryTicketing,
   createBooking,
   createBookingAndInitiatePayment,
   getBooking,
