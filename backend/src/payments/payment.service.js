@@ -12,6 +12,7 @@ const ApiError = require('../core/ApiError');
 const logger = require('../config/winstonLogger');
 const { getPool } = require('../config/database');
 const ticketingService = require('../services/ticketing.service');
+const hotelFulfillmentService = require('../services/hotelFulfillment.service');
 const { isAllowedRedirectUrl, getFrontendBaseUrl } = require('../utils/security');
 
 /**
@@ -258,13 +259,16 @@ const initiatePayment = async (bookingId, paymentOptions = {}) => {
 const markPaymentSuccessful = async (payment, details = {}) => {
   const result = await confirmPaymentInDatabase(payment, details);
 
-  // Ticket only once, right after the payment first succeeds. Ticketing never throws:
-  // failures are recorded on the booking (ticketing_status = FAILED) for follow-up.
-  if (!result.alreadyProcessed && result.bookingType === 'flight') {
+  // Book with the supplier only once, right after the payment first succeeds.
+  // Failures are recorded on the booking (ticketing/fulfillment status FAILED) for follow-up.
+  if (!result.alreadyProcessed) {
+    const fulfill = result.bookingType === 'hotel'
+      ? () => hotelFulfillmentService.fulfillHotelBooking(result.bookingId)
+      : () => ticketingService.issueFlightTickets(result.bookingId);
     try {
-      result.ticketing = await ticketingService.issueFlightTickets(result.bookingId);
+      result.ticketing = await fulfill();
     } catch (error) {
-      logger.error(`[Payment] Ticketing error for booking ${result.bookingId}:`, error.message);
+      logger.error(`[Payment] Supplier booking error for ${result.bookingType} booking ${result.bookingId}:`, error.message);
       result.ticketing = { success: false, status: 'FAILED', error: error.message };
     }
   }

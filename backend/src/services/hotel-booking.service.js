@@ -8,6 +8,8 @@ const ApiError = require('../core/ApiError');
 const logger = require('../config/winstonLogger');
 const hotelService = require('./hotel.service');
 const { canAccessBooking } = require('./booking.service');
+// DATE columns → YYYY-MM-DD without the UTC day shift
+const { formatDate } = require('./ticketing.service');
 const { generateReference } = require('../utils/security');
 
 // Industry standard: Hotel bookings expire in 30 minutes if unpaid
@@ -100,6 +102,18 @@ const createHotelBooking = async (bookingData, userId = null) => {
   // Done before opening the transaction so no DB connection is held during the API call.
   const { totalPrice, currency, offer } = await resolveHotelOfferPrice(offerId);
 
+  // Every room needs a named lead guest; names must match ID at check-in
+  const rooms = offer.rooms?.length || offer.roomQuantity || 1;
+  if (guests.length < rooms) {
+    throw ApiError.badRequest(`Please add a lead guest for each of the ${rooms} rooms`);
+  }
+  const NAME_PATTERN = /^[A-Za-z][A-Za-z\s'-]{0,49}$/;
+  guests.forEach((guest, i) => {
+    if (!NAME_PATTERN.test(String(guest.firstName || '').trim()) || !NAME_PATTERN.test(String(guest.lastName || '').trim())) {
+      throw ApiError.badRequest(`Guest ${i + 1}: enter first and last name as on the ID (letters only)`);
+    }
+  });
+
   const pool = getPool();
   const client = await pool.connect();
 
@@ -118,8 +132,9 @@ const createHotelBooking = async (bookingData, userId = null) => {
         check_in_date, check_out_date, room_quantity, adults,
         total_price, currency, status,
         contact_email, contact_phone, special_requests,
-        expires_at, created_at, updated_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        expires_at, supplier, supplier_offer_id, supplier_hold_id, fulfillment_status,
+        created_at, updated_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
       RETURNING *`,
       [
         bookingReference,
@@ -131,15 +146,19 @@ const createHotelBooking = async (bookingData, userId = null) => {
         JSON.stringify(offer),
         offer.checkInDate || checkInDate || null,
         offer.checkOutDate || checkOutDate || null,
-        roomQuantity || 1,
-        adults || 1,
+        rooms,
+        offer.guests?.adults || adults || 1,
         totalPrice,
         currency,
         'pending',
         contactEmail,
         contactPhone,
         specialRequests || null,
-        expiresAt
+        expiresAt,
+        offer.source?.supplier || null,
+        offer.source?.supplierOfferId || null,
+        offer.source?.prebookId || null,
+        offer.source?.supplier ? 'PENDING' : null
       ]
     );
 
@@ -175,8 +194,8 @@ const createHotelBooking = async (bookingData, userId = null) => {
       hotelId: booking.hotel_id,
       offerId: booking.offer_id,
       hotelName: booking.hotel_name,
-      checkInDate: booking.check_in_date,
-      checkOutDate: booking.check_out_date,
+      checkInDate: formatDate(booking.check_in_date),
+      checkOutDate: formatDate(booking.check_out_date),
       roomQuantity: booking.room_quantity,
       adults: booking.adults,
       totalPrice: parseFloat(booking.total_price),
@@ -418,8 +437,8 @@ function formatBookingResponse(booking, guests = []) {
     hotelName: booking.hotel_name,
     hotelData: booking.hotel_data,
     offerData: booking.offer_data,
-    checkInDate: booking.check_in_date,
-    checkOutDate: booking.check_out_date,
+    checkInDate: formatDate(booking.check_in_date),
+    checkOutDate: formatDate(booking.check_out_date),
     roomQuantity: booking.room_quantity,
     adults: booking.adults,
     totalPrice: parseFloat(booking.total_price),
@@ -430,6 +449,8 @@ function formatBookingResponse(booking, guests = []) {
     specialRequests: booking.special_requests,
     providerConfirmationId: booking.provider_confirmation_id,
     amadeusOrderId: booking.amadeus_order_id,
+    supplier: booking.supplier || null,
+    fulfillmentStatus: booking.fulfillment_status || null,
     guests: guests.map(g => ({
       id: g.id,
       title: g.title,

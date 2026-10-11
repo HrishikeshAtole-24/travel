@@ -51,8 +51,12 @@ const createBookingTable = async () => {
 
     -- Supplier order details (airline booking placed after payment)
     ALTER TABLE bookings ADD COLUMN IF NOT EXISTS supplier VARCHAR(20);
-    ALTER TABLE bookings ADD COLUMN IF NOT EXISTS supplier_offer_id VARCHAR(100);
+    ALTER TABLE bookings ADD COLUMN IF NOT EXISTS supplier_offer_id TEXT;
+    -- LiteAPI offer IDs are long opaque tokens
+    ALTER TABLE bookings ALTER COLUMN supplier_offer_id TYPE TEXT;
     ALTER TABLE bookings ADD COLUMN IF NOT EXISTS supplier_order_id VARCHAR(100);
+    -- Seat hold created before payment (e.g. LiteAPI prebookId)
+    ALTER TABLE bookings ADD COLUMN IF NOT EXISTS supplier_hold_id VARCHAR(100);
     ALTER TABLE bookings ADD COLUMN IF NOT EXISTS supplier_amount DECIMAL(12, 2);
     ALTER TABLE bookings ADD COLUMN IF NOT EXISTS supplier_currency VARCHAR(3);
     -- PENDING → IN_PROGRESS → ISSUED | FAILED (FAILED needs manual follow-up / refund)

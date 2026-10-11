@@ -346,6 +346,210 @@ const mapDuffelData = (duffelData, supplierCode = 'duffel') => {
   return offers;
 };
 
+// ═══════════════════════════════════════════════════════════════
+// ✈️ LITEAPI (Nuitée Connect)
+// ═══════════════════════════════════════════════════════════════
+
+// LiteAPI cabin names ("Economy", "Premium Economy") → standard cabin codes
+const mapLiteApiCabin = (cabin) =>
+  mapCabinClass(String(cabin || 'ECONOMY').toUpperCase().replace(/\s+/g, '_'));
+
+/**
+ * Summarize LiteAPI included baggage into the standard baggage shape
+ * Uses allowances for adults (ADT) or all passengers (ALL).
+ */
+const mapLiteApiBaggage = (baggage) => {
+  const included = (baggage?.included || []).filter(b => ['ADT', 'ALL'].includes(b.passengerType || 'ALL'));
+  const pick = (types) => included.filter(b => types.includes(b.bagType));
+  const summarize = (bags) => ({
+    pieces: bags.reduce((sum, b) => sum + (b.pieces || 0), 0),
+    weightKg: bags.find(b => b.weightKg)?.weightKg ?? null
+  });
+  return {
+    checkIn: summarize(pick(['checked'])),
+    cabin: summarize(pick(['cabin', 'personal']))
+  };
+};
+
+/**
+ * Map one LiteAPI journey + fare offer to the standard offer format
+ * @param {Object} journey - LiteAPI journey (segments, legDurations, ...)
+ * @param {Object} offer - The fare (pricing, baggage, fare, terms, segmentFares)
+ * @param {string} offerId - LiteAPI offer ID (verify responses don't include it)
+ * @param {Object|null} passengerCounts - { adults, children, infants } when known (verify)
+ * @param {string} supplierCode
+ */
+const mapLiteApiJourney = (journey, offer, offerId, passengerCounts, supplierCode = 'liteapi') => {
+  const segmentFares = offer.segmentFares || [];
+  const baggage = mapLiteApiBaggage(offer.baggage);
+  const directions = ['OUTBOUND', 'INBOUND'];
+  let segmentIndex = 0;
+
+  const slices = directions
+    .map((direction, sliceIndex) => {
+      const segs = (journey.segments || []).filter(g => (g.direction || 'OUTBOUND') === direction);
+      if (segs.length === 0) return null;
+
+      const segments = segs.map((seg, i) => {
+        const fare = segmentFares[segmentIndex++] || {};
+        return {
+          segmentId: `SEG${sliceIndex + 1}_${i + 1}`,
+          supplierSegmentId: seg.segmentKey || null,
+          marketingAirlineCode: seg.carrier?.marketingCode,
+          marketingAirlineName: seg.carrier?.marketingName || null,
+          marketingAirlineLogo: seg.carrier?.marketingLogo || null,
+          operatingAirlineCode: seg.carrier?.operatingCode || seg.carrier?.marketingCode,
+          flightNumber: seg.flight?.marketingNumber,
+          departure: {
+            airportCode: seg.originCode,
+            airportName: seg.originName || null,
+            terminal: seg.originTerminal || null,
+            time: seg.departureTime
+          },
+          arrival: {
+            airportCode: seg.destinationCode,
+            airportName: seg.destinationName || null,
+            terminal: seg.destinationTerminal || null,
+            time: seg.arrivalTime
+          },
+          aircraftCode: seg.aircraft?.code || null,
+          aircraftName: seg.aircraft?.name || null,
+          cabinClass: mapLiteApiCabin(fare.cabin),
+          bookingClass: fare.bookingCode || null,
+          fareBasisCode: fare.fareBasisCode || null,
+          baggage,
+          durationMinutes: seg.duration?.minutes ?? parseDuration(seg.duration?.iso8601),
+          technicalStops: seg.stopCount || 0
+        };
+      });
+
+      const legDuration = (journey.legDurations || []).find(l => l.direction === direction);
+      const fallbackMinutes = Math.round(
+        (new Date(segs[segs.length - 1].arrivalTime) - new Date(segs[0].departureTime)) / 60000
+      );
+
+      return {
+        sliceId: direction,
+        durationMinutes: legDuration?.duration?.minutes ?? fallbackMinutes,
+        fareBrandName: offer.fare?.family || null,
+        segments
+      };
+    })
+    .filter(Boolean);
+
+  const display = offer.pricing?.display || {};
+  const terms = offer.terms || {};
+  const feeType = (allowed, hasFee) => {
+    if (allowed === undefined) return 'UNKNOWN';
+    if (!allowed) return 'NOT_PERMITTED';
+    return hasFee ? 'VARIABLE' : 'FREE';
+  };
+
+  const pricing = {
+    totalAmount: parseFloat(display.total),
+    totalCurrency: display.currency,
+    baseAmount: parseFloat(display.base || 0),
+    taxesAmount: Math.round(((display.taxes || 0) + (display.fees || 0)) * 100) / 100,
+    fareFamily: offer.fare?.family || null,
+    isRefundable: Boolean(terms.refundable),
+    isChangeable: Boolean(terms.changeable),
+    penaltiesSummary: {
+      changeFeeType: feeType(terms.changeable, terms.hasChangeFee),
+      refundFeeType: feeType(terms.refundable, terms.hasRefundFee)
+    },
+    termsSummary: (terms.summary || []).map(t => t.message)
+  };
+
+  // Per-passenger-type prices are itemised by LiteAPI
+  const perPassenger = display.perPassenger || {};
+  const counts = passengerCounts || {};
+  const travelerTypes = [
+    ['ADULT', 'adult', counts.adults],
+    ['CHILD', 'child', counts.children],
+    ['INFANT', 'infant', counts.infants]
+  ];
+
+  const travelerPricing = travelerTypes
+    .filter(([, key, count]) => perPassenger[key] && (passengerCounts ? count > 0 : key === 'adult'))
+    .map(([type, key, count]) => ({
+      travelerType: type,
+      quantity: count || 1,
+      price: {
+        totalAmount: parseFloat(perPassenger[key].total),
+        totalCurrency: perPassenger[key].currency || display.currency,
+        baseAmount: parseFloat(perPassenger[key].base || 0),
+        taxesAmount: Math.round(((perPassenger[key].taxes || 0) + (perPassenger[key].fees || 0)) * 100) / 100
+      },
+      fareDetailsBySegment: []
+    }));
+
+  // LiteAPI has no passenger IDs: slots are positional (same order sent at prebook)
+  const passengers = passengerCounts ? travelerTypes.flatMap(([type, , count]) =>
+    Array.from({ length: count || 0 }, (_, i) => ({ supplierPassengerId: `${type}_${i + 1}`, type }))
+  ) : [];
+
+  const firstSegment = slices[0]?.segments[0] || {};
+
+  return {
+    id: `OFFER_LITEAPI_${journey.journeyKey || offerId.slice(-16)}`,
+    source: {
+      supplier: supplierCode,
+      supplierOfferId: offerId,
+      distributionChannel: 'AGGREGATOR',
+      fetchedAt: Date.now(),
+      expiresAt: offer.expiration || journey.expiration || null
+    },
+    itinerary: { slices },
+    pricing,
+    travelerPricing,
+    passengers,
+    requirements: {
+      identityDocumentsRequired: false,
+      instantPaymentRequired: true,
+      holdBeforePayment: true // seats are held at prebook, before the customer pays
+    },
+    validatingAirlineCode: firstSegment.marketingAirlineCode,
+    validatingAirlineName: firstSegment.marketingAirlineName,
+    seatsRemaining: offer.fare?.seatsRemaining ?? null
+  };
+};
+
+/**
+ * Map LiteAPI flight data to standardized format
+ * Accepts a search response ({ data: [{ journeys }] }) or a verify response
+ * ({ data: [{ journey, changes }], requestedOfferId }).
+ */
+const mapLiteApiFlightData = (liteData, supplierCode = 'liteapi') => {
+  const first = Array.isArray(liteData?.data) ? liteData.data[0] : liteData?.data;
+  if (!first) return [];
+
+  const offers = [];
+
+  // Verify response: the fare is merged into the journey itself
+  if (first.journey) {
+    try {
+      offers.push(mapLiteApiJourney(first.journey, first.journey, liteData.requestedOfferId, first.journey.passengers || null, supplierCode));
+    } catch (error) {
+      logger.warn(`Skipping unmappable LiteAPI verify response: ${error.message}`);
+    }
+    return offers;
+  }
+
+  for (const journey of first.journeys || []) {
+    const offer = journey.cheapestOffer || journey.offers?.[0];
+    if (!offer?.offerId) continue;
+    try {
+      offers.push(mapLiteApiJourney(journey, offer, offer.offerId, null, supplierCode));
+    } catch (error) {
+      // One malformed journey must not break the whole search
+      logger.warn(`Skipping unmappable LiteAPI journey ${journey.journeyKey}: ${error.message}`);
+    }
+  }
+
+  logger.info(`✅ Mapped ${offers.length} flight offers from ${supplierCode}`);
+  return offers;
+};
+
 /**
  * Map Amadeus flight data to standardized format
  * @param {Object} amadeusData - Raw Amadeus API response
@@ -382,6 +586,9 @@ const mapFlightData = (rawData, supplier = 'amadeus') => {
 
     case 'duffel':
       return mapDuffelData(rawData, supplier);
+
+    case 'liteapi':
+      return mapLiteApiFlightData(rawData, supplier);
     
     // Future suppliers
     // case 'sabre':
@@ -401,5 +608,6 @@ module.exports = {
   mapAmadeusOffer,
   mapDuffelData,
   mapDuffelOffer,
+  mapLiteApiFlightData,
   parseDuration
 };

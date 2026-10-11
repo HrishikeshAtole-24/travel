@@ -9,6 +9,7 @@ const logger = require('../config/winstonLogger');
 const flightService = require('./flight.service');
 const { generateReference } = require('../utils/security');
 const { validateTravelersForOffer } = require('../utils/passengerValidation');
+const ticketingService = require('./ticketing.service');
 
 // Industry standard: Flight bookings expire in 30 minutes if unpaid
 const BOOKING_EXPIRY_MINUTES = 30;
@@ -106,7 +107,7 @@ const createBooking = async (bookingData, userId = null) => {
 
   // Authoritative price from the supplier (client-submitted price is ignored).
   // Done before opening the transaction so no DB connection is held during the API call.
-  const { totalPrice, currency, pricedOffer } = await resolveFlightPrice(validatedFlightOffer);
+  const { totalPrice: quotedPrice, currency, pricedOffer } = await resolveFlightPrice(validatedFlightOffer);
 
   // Validate passengers against what the airline needs to ticket - BEFORE taking payment
   const validTravelers = validateTravelersForOffer(travelers, pricedOffer, {
@@ -114,12 +115,29 @@ const createBooking = async (bookingData, userId = null) => {
     phone: contactPhone
   });
 
+  // Suppliers like LiteAPI hold the seats now (before payment); the held price is final
+  const hold = await ticketingService.holdFlight({
+    pricedOffer,
+    travelers: validTravelers,
+    contactEmail,
+    contactPhone
+  });
+
+  if (hold && (hold.currency !== currency || hold.price > quotedPrice + 1)) {
+    throw ApiError.badRequest(
+      `The fare changed to ${hold.currency} ${hold.price} while holding your seats. Please search again.`
+    );
+  }
+
+  const totalPrice = hold ? hold.price : quotedPrice;
+
   // Supplier details needed to place the airline order after payment
   const supplierInfo = pricedOffer?.source?.supplier ? {
     supplier: pricedOffer.source.supplier,
     supplierOfferId: pricedOffer.source.supplierOfferId,
-    supplierAmount: pricedOffer.pricing?.supplierPrice?.totalAmount ?? pricedOffer.pricing?.totalAmount,
-    supplierCurrency: pricedOffer.pricing?.supplierPrice?.currency ?? pricedOffer.pricing?.totalCurrency
+    supplierHoldId: hold?.holdId || null,
+    supplierAmount: hold ? hold.price : (pricedOffer.pricing?.supplierPrice?.totalAmount ?? pricedOffer.pricing?.totalAmount),
+    supplierCurrency: hold ? hold.currency : (pricedOffer.pricing?.supplierPrice?.currency ?? pricedOffer.pricing?.totalCurrency)
   } : null;
 
   const pool = getPool();
@@ -132,9 +150,10 @@ const createBooking = async (bookingData, userId = null) => {
     const bookingReference = generateBookingReference();
     
     // Calculate expiration time (industry standard: 30 minutes for flight bookings),
-    // never later than the supplier's offer expiry - an expired offer can't be ticketed
+    // never later than the seat hold / supplier offer expiry - an expired offer can't be ticketed
     let expiresAt = getBookingExpirationTime();
-    const offerExpiresAt = pricedOffer?.source?.expiresAt ? new Date(pricedOffer.source.expiresAt) : null;
+    const supplierDeadline = hold?.expiresAt || pricedOffer?.source?.expiresAt;
+    const offerExpiresAt = supplierDeadline ? new Date(supplierDeadline) : null;
     if (offerExpiresAt && !isNaN(offerExpiresAt) && offerExpiresAt < expiresAt) {
       expiresAt = offerExpiresAt;
     }
@@ -146,8 +165,8 @@ const createBooking = async (bookingData, userId = null) => {
         total_price, currency, status,
         contact_email, contact_phone, special_requests,
         expires_at, supplier, supplier_offer_id, supplier_amount, supplier_currency,
-        ticketing_status, created_at, updated_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        ticketing_status, supplier_hold_id, created_at, updated_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
       RETURNING *`,
       [
         bookingReference,
@@ -165,7 +184,8 @@ const createBooking = async (bookingData, userId = null) => {
         supplierInfo?.supplierOfferId || null,
         supplierInfo?.supplierAmount ?? null,
         supplierInfo?.supplierCurrency || null,
-        supplierInfo ? 'PENDING' : null
+        supplierInfo ? 'PENDING' : null,
+        supplierInfo?.supplierHoldId || null
       ]
     );
 

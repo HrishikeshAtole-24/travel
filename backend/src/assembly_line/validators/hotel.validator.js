@@ -214,9 +214,15 @@ const validateHotelSearchParams = (searchParams) => {
 const validateHotelOfferSearchParams = (searchParams) => {
   const errors = [];
 
-  // hotelIds is required
-  if (!searchParams.hotelIds) {
-    errors.push('hotelIds is required');
+  // Where to search: specific hotels, a city, or coordinates
+  const hasCity = searchParams.cityName && searchParams.countryCode;
+  const hasGeo = searchParams.latitude && searchParams.longitude;
+  if (!searchParams.hotelIds && !hasCity && !hasGeo) {
+    errors.push('Provide hotelIds, cityName + countryCode, or latitude + longitude');
+  }
+
+  if (!searchParams.checkInDate || !searchParams.checkOutDate) {
+    errors.push('checkInDate and checkOutDate are required (YYYY-MM-DD)');
   }
 
   // Adults validation

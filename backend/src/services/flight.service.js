@@ -142,7 +142,7 @@ class FlightService {
 
       // Race between supplier call and timeout
       const rawData = await Promise.race([
-        supplier.searchFlights(searchParams),
+        supplier.searchFlights({ ...searchParams, currency: CHARGE_CURRENCY }),
         timeoutPromise
       ]);
 
@@ -171,7 +171,13 @@ class FlightService {
     const transformedData = transformFlightData(validatedData);
 
     const rates = await currencyService.getRatesForOffers(transformedData, CHARGE_CURRENCY);
-    return convertOffersCurrency(transformedData, rates, CHARGE_CURRENCY);
+    const offers = convertOffersCurrency(transformedData, rates, CHARGE_CURRENCY);
+
+    // Shown to customers as "via <supplier>" (like OTAs credit their consolidators)
+    const supplierName = SupplierConfigManager.getDisplayName(supplierCode);
+    offers.forEach(offer => { offer.source.supplierName = supplierName; });
+
+    return offers;
   }
 
   /**

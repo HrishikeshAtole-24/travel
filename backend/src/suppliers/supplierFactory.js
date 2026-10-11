@@ -1,6 +1,7 @@
 // Supplier Factory - Dynamic Supplier Selection
 const Amadeus = require('./amadeus');
 const Duffel = require('./duffel');
+const LiteApi = require('./liteapi');
 const logger = require('../config/winstonLogger');
 
 /**
@@ -12,6 +13,7 @@ const logger = require('../config/winstonLogger');
 const supplierFactory = (supplierName = 'duffel') => {
   const suppliers = {
     duffel: Duffel,
+    liteapi: LiteApi,
     amadeus: Amadeus,
     // sabre: Sabre,        // Future suppliers
     // travelport: Travelport,

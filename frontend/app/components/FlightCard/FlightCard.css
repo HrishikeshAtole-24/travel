@@ -41,6 +41,34 @@
   font-size: var(--fs-sm);
 }
 
+/* Real airline logo (when the supplier provides one) */
+.airline-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: var(--white);
+  border-radius: var(--radius-md);
+  padding: 4px;
+}
+
+/* Which supplier the fare comes from, e.g. "via Duffel" */
+.supplier-badge {
+  display: inline-block;
+  font-size: var(--fs-xs, 0.75rem);
+  color: var(--gray-600);
+  background: var(--gray-100, #f3f4f6);
+  border: 1px solid var(--gray-200, #e5e7eb);
+  border-radius: 999px;
+  padding: 2px 10px;
+  margin-bottom: 4px;
+  white-space: nowrap;
+}
+
+.supplier-badge strong {
+  color: var(--primary-color);
+  font-weight: 600;
+}
+
 .airline-info {
   display: flex;
   flex-direction: column;

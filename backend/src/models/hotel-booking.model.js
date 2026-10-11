@@ -62,6 +62,18 @@ const createHotelBookingTable = async () => {
       CONSTRAINT fk_hotel_guest_booking FOREIGN KEY (hotel_booking_id) REFERENCES hotel_bookings(id) ON DELETE CASCADE
     );
 
+    -- Supplier booking details (hotel booked with the supplier after payment)
+    ALTER TABLE hotel_bookings ADD COLUMN IF NOT EXISTS supplier VARCHAR(20);
+    ALTER TABLE hotel_bookings ADD COLUMN IF NOT EXISTS supplier_offer_id TEXT;
+    -- Price/availability hold created before payment (e.g. LiteAPI prebookId)
+    ALTER TABLE hotel_bookings ADD COLUMN IF NOT EXISTS supplier_hold_id VARCHAR(100);
+    ALTER TABLE hotel_bookings ADD COLUMN IF NOT EXISTS supplier_booking_id VARCHAR(100);
+    -- PENDING → IN_PROGRESS → CONFIRMED | FAILED (FAILED needs refund or manual rebooking)
+    ALTER TABLE hotel_bookings ADD COLUMN IF NOT EXISTS fulfillment_status VARCHAR(20);
+    ALTER TABLE hotel_bookings ADD COLUMN IF NOT EXISTS fulfillment_error TEXT;
+    -- LiteAPI offer IDs are long opaque tokens
+    ALTER TABLE hotel_bookings ALTER COLUMN offer_id TYPE TEXT;
+
     -- Create indexes for faster lookups
     CREATE INDEX IF NOT EXISTS idx_hotel_bookings_user_id ON hotel_bookings(user_id);
     CREATE INDEX IF NOT EXISTS idx_hotel_bookings_reference ON hotel_bookings(booking_reference);

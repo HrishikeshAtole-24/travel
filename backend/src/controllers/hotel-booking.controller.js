@@ -5,6 +5,8 @@
  */
 const hotelBookingService = require('../services/hotel-booking.service');
 const paymentService = require('../payments/payment.service');
+const hotelFulfillmentService = require('../services/hotelFulfillment.service');
+const ApiError = require('../core/ApiError');
 const AsyncHandler = require('../core/AsyncHandler');
 const ApiResponse = require('../core/ApiResponse');
 const { StatusCodes } = require('../core/StatusCodes');
@@ -241,7 +243,23 @@ const confirmHotelBooking = AsyncHandler(async (req, res) => {
   );
 });
 
+/**
+ * Retry booking a paid hotel with the supplier after a failure
+ * POST /api/hotel-bookings/:bookingId/retry-fulfillment
+ * Admin only (X-Admin-Key)
+ */
+const retryFulfillment = AsyncHandler(async (req, res) => {
+  const result = await hotelFulfillmentService.fulfillHotelBooking(req.params.bookingId, { retry: true });
+
+  if (result.status === 'SKIPPED') {
+    throw ApiError.badRequest('Hotel booking is not paid or is not awaiting supplier confirmation');
+  }
+
+  return ApiResponse.success(res, result, result.success ? 'Hotel booked with supplier' : 'Supplier booking failed', StatusCodes.OK);
+});
+
 module.exports = {
+  retryFulfillment,
   createHotelBooking,
   createHotelBookingAndPay,
   getHotelBooking,

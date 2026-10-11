@@ -386,6 +386,180 @@ const mapHotelListData = (rawData, supplier = 'amadeus') => {
   }
 };
 
+// ═══════════════════════════════════════════════════════════════
+// 🏨 LITEAPI (Nuitée Connect) HOTEL OFFERS
+// ═══════════════════════════════════════════════════════════════
+
+// Prefix that identifies LiteAPI offers in our standard offer IDs
+const LITEAPI_OFFER_PREFIX = 'HOTEL_OFFER_LITEAPI_';
+
+const sumAmounts = (items) => Math.round(
+  (items || []).reduce((sum, item) => sum + parseFloat(item?.amount || 0), 0) * 100
+) / 100;
+
+/**
+ * Map one LiteAPI room offer (roomTypes[]) to the standard hotel offer
+ * @param {Object} roomOffer - LiteAPI roomType offer ({ offerId, rates[], offerRetailRate, ... })
+ * @param {Object} hotelInfo - Hotel details (from includeHotelData)
+ * @param {Object} stay - { checkInDate, checkOutDate }
+ * @param {string} supplierCode
+ * @param {Object} [extra] - { prebookId } when mapping a prebook response
+ */
+const mapLiteApiRoomOffer = (roomOffer, hotelInfo, stay, supplierCode = 'liteapi', extra = {}) => {
+  const rates = roomOffer.rates || [];
+  const firstRate = rates[0] || {};
+
+  // Taxes/fees: included ones are inside the price, excluded ones are paid at the hotel
+  const fees = rates.flatMap(r => r.retailRate?.taxesAndFees || []).filter(Boolean);
+  const includedTaxes = sumAmounts(fees.filter(f => f.included));
+  const payAtProperty = fees.filter(f => !f.included).map(f => ({
+    description: f.description || 'Local taxes/fees',
+    amount: parseFloat(f.amount || 0),
+    currency: f.currency
+  }));
+
+  const totalAmount = parseFloat(extra.price ?? roomOffer.offerRetailRate?.amount ?? sumAmounts(rates.map(r => r.retailRate?.total?.[0])));
+  const totalCurrency = extra.currency || roomOffer.offerRetailRate?.currency || firstRate.retailRate?.total?.[0]?.currency;
+
+  // Cancellation: refundable until the earliest penalty deadline, else non-refundable
+  const refundable = rates.length > 0 && rates.every(r => r.cancellationPolicies?.refundableTag === 'RFN');
+  const penalties = rates.flatMap(r => r.cancellationPolicies?.cancelPolicyInfos || [])
+    .filter(p => p.cancelTime)
+    .sort((a, b) => new Date(a.cancelTime) - new Date(b.cancelTime));
+
+  const cancellation = refundable
+    ? {
+      deadline: penalties[0] ? `${penalties[0].cancelTime.replace(' ', 'T')}Z` : null,
+      description: penalties[0]
+        ? `Free cancellation until ${penalties[0].cancelTime} GMT; ${penalties[0].currency} ${penalties[0].amount} charged after`
+        : 'Free cancellation',
+      amount: penalties[0] ? parseFloat(penalties[0].amount) : 0,
+      numberOfNights: null,
+      type: 'FREE_UNTIL_DEADLINE'
+    }
+    : {
+      deadline: null,
+      description: 'Non-refundable rate',
+      amount: totalAmount,
+      numberOfNights: null,
+      type: 'NON_REFUNDABLE'
+    };
+
+  const adults = rates.reduce((sum, r) => sum + (r.adultCount || 0), 0);
+  const childrenAges = rates.flatMap(r => r.childrenAges || []);
+
+  return {
+    id: `${LITEAPI_OFFER_PREFIX}${roomOffer.offerId}`,
+    source: {
+      supplier: supplierCode,
+      supplierOfferId: roomOffer.offerId,
+      distributionChannel: 'AGGREGATOR',
+      fetchedAt: Date.now(),
+      ...(extra.prebookId ? { prebookId: extra.prebookId } : {})
+    },
+    hotel: {
+      hotelId: hotelInfo.id || hotelInfo.hotelId || null,
+      name: hotelInfo.name || null,
+      chainCode: null,
+      cityCode: null,
+      cityName: hotelInfo.city_name || hotelInfo.city || null,
+      countryCode: hotelInfo.country_code || null,
+      address: hotelInfo.address || null,
+      latitude: hotelInfo.latitude ?? null,
+      longitude: hotelInfo.longitude ?? null,
+      stars: hotelInfo.stars ?? null,
+      rating: hotelInfo.rating ?? null,
+      reviewCount: hotelInfo.review_count ?? null,
+      photo: hotelInfo.main_photo || null,
+      thumbnail: hotelInfo.thumbnail || null
+    },
+    checkInDate: stay.checkInDate || null,
+    checkOutDate: stay.checkOutDate || null,
+    roomQuantity: rates.length || 1,
+    rateCode: null,
+    rateFamilyEstimated: null,
+    boardType: firstRate.boardType || null,
+    boardName: firstRate.boardName || null,
+    room: {
+      type: null,
+      typeEstimated: null,
+      description: firstRate.name || null,
+      maxOccupancy: firstRate.maxOccupancy ?? null,
+      // Room in the hotel content (photos, size, beds); only present when roomMapping was requested
+      mappedRoomId: firstRate.mappedRoomId ?? null
+    },
+    // One entry per room: the guest names sent at booking are matched by occupancyNumber
+    rooms: rates.map(r => ({
+      occupancyNumber: r.occupancyNumber,
+      mappedRoomId: r.mappedRoomId ?? null,
+      name: r.name,
+      adults: r.adultCount || 0,
+      childrenAges: r.childrenAges || []
+    })),
+    guests: { adults: adults || 1, childrenAges },
+    pricing: {
+      totalAmount,
+      totalCurrency,
+      baseAmount: Math.round((totalAmount - includedTaxes) * 100) / 100,
+      taxesAmount: includedTaxes,
+      markupAmount: 0,
+      variations: null,
+      suggestedSellingPrice: roomOffer.suggestedSellingPrice?.amount
+        ? parseFloat(roomOffer.suggestedSellingPrice.amount)
+        : null,
+      payAtProperty
+    },
+    policies: {
+      paymentType: 'PREPAY',
+      refundable,
+      cancellation,
+      deposit: null,
+      holdTime: null,
+      checkInOut: null,
+      remarks: firstRate.remarks || null
+    }
+  };
+};
+
+/**
+ * Map LiteAPI hotel rates (search) or a prebook response to standard offers.
+ * - Search: { data: [{ hotelId, roomTypes }], hotels: [...], request: { checkin, checkout } }
+ * - Prebook: { prebookId, hotelId, roomTypes, price, currency, checkin, checkout }
+ */
+const mapLiteApiHotelOffers = (liteData, supplierCode = 'liteapi') => {
+  if (!liteData) return [];
+
+  // Prebook response (single offer, confirmed price)
+  if (liteData.prebookId) {
+    const roomOffer = { ...(liteData.roomTypes?.[0] || {}), offerId: liteData.offerId };
+    return [mapLiteApiRoomOffer(
+      roomOffer,
+      { id: liteData.hotelId, name: liteData.hotelName || null },
+      { checkInDate: liteData.checkin, checkOutDate: liteData.checkout },
+      supplierCode,
+      { prebookId: liteData.prebookId, price: liteData.price, currency: liteData.currency }
+    )];
+  }
+
+  const hotelsById = Object.fromEntries((liteData.hotels || []).map(h => [h.id, h]));
+  const stay = { checkInDate: liteData.request?.checkin, checkOutDate: liteData.request?.checkout };
+  const offers = [];
+
+  for (const hotelRates of liteData.data || []) {
+    const hotelInfo = hotelsById[hotelRates.hotelId] || { id: hotelRates.hotelId };
+    for (const roomOffer of hotelRates.roomTypes || []) {
+      try {
+        offers.push(mapLiteApiRoomOffer(roomOffer, hotelInfo, stay, supplierCode));
+      } catch (error) {
+        logger.warn(`Skipping unmappable LiteAPI hotel offer for ${hotelRates.hotelId}: ${error.message}`);
+      }
+    }
+  }
+
+  logger.info(`✅ Mapped ${offers.length} hotel offers from ${supplierCode}`);
+  return offers;
+};
+
 /**
  * Generic hotel offers mapper - routes to specific supplier mapper
  * @param {Object} rawData - Raw supplier data
@@ -396,6 +570,8 @@ const mapHotelOffersData = (rawData, supplier = 'amadeus') => {
   switch (supplier.toLowerCase()) {
     case 'amadeus':
       return mapAmadeusHotelOffers(rawData, supplier);
+    case 'liteapi':
+      return mapLiteApiHotelOffers(rawData, supplier);
     default:
       logger.warn(`No hotel offers mapper found for supplier: ${supplier}`);
       return [];
@@ -410,5 +586,7 @@ module.exports = {
   mapAmadeusHotelOffer,
   mapAmadeusHotelOffers,
   mapAmadeusHotelRatings,
-  mapAmadeusHotelAutocomplete
+  mapAmadeusHotelAutocomplete,
+  mapLiteApiHotelOffers,
+  LITEAPI_OFFER_PREFIX
 };

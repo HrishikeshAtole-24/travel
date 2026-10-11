@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import Header from '../components/Header/Header';
 import Footer from '../components/Footer/Footer';
 import './payment-success.css';
+import HotelConfirmation from './HotelConfirmation';
 
 function PaymentSuccessContent() {
   const searchParams = useSearchParams();
@@ -505,6 +506,23 @@ function PaymentSuccessContent() {
   );
 }
 
+/**
+ * Hotel bookings (HB- references) get their own confirmation view
+ */
+function PaymentSuccessRouter() {
+  const searchParams = useSearchParams();
+  const reference = searchParams.get('booking') || searchParams.get('booking_reference') || '';
+  if (reference.startsWith('HB-')) {
+    return (
+      <HotelConfirmation
+        bookingReference={reference}
+        paymentId={searchParams.get('payment') || searchParams.get('payment_reference')}
+      />
+    );
+  }
+  return <PaymentSuccessContent />;
+}
+
 export default function PaymentSuccessPage() {
   return (
     <Suspense fallback={
@@ -517,7 +535,7 @@ export default function PaymentSuccessPage() {
         </div>
       </div>
     }>
-      <PaymentSuccessContent />
+      <PaymentSuccessRouter />
     </Suspense>
   );
 }

@@ -102,7 +102,7 @@ describe('markPaymentSuccessful', () => {
       { acquirerPaymentId: 'pay_2', paymentMethod: 'upi' }
     );
 
-    expect(result).toEqual({ alreadyProcessed: false, bookingType: 'hotel', bookingId: 55 });
+    expect(result).toMatchObject({ alreadyProcessed: false, bookingType: 'hotel', bookingId: 55 });
     const sqls = mockClientQuery.mock.calls.map(([sql]) => sql);
     expect(sqls.some(sql => sql.includes("UPDATE hotel_bookings SET status = 'confirmed'"))).toBe(true);
     expect(sqls.some(sql => sql.includes('UPDATE bookings '))).toBe(false);

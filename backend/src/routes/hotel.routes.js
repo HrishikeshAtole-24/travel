@@ -76,4 +76,29 @@ router.get('/ratings', asyncHandler(hotelController.getRatings));
  */
 router.get('/autocomplete', asyncHandler(hotelController.autocomplete));
 
+// ═══════════════════════════════════════════════════════════════
+// 🔎 BOOKING SITE: DESTINATIONS / SEARCH / DETAILS
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * @route   GET /api/hotels/destinations
+ * @desc    Destination autocomplete (cities)
+ * @query   q
+ */
+router.get('/destinations', asyncHandler(hotelController.destinations));
+
+/**
+ * @route   GET /api/hotels/search
+ * @desc    Hotels in a destination with their cheapest room for the stay
+ * @query   cityName+countryCode | latitude+longitude | hotelIds, checkInDate, checkOutDate, adults, rooms, childrenAges, sortBy
+ */
+router.get('/search', asyncHandler(hotelController.searchHotels));
+
+/**
+ * @route   GET /api/hotels/:hotelId/details
+ * @desc    Hotel content (photos, amenities, policies) and room rates for the stay
+ * @query   checkInDate, checkOutDate, adults, rooms, childrenAges
+ */
+router.get('/:hotelId/details', asyncHandler(hotelController.getHotelDetails));
+
 module.exports = router;

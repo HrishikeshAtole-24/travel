@@ -158,6 +158,11 @@ const determineCancellationType = (policies) => {
     return hasFreeCancellation ? 'FREE_CANCELLATION' : 'PARTIAL_REFUND';
   }
 
+  // Supplier explicitly marked the rate non-refundable (e.g. LiteAPI NRFN)
+  if (cancellation.type === 'NON_REFUNDABLE') {
+    return 'NON_REFUNDABLE';
+  }
+
   // Single cancellation rule
   if (cancellation.amount === 0 || cancellation.numberOfNights === 0) {
     return 'FREE_CANCELLATION';

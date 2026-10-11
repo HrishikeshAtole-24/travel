@@ -7,7 +7,63 @@ const hotelService = require('../services/hotel.service');
 const ApiResponse = require('../core/ApiResponse');
 const { StatusCodes } = require('../core/StatusCodes');
 
+/**
+ * Stay parameters shared by hotel search and hotel details
+ */
+function parseStayParams(query) {
+  return {
+    checkInDate: query.checkInDate || null,
+    checkOutDate: query.checkOutDate || null,
+    adults: Math.min(Math.max(parseInt(query.adults) || 2, 1), 18),
+    roomQuantity: Math.min(Math.max(parseInt(query.rooms || query.roomQuantity) || 1, 1), 9),
+    childrenAges: query.childrenAges
+      ? String(query.childrenAges).split(',').map(a => parseInt(a)).filter(a => !isNaN(a) && a >= 0 && a < 18)
+      : []
+  };
+}
+
 class HotelController {
+
+  // ═══════════════════════════════════════════════════════════════
+  // 🔎 HOTEL SEARCH / DETAILS / DESTINATIONS (booking site)
+  // ═══════════════════════════════════════════════════════════════
+
+  /**
+   * Destination autocomplete
+   * GET /api/hotels/destinations?q=goa
+   */
+  async destinations(req, res) {
+    const result = await hotelService.searchDestinations(req.query.q || '');
+    return ApiResponse.success(res, result, 'Destinations', StatusCodes.OK);
+  }
+
+  /**
+   * Search hotels in a destination (one card per hotel)
+   * GET /api/hotels/search?cityName=Goa&countryCode=IN&checkInDate=...&checkOutDate=...&adults=2&rooms=1&childrenAges=5,8&sortBy=PRICE_ASC
+   */
+  async searchHotels(req, res) {
+    const { cityName, countryCode, latitude, longitude, hotelIds, sortBy } = req.query;
+
+    const result = await hotelService.searchHotels({
+      ...parseStayParams(req.query),
+      cityName: cityName || null,
+      countryCode: countryCode ? String(countryCode).toUpperCase() : null,
+      latitude: latitude || null,
+      longitude: longitude || null,
+      hotelIds: hotelIds || null
+    }, { sortBy: sortBy || 'POPULARITY' });
+
+    return ApiResponse.success(res, result, 'Hotels found', StatusCodes.OK);
+  }
+
+  /**
+   * Hotel details with room rates for the stay
+   * GET /api/hotels/:hotelId/details?checkInDate=...&checkOutDate=...&adults=2&rooms=1
+   */
+  async getHotelDetails(req, res) {
+    const result = await hotelService.getHotelDetails(req.params.hotelId, parseStayParams(req.query));
+    return ApiResponse.success(res, result, 'Hotel details', StatusCodes.OK);
+  }
 
   // ═══════════════════════════════════════════════════════════════
   // 🏨 HOTEL LIST ENDPOINTS
@@ -102,11 +158,22 @@ class HotelController {
   /**
    * Search hotel offers (availability + pricing)
    * GET /api/hotels/offers
-   * Query: hotelIds, adults, checkInDate, checkOutDate, roomQuantity, currency, priceRange, boardType, paymentPolicy
+   * Query: (hotelIds | cityName+countryCode | latitude+longitude[,radius]), checkInDate, checkOutDate,
+   *        adults, roomQuantity, childrenAges (e.g. 5,9), starRating (e.g. 4,5), minRating, refundableOnly,
+   *        priceRange, boardType, paymentPolicy, page, pageSize, sortBy
    */
   async searchOffers(req, res) {
     const {
       hotelIds,
+      cityName,
+      countryCode,
+      latitude,
+      longitude,
+      radius,
+      childrenAges,
+      starRating,
+      minRating,
+      refundableOnly,
       adults,
       checkInDate,
       checkOutDate,
@@ -121,7 +188,16 @@ class HotelController {
     } = req.query;
 
     const searchParams = {
-      hotelIds,
+      hotelIds: hotelIds || null,
+      cityName: cityName || null,
+      countryCode: countryCode ? String(countryCode).toUpperCase() : null,
+      latitude: latitude || null,
+      longitude: longitude || null,
+      radius: radius || null,
+      childrenAges: childrenAges ? String(childrenAges).split(',').map(a => parseInt(a)).filter(a => !isNaN(a)) : [],
+      starRating: starRating || null,
+      minRating: minRating || null,
+      refundableOnly: refundableOnly === 'true',
       adults: adults || 1,
       checkInDate: checkInDate || null,
       checkOutDate: checkOutDate || null,

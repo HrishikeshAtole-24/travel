@@ -5,7 +5,7 @@
 const express = require('express');
 const router = express.Router();
 const hotelBookingController = require('../controllers/hotel-booking.controller');
-const { authenticateToken, optionalAuth } = require('../middleware/auth.middleware');
+const { authenticateToken, optionalAuth, requireAdminKey } = require('../middleware/auth.middleware');
 const { bookingLimiter, lookupLimiter } = require('../middleware/rateLimit.middleware');
 
 // ═══════════════════════════════════════════════════════════════
@@ -72,5 +72,12 @@ router.post('/:bookingId/confirm', authenticateToken, hotelBookingController.con
  * @access  Protected (owner only)
  */
 router.post('/:bookingId/cancel', authenticateToken, hotelBookingController.cancelHotelBooking);
+
+/**
+ * @route   POST /api/hotel-bookings/:bookingId/retry-fulfillment
+ * @desc    Retry booking a paid hotel with the supplier after a failure
+ * @access  Admin (X-Admin-Key)
+ */
+router.post('/:bookingId/retry-fulfillment', requireAdminKey, hotelBookingController.retryFulfillment);
 
 module.exports = router;

@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import AirportAutocomplete from '../AirportAutocomplete/AirportAutocomplete';
 import DatePicker from '../DatePicker/DatePicker';
+import HotelSearchForm from '../HotelSearchForm/HotelSearchForm';
 import './FlightSearchWidget.css';
 
 export default function FlightSearchWidget() {
@@ -567,7 +568,9 @@ export default function FlightSearchWidget() {
           </form>
         )}
 
-        {activeTab !== 'flights' && (
+        {activeTab === 'hotels' && <HotelSearchForm />}
+
+        {!['flights', 'hotels'].includes(activeTab) && (
           <div className="coming-soon">
             <i className={`fas ${tabs.find(t => t.id === activeTab)?.icon} fa-3x`}></i>
             <h3>{tabs.find(t => t.id === activeTab)?.label}</h3>
