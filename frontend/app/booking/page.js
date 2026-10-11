@@ -109,10 +109,9 @@ export default function BookingPage() {
     }
 
     try {
-      // Use validated offer if available, otherwise fallback to original flight data
+      // Validated (re-priced) offer from the flight card; required to book
       const validatedOffer = flight.validatedOffer;
       const segment = flight.segments?.[0] || {};
-      const price = flight.price || {};
 
       // Build flight data object matching backend expectations
       const flightData = {
@@ -129,22 +128,23 @@ export default function BookingPage() {
         stops: flight.stops || (flight.segments?.length - 1) || 0
       };
 
-      // Use validated price if available
-      const validatedPrice = validatedOffer?.price || price;
+      if (!validatedOffer) {
+        setError('This fare could not be confirmed. Please go back and select the flight again.');
+        return;
+      }
 
+      // Price is NOT sent: the server re-prices validatedFlightOffer with the airline
       const bookingRequest = {
         flightData: flightData,
         travelers: travelers,
         contactEmail: contactDetails.email,
         contactPhone: contactDetails.phone,
-        totalPrice: validatedPrice.total || price.total || flight.totalPrice || 0,
-        currency: validatedPrice.currency || price.currency || 'INR',
         specialRequests: specialRequests || undefined,
         paymentAcquirer: 'RAZORPAY',
         successUrl: `${window.location.origin}/confirmation`,
         failureUrl: `${window.location.origin}/payment-failed`,
-        // Include validated flight offer for Amadeus booking
-        validatedFlightOffer: validatedOffer || undefined
+        // Validated flight offer - re-priced server-side and used for the Amadeus booking
+        validatedFlightOffer: validatedOffer
       };
 
       console.log('Creating booking with data:', bookingRequest);

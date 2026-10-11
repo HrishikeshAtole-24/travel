@@ -6,8 +6,8 @@
 const jwt = require('jsonwebtoken');
 const ApiError = require('../core/ApiError');
 const logger = require('../config/winstonLogger');
-
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+const { JWT_SECRET } = require('../config/jwt');
+const { safeEqual } = require('../utils/security');
 
 /**
  * Authenticate JWT token (required)
@@ -74,9 +74,26 @@ const optionalAuth = (req, res, next) => {
   }
 };
 
+/**
+ * Admin-only operations (refunds, internal analytics)
+ * Requires the X-Admin-Key header to match ADMIN_API_KEY. Disabled when ADMIN_API_KEY is unset.
+ */
+const requireAdminKey = (req, res, next) => {
+  const expected = process.env.ADMIN_API_KEY;
+  const provided = req.headers['x-admin-key'];
+
+  if (!expected || !safeEqual(String(provided || ''), expected)) {
+    logger.warn(`[Auth] Admin key rejected for ${req.method} ${req.originalUrl}`);
+    return next(ApiError.forbidden('Admin access required'));
+  }
+
+  next();
+};
+
 module.exports = {
   authenticateToken,
-  optionalAuth
+  optionalAuth,
+  requireAdminKey
 };
 
 // For backward compatibility

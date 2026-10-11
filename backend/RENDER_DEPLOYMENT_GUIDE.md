@@ -107,11 +107,11 @@ Add these **EXACT** environment variables:
 ### **Database Configuration (Supabase)**
 
 ```env
-DB_HOST=db.bbaxhfbntnfkpiqlnqiy.supabase.co
+DB_HOST=<your-supabase-host>
 DB_PORT=5432
 DB_NAME=postgres
 DB_USER=postgres
-DB_PASSWORD=Hrishikesh@$%2406
+DB_PASSWORD=<supabase-db-password>
 DB_SSL=true
 ```
 
@@ -125,15 +125,15 @@ NODE_ENV=production
 ### **Amadeus API (Test)**
 
 ```env
-AMADEUS_API_KEY=Lhrlj073vKfxA5EB9ai52h1I82o7F7S9
-AMADEUS_API_SECRET=oePorCGvIjGLEBPv
+AMADEUS_API_KEY=<amadeus-api-key>
+AMADEUS_API_SECRET=<amadeus-api-secret>
 AMADEUS_API_URL=https://test.api.amadeus.com
 ```
 
 ### **JWT Secret**
 
 ```env
-JWT_SECRET=skywings_prod_jwt_secret_key_2026_secure_token
+JWT_SECRET=<generate-a-long-random-secret>
 ```
 
 **⚠️ Change this to a random strong key!** Generate one:
@@ -145,15 +145,15 @@ node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
 
 ```env
 EMAIL_USER=rishiatole4545@gmail.com
-EMAIL_PASSWORD=uyxyfotrnchmwozb
+EMAIL_PASSWORD=<gmail-app-password>
 EMAIL_FROM=rishiatole4545@gmail.com
 ```
 
 ### **Razorpay Payment Gateway**
 
 ```env
-RAZORPAY_KEY_ID=rzp_test_Au81TcFRZWcmJD
-RAZORPAY_KEY_SECRET=2Oi1Xf1iafgNBE1QDb1ACSIn
+RAZORPAY_KEY_ID=rzp_test_xxxxxxxxxxxxxx
+RAZORPAY_KEY_SECRET=<razorpay-key-secret>
 RAZORPAY_WEBHOOK_SECRET=razorpay_webhook_secret_change_this
 ```
 
@@ -379,29 +379,29 @@ PORT=5000
 NODE_ENV=production
 
 # Database (Supabase)
-DB_HOST=db.bbaxhfbntnfkpiqlnqiy.supabase.co
+DB_HOST=<your-supabase-host>
 DB_PORT=5432
 DB_NAME=postgres
 DB_USER=postgres
-DB_PASSWORD=Hrishikesh@$%2406
+DB_PASSWORD=<supabase-db-password>
 DB_SSL=true
 
 # Amadeus API
-AMADEUS_API_KEY=Lhrlj073vKfxA5EB9ai52h1I82o7F7S9
-AMADEUS_API_SECRET=oePorCGvIjGLEBPv
+AMADEUS_API_KEY=<amadeus-api-key>
+AMADEUS_API_SECRET=<amadeus-api-secret>
 AMADEUS_API_URL=https://test.api.amadeus.com
 
 # JWT Secret (CHANGE THIS!)
-JWT_SECRET=skywings_prod_jwt_secret_key_2026_secure_token
+JWT_SECRET=<generate-a-long-random-secret>
 
 # Email
 EMAIL_USER=rishiatole4545@gmail.com
-EMAIL_PASSWORD=uyxyfotrnchmwozb
+EMAIL_PASSWORD=<gmail-app-password>
 EMAIL_FROM=rishiatole4545@gmail.com
 
 # Razorpay
-RAZORPAY_KEY_ID=rzp_test_Au81TcFRZWcmJD
-RAZORPAY_KEY_SECRET=2Oi1Xf1iafgNBE1QDb1ACSIn
+RAZORPAY_KEY_ID=rzp_test_xxxxxxxxxxxxxx
+RAZORPAY_KEY_SECRET=<razorpay-key-secret>
 RAZORPAY_WEBHOOK_SECRET=razorpay_webhook_secret_change_this
 
 # Logging

@@ -6,20 +6,22 @@
 const express = require('express');
 const router = express.Router();
 const paymentController = require('./payment.controller');
+const { authenticateToken, optionalAuth, requireAdminKey } = require('../middleware/auth.middleware');
+const { bookingLimiter, lookupLimiter } = require('../middleware/rateLimit.middleware');
 
 /**
  * @route   POST /api/payments/create
  * @desc    Create/Initiate a new payment
- * @access  Public (should be protected with auth in production)
- * @body    { bookingId, acquirer?, customerEmail?, customerName?, customerPhone? }
+ * @access  Protected (booking owner)
+ * @body    { bookingId, bookingType?, acquirer?, customerEmail?, customerName?, customerPhone?, successUrl?, failureUrl? }
  */
-router.post('/create', paymentController.createPayment);
+router.post('/create', bookingLimiter, authenticateToken, paymentController.createPayment);
 
 /**
  * @route   POST /api/payments/verify
  * @desc    Verify Razorpay payment (called from EJS payment page)
- * @access  Public
- * @body    { razorpay_payment_id, razorpay_order_id, razorpay_signature, bookingReference }
+ * @access  Public (Razorpay signature verified in controller)
+ * @body    { razorpay_payment_id, razorpay_order_id, razorpay_signature }
  */
 router.post('/verify', paymentController.verifyRazorpayPayment);
 
@@ -34,7 +36,7 @@ router.post('/callback', paymentController.verifyPayment);
 /**
  * @route   GET /api/payments/callback
  * @desc    Handle payment callback redirect (from Razorpay/payment gateways)
- * @access  Public (called by payment gateway after payment completion)
+ * @access  Public (only a valid Razorpay signature can mark a payment successful)
  * @query   payment_id, order_id, signature, status, reason
  */
 router.get('/callback', paymentController.handlePaymentCallback);
@@ -42,31 +44,32 @@ router.get('/callback', paymentController.handlePaymentCallback);
 /**
  * @route   GET /api/payments/:paymentReference
  * @desc    Get payment details by reference
- * @access  Public (should be protected with auth in production)
+ * @access  Owner (JWT) or ?email=<booking contact email>
  */
-router.get('/:paymentReference', paymentController.getPaymentDetails);
+router.get('/:paymentReference', lookupLimiter, optionalAuth, paymentController.getPaymentDetails);
 
 /**
  * @route   GET /api/payments/:paymentReference/status
  * @desc    Check payment status
- * @access  Public (should be protected with auth in production)
+ * @access  Owner (JWT) or ?email=<booking contact email>
  */
-router.get('/:paymentReference/status', paymentController.getPaymentStatus);
+router.get('/:paymentReference/status', lookupLimiter, optionalAuth, paymentController.getPaymentStatus);
 
 /**
  * @route   POST /api/payments/:paymentReference/refund
  * @desc    Process refund for a payment
- * @access  Protected (admin only in production)
+ * @access  Admin (X-Admin-Key header must match ADMIN_API_KEY)
  * @body    { amount, reason }
  */
-router.post('/:paymentReference/refund', paymentController.processRefund);
+router.post('/:paymentReference/refund', requireAdminKey, paymentController.processRefund);
 
 /**
  * @route   GET /api/payments/booking/:bookingId
  * @desc    Get all payments for a booking
- * @access  Public (should be protected with auth in production)
+ * @access  Protected (booking owner)
+ * @query   type=flight|hotel (default flight)
  */
-router.get('/booking/:bookingId', paymentController.getPaymentsByBooking);
+router.get('/booking/:bookingId', authenticateToken, paymentController.getPaymentsByBooking);
 
 /**
  * @route   POST /api/payments/webhook/razorpay

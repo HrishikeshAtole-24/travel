@@ -10,33 +10,35 @@
 const express = require('express');
 const router = express.Router();
 const chatController = require('../controllers/chat.controller');
+const { requireAdminKey } = require('../middleware/auth.middleware');
+const { chatLimiter } = require('../middleware/rateLimit.middleware');
 
 /**
  * @route   POST /api/chat
  * @desc    Send message to SkyBot AI
  * @access  Public
  */
-router.post('/', chatController.sendMessage);
+router.post('/', chatLimiter, chatController.sendMessage);
 
 /**
  * @route   POST /api/chat/travel-tips
  * @desc    Get AI-generated travel tips
  * @access  Public
  */
-router.post('/travel-tips', chatController.getTravelTips);
+router.post('/travel-tips', chatLimiter, chatController.getTravelTips);
 
 /**
  * @route   POST /api/chat/itinerary
  * @desc    Generate AI trip itinerary
  * @access  Public
  */
-router.post('/itinerary', chatController.generateItinerary);
+router.post('/itinerary', chatLimiter, chatController.generateItinerary);
 
 /**
  * @route   GET /api/chat/analytics
  * @desc    Get chat analytics data
- * @access  Public (should be protected in production)
+ * @access  Admin (X-Admin-Key)
  */
-router.get('/analytics', chatController.getAnalytics);
+router.get('/analytics', requireAdminKey, chatController.getAnalytics);
 
 module.exports = router;

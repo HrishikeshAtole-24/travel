@@ -13,6 +13,7 @@ const axios = require('axios');
 const IAcquirerClient = require('../../IAcquirerClient');
 const logger = require('../../../../config/winstonLogger');
 const { PaymentStatus } = require('../../../../core/PaymentStatusCodes');
+const { safeEqual } = require('../../../../utils/security');
 
 class StripeNonSeamlessClient extends IAcquirerClient {
   constructor() {
@@ -408,6 +409,11 @@ class StripeNonSeamlessClient extends IAcquirerClient {
         throw new Error('No Stripe signature found in webhook');
       }
 
+      // Stripe signs the exact raw request body - a re-serialized object will not match
+      if (typeof rawBody !== 'string' || !webhook_secret) {
+        throw new Error('Raw body or webhook secret missing - cannot verify webhook');
+      }
+
       // Parse signature header: "t=timestamp,v1=signature"
       const signatures = signature.split(',').reduce((acc, part) => {
         const [key, value] = part.split('=');
@@ -418,8 +424,14 @@ class StripeNonSeamlessClient extends IAcquirerClient {
       const timestamp = signatures.t;
       const expectedSignature = signatures.v1;
 
+      // Reject replayed events older than 5 minutes (Stripe's default tolerance)
+      const toleranceSeconds = 300;
+      if (!timestamp || Math.abs(Math.floor(Date.now() / 1000) - Number(timestamp)) > toleranceSeconds) {
+        throw new Error('Webhook timestamp outside tolerance');
+      }
+
       // Create signed payload: "timestamp.payload"
-      const signedPayload = `${timestamp}.${typeof rawBody === 'string' ? rawBody : JSON.stringify(rawBody)}`;
+      const signedPayload = `${timestamp}.${rawBody}`;
 
       // Compute signature using HMAC SHA256
       const computedSignature = crypto
@@ -428,12 +440,12 @@ class StripeNonSeamlessClient extends IAcquirerClient {
         .digest('hex');
 
       // Verify signature
-      if (computedSignature !== expectedSignature) {
+      if (!safeEqual(computedSignature, expectedSignature)) {
         throw new Error('Invalid webhook signature');
       }
 
       // Parse event
-      const event = typeof rawBody === 'string' ? JSON.parse(rawBody) : rawBody;
+      const event = JSON.parse(rawBody);
 
       logger.info(`[Stripe] Webhook received: ${event.type}`);
 

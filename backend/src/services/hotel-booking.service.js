@@ -6,18 +6,42 @@
 const { getPool } = require('../config/database');
 const ApiError = require('../core/ApiError');
 const logger = require('../config/winstonLogger');
+const hotelService = require('./hotel.service');
+const { canAccessBooking } = require('./booking.service');
+const { generateReference } = require('../utils/security');
 
 // Industry standard: Hotel bookings expire in 30 minutes if unpaid
 const HOTEL_BOOKING_EXPIRY_MINUTES = 30;
 
+// Hotel bookings in these states can still be cancelled
+const CANCELLABLE_STATUSES = ['pending', 'payment_initiated', 'confirmed'];
+
 /**
- * Generate hotel booking reference (e.g., HB-20241212-XXXXX)
+ * Generate unguessable hotel booking reference (e.g., HB-20241212-7KQ4M9XA2C)
  */
 function generateHotelBookingReference() {
-  const date = new Date();
-  const dateStr = date.toISOString().split('T')[0].replace(/-/g, '');
-  const random = Math.floor(10000 + Math.random() * 90000);
-  return `HB-${dateStr}-${random}`;
+  return generateReference('HB');
+}
+
+/**
+ * Look up the offer with the supplier and return the authoritative price.
+ * Never trust a price sent by the client.
+ * @param {string} offerId
+ * @returns {{ totalPrice: number, currency: string, offer: Object }}
+ */
+async function resolveHotelOfferPrice(offerId) {
+  const offer = await hotelService.getHotelOfferById(offerId);
+  const totalPrice = parseFloat(offer?.pricing?.totalAmount);
+
+  if (!Number.isFinite(totalPrice) || totalPrice <= 0) {
+    throw ApiError.badRequest('Unable to confirm hotel price. Please search again.');
+  }
+
+  return {
+    totalPrice,
+    currency: offer.pricing.totalCurrency || offer.pricing.currency || 'INR',
+    offer
+  };
 }
 
 /**
@@ -48,38 +72,39 @@ function isBookingExpired(booking) {
  * @returns {Object} Created booking
  */
 const createHotelBooking = async (bookingData, userId = null) => {
+  const {
+    hotelId,
+    hotelName,
+    hotelData,
+    offerId,
+    checkInDate,
+    checkOutDate,
+    roomQuantity,
+    adults,
+    guests,
+    contactEmail,
+    contactPhone,
+    specialRequests
+  } = bookingData;
+
+  // Validate required fields
+  if (!offerId || !guests || !contactEmail || !contactPhone) {
+    throw ApiError.badRequest('Offer ID, guests, contact email and phone are required');
+  }
+
+  if (!Array.isArray(guests) || guests.length === 0) {
+    throw ApiError.badRequest('At least one guest is required');
+  }
+
+  // Authoritative price + offer details from the supplier (client price is ignored).
+  // Done before opening the transaction so no DB connection is held during the API call.
+  const { totalPrice, currency, offer } = await resolveHotelOfferPrice(offerId);
+
   const pool = getPool();
   const client = await pool.connect();
 
   try {
     await client.query('BEGIN');
-
-    const {
-      hotelId,
-      offerId,
-      hotelName,
-      hotelData,
-      offerData,
-      checkInDate,
-      checkOutDate,
-      roomQuantity,
-      adults,
-      guests,
-      contactEmail,
-      contactPhone,
-      totalPrice,
-      currency,
-      specialRequests
-    } = bookingData;
-
-    // Validate required fields
-    if (!offerId || !guests || !contactEmail || !contactPhone) {
-      throw ApiError.badRequest('Offer ID, guests, contact email and phone are required');
-    }
-
-    if (!guests || guests.length === 0) {
-      throw ApiError.badRequest('At least one guest is required');
-    }
 
     // Generate booking reference
     const bookingReference = generateHotelBookingReference();
@@ -99,17 +124,17 @@ const createHotelBooking = async (bookingData, userId = null) => {
       [
         bookingReference,
         userId,
-        hotelId || null,
+        offer.hotel?.hotelId || hotelId || null,
         offerId,
-        hotelName || null,
+        offer.hotel?.name || hotelName || null,
         hotelData ? JSON.stringify(hotelData) : null,
-        offerData ? JSON.stringify(offerData) : null,
-        checkInDate || null,
-        checkOutDate || null,
+        JSON.stringify(offer),
+        offer.checkInDate || checkInDate || null,
+        offer.checkOutDate || checkOutDate || null,
         roomQuantity || 1,
         adults || 1,
         totalPrice,
-        currency || 'USD',
+        currency,
         'pending',
         contactEmail,
         contactPhone,
@@ -189,31 +214,24 @@ const createHotelBooking = async (bookingData, userId = null) => {
 /**
  * Get hotel booking by ID
  * @param {number} bookingId - Booking ID
- * @param {number|null} userId - User ID for ownership verification
+ * @param {Object} access - { userId, email } of the caller (see canAccessBooking)
  * @returns {Object} Booking details
  */
-const getHotelBookingById = async (bookingId, userId = null) => {
+const getHotelBookingById = async (bookingId, access = {}) => {
   const pool = getPool();
 
   try {
-    let query = 'SELECT * FROM hotel_bookings WHERE id = $1';
-    const params = [bookingId];
+    const result = await pool.query('SELECT * FROM hotel_bookings WHERE id = $1', [bookingId]);
 
-    if (userId) {
-      query += ' AND user_id = $2';
-      params.push(userId);
-    }
-
-    const result = await pool.query(query, params);
-
-    if (result.rows.length === 0) {
+    // Same 404 for "missing" and "not yours" so IDs can't be probed
+    if (result.rows.length === 0 || !canAccessBooking(result.rows[0], access)) {
       throw ApiError.notFound('Hotel booking not found');
     }
 
     const booking = result.rows[0];
 
     // Check if expired
-    if (isBookingExpired(booking) && booking.status === 'pending') {
+    if (isBookingExpired(booking) && ['pending', 'payment_initiated'].includes(booking.status)) {
       await updateHotelBookingStatus(bookingId, 'expired');
       booking.status = 'expired';
     }
@@ -235,32 +253,27 @@ const getHotelBookingById = async (bookingId, userId = null) => {
 
 /**
  * Get hotel booking by reference
- * @param {string} bookingReference - Booking reference (HB-XXXXXXXX-XXXXX)
- * @param {string|null} email - Email for guest verification
+ * @param {string} bookingReference - Booking reference (HB-XXXXXXXX-XXXXXXXXXX)
+ * @param {Object} access - { userId, email } of the caller (see canAccessBooking)
  * @returns {Object} Booking details
  */
-const getHotelBookingByReference = async (bookingReference, email = null) => {
+const getHotelBookingByReference = async (bookingReference, access = {}) => {
   const pool = getPool();
 
   try {
-    let query = 'SELECT * FROM hotel_bookings WHERE booking_reference = $1';
-    const params = [bookingReference];
+    const result = await pool.query(
+      'SELECT * FROM hotel_bookings WHERE booking_reference = $1',
+      [bookingReference]
+    );
 
-    if (email) {
-      query += ' AND contact_email = $2';
-      params.push(email);
-    }
-
-    const result = await pool.query(query, params);
-
-    if (result.rows.length === 0) {
+    if (result.rows.length === 0 || !canAccessBooking(result.rows[0], access)) {
       throw ApiError.notFound('Hotel booking not found');
     }
 
     const booking = result.rows[0];
 
     // Check expiry
-    if (isBookingExpired(booking) && booking.status === 'pending') {
+    if (isBookingExpired(booking) && ['pending', 'payment_initiated'].includes(booking.status)) {
       await updateHotelBookingStatus(booking.id, 'expired');
       booking.status = 'expired';
     }
@@ -289,28 +302,43 @@ const getUserHotelBookings = async (userId) => {
   const pool = getPool();
 
   try {
+    // Expire stale unpaid bookings in one statement
+    await pool.query(
+      `UPDATE hotel_bookings
+       SET status = 'expired', updated_at = CURRENT_TIMESTAMP
+       WHERE user_id = $1
+         AND status IN ('pending', 'payment_initiated')
+         AND expires_at IS NOT NULL
+         AND expires_at < NOW()`,
+      [userId]
+    );
+
     const result = await pool.query(
       `SELECT * FROM hotel_bookings WHERE user_id = $1 ORDER BY created_at DESC`,
       [userId]
     );
 
-    // Check and update expired bookings
-    const bookings = [];
-    for (const booking of result.rows) {
-      if (isBookingExpired(booking) && booking.status === 'pending') {
-        await updateHotelBookingStatus(booking.id, 'expired');
-        booking.status = 'expired';
-      }
-
-      const guestsResult = await pool.query(
-        'SELECT * FROM hotel_guests WHERE hotel_booking_id = $1',
-        [booking.id]
-      );
-
-      bookings.push(formatBookingResponse(booking, guestsResult.rows));
+    if (result.rows.length === 0) {
+      return [];
     }
 
-    return bookings;
+    // Load all guests in a single query instead of one query per booking
+    const guestsResult = await pool.query(
+      'SELECT * FROM hotel_guests WHERE hotel_booking_id = ANY($1::int[])',
+      [result.rows.map(b => b.id)]
+    );
+
+    const guestsByBooking = new Map();
+    for (const guest of guestsResult.rows) {
+      if (!guestsByBooking.has(guest.hotel_booking_id)) {
+        guestsByBooking.set(guest.hotel_booking_id, []);
+      }
+      guestsByBooking.get(guest.hotel_booking_id).push(guest);
+    }
+
+    return result.rows.map(booking =>
+      formatBookingResponse(booking, guestsByBooking.get(booking.id) || [])
+    );
 
   } catch (error) {
     logger.error('❌ Get user hotel bookings error:', error);
@@ -346,6 +374,12 @@ const updateHotelBookingStatus = async (bookingId, status, additionalData = {}) 
     if (additionalData.amadeusOrderId) {
       query += `, amadeus_order_id = $${paramIndex}`;
       params.push(additionalData.amadeusOrderId);
+      paramIndex++;
+    }
+
+    if (additionalData.cancellationReason) {
+      query += `, special_requests = COALESCE(special_requests, '') || $${paramIndex}`;
+      params.push(`\n[CANCELLED: ${new Date().toISOString()}] Reason: ${additionalData.cancellationReason}`);
       paramIndex++;
     }
 
@@ -410,12 +444,74 @@ function formatBookingResponse(booking, guests = []) {
   };
 }
 
+/**
+ * Cancel a hotel booking the caller has access to
+ * @param {number} bookingId
+ * @param {Object} access - { userId, email }
+ * @param {string} reason
+ */
+const cancelHotelBooking = async (bookingId, access, reason) => {
+  const pool = getPool();
+  const result = await pool.query('SELECT * FROM hotel_bookings WHERE id = $1', [bookingId]);
+
+  if (result.rows.length === 0 || !canAccessBooking(result.rows[0], access)) {
+    throw ApiError.notFound('Hotel booking not found');
+  }
+
+  const booking = result.rows[0];
+  if (!CANCELLABLE_STATUSES.includes(booking.status)) {
+    throw ApiError.badRequest(`Cannot cancel booking with status: ${booking.status}`);
+  }
+
+  const updated = await updateHotelBookingStatus(bookingId, 'cancelled', {
+    cancellationReason: reason || 'Cancelled by customer'
+  });
+  return formatBookingResponse(updated);
+};
+
+/**
+ * Record supplier confirmation details for a PAID hotel booking.
+ * Requires a successful payment - this can never confirm an unpaid booking.
+ * @param {number} bookingId
+ * @param {Object} access - { userId, email }
+ * @param {Object} details - { providerConfirmationId, amadeusOrderId }
+ */
+const confirmHotelBooking = async (bookingId, access, details = {}) => {
+  const pool = getPool();
+  const result = await pool.query('SELECT * FROM hotel_bookings WHERE id = $1', [bookingId]);
+
+  if (result.rows.length === 0 || !canAccessBooking(result.rows[0], access)) {
+    throw ApiError.notFound('Hotel booking not found');
+  }
+
+  const booking = result.rows[0];
+  if (!['pending', 'payment_initiated', 'confirmed'].includes(booking.status)) {
+    throw ApiError.badRequest(`Cannot confirm booking with status: ${booking.status}`);
+  }
+
+  const paid = await pool.query(
+    `SELECT 1 FROM payments WHERE hotel_booking_id = $1 AND status = 'SUCCESS' LIMIT 1`,
+    [bookingId]
+  );
+  if (paid.rows.length === 0) {
+    throw ApiError.badRequest('Hotel booking has not been paid');
+  }
+
+  const updated = await updateHotelBookingStatus(bookingId, 'confirmed', {
+    providerConfirmationId: details.providerConfirmationId || null,
+    amadeusOrderId: details.amadeusOrderId || null
+  });
+  return formatBookingResponse(updated);
+};
+
 module.exports = {
   createHotelBooking,
   getHotelBookingById,
   getHotelBookingByReference,
   getUserHotelBookings,
   updateHotelBookingStatus,
+  cancelHotelBooking,
+  confirmHotelBooking,
   generateHotelBookingReference,
   isBookingExpired
 };

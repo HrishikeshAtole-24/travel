@@ -7,6 +7,7 @@ const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/auth.controller');
 const { authenticateToken } = require('../middleware/auth.middleware');
+const { authLimiter, otpLimiter } = require('../middleware/rateLimit.middleware');
 
 /**
  * @route   POST /api/auth/signup
@@ -14,7 +15,7 @@ const { authenticateToken } = require('../middleware/auth.middleware');
  * @access  Public
  * @body    { email, phone, password, firstName, lastName }
  */
-router.post('/signup', authController.signUp);
+router.post('/signup', authLimiter, authController.signUp);
 
 /**
  * @route   POST /api/auth/login
@@ -22,7 +23,7 @@ router.post('/signup', authController.signUp);
  * @access  Public
  * @body    { email, password }
  */
-router.post('/login', authController.login);
+router.post('/login', authLimiter, authController.login);
 
 /**
  * @route   POST /api/auth/verify-email
@@ -30,7 +31,7 @@ router.post('/login', authController.login);
  * @access  Public
  * @body    { email, otp }
  */
-router.post('/verify-email', authController.verifyEmail);
+router.post('/verify-email', otpLimiter, authController.verifyEmail);
 
 /**
  * @route   POST /api/auth/verify-phone
@@ -38,7 +39,7 @@ router.post('/verify-email', authController.verifyEmail);
  * @access  Public
  * @body    { phone, otp }
  */
-router.post('/verify-phone', authController.verifyPhone);
+router.post('/verify-phone', otpLimiter, authController.verifyPhone);
 
 /**
  * @route   POST /api/auth/resend-email-otp
@@ -46,7 +47,7 @@ router.post('/verify-phone', authController.verifyPhone);
  * @access  Public
  * @body    { email }
  */
-router.post('/resend-email-otp', authController.resendEmailOTP);
+router.post('/resend-email-otp', otpLimiter, authController.resendEmailOTP);
 
 /**
  * @route   POST /api/auth/resend-phone-otp
@@ -54,7 +55,7 @@ router.post('/resend-email-otp', authController.resendEmailOTP);
  * @access  Public
  * @body    { phone }
  */
-router.post('/resend-phone-otp', authController.resendPhoneOTP);
+router.post('/resend-phone-otp', otpLimiter, authController.resendPhoneOTP);
 
 /**
  * @route   GET /api/auth/profile

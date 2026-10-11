@@ -7,7 +7,7 @@ const { getPool } = require('../config/database');
 const { createUserTable } = require('./user.model');
 const { createBookingTable } = require('./booking.model');
 const { createTravelerTable } = require('./traveler.model');
-const {createPaymentTable} = require("./payment.model");
+const { createPaymentTable, addHotelPaymentSupport } = require('./payment.model');
 const { createAcquirerTable } = require('./acquirer.model');
 const { createStandardStatusTable } = require('./standard-status.model');
 const { createAcquirerStatusMappingTable } = require('./acquirer-status-mapping.model');
@@ -46,6 +46,9 @@ const initializeDatabase = async () => {
 
     // 8. Hotel bookings & guests tables (depends on users)
     await createHotelBookingTable();
+
+    // 9. Let payments reference hotel bookings (depends on payments & hotel_bookings)
+    await addHotelPaymentSupport();
 
     logger.info('✅ Database initialization completed successfully!');
     logger.info('📊 All tables created/verified:');

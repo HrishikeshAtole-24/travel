@@ -37,7 +37,8 @@ class AmadeusFlightAPI {
       if (searchParams.infants) params.infants = searchParams.infants;
       if (searchParams.travelClass) params.travelClass = searchParams.travelClass; // ECONOMY, PREMIUM_ECONOMY, BUSINESS, FIRST
       if (searchParams.nonStop !== undefined) params.nonStop = searchParams.nonStop;
-      if (searchParams.currencyCode) params.currencyCode = searchParams.currencyCode;
+      // Default to INR: the payment gateway (Razorpay India) can only charge INR
+      params.currencyCode = searchParams.currencyCode || 'INR';
       if (searchParams.maxPrice) params.maxPrice = searchParams.maxPrice;
 
       logger.info('🔍 Amadeus Flight Search:', params);

@@ -247,7 +247,8 @@ class AmadeusHotelAPI {
       if (params.checkOutDate) queryParams.checkOutDate = params.checkOutDate;
       if (params.roomQuantity) queryParams.roomQuantity = params.roomQuantity;
       if (params.priceRange) queryParams.priceRange = params.priceRange;
-      if (params.currency) queryParams.currency = params.currency;
+      // Default to INR: the payment gateway (Razorpay India) can only charge INR
+      queryParams.currency = params.currency || 'INR';
       if (params.paymentPolicy) queryParams.paymentPolicy = params.paymentPolicy;
       if (params.boardType) queryParams.boardType = params.boardType;
 

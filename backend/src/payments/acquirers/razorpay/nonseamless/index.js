@@ -13,6 +13,7 @@ const axios = require('axios');
 const IAcquirerClient = require('../../IAcquirerClient');
 const logger = require('../../../../config/winstonLogger');
 const { PaymentStatus } = require('../../../../core/PaymentStatusCodes');
+const { safeEqual, verifyRazorpaySignature } = require('../../../../utils/security');
 
 class RazorpayNonSeamlessClient extends IAcquirerClient {
   constructor() {
@@ -63,6 +64,16 @@ class RazorpayNonSeamlessClient extends IAcquirerClient {
         bookingId,
         metadata = {}
       } = paymentData;
+
+      // Razorpay India accounts only support INR. Refuse other currencies rather than
+      // charging e.g. a 200 USD booking as 200 INR.
+      if (currency && currency !== 'INR') {
+        return {
+          success: false,
+          error: `Currency ${currency} is not supported by this payment gateway. Please search again in INR.`,
+          errorCode: 'CURRENCY_NOT_SUPPORTED'
+        };
+      }
 
       const httpClient = this.getHttpClient(credentials);
 
@@ -150,17 +161,13 @@ class RazorpayNonSeamlessClient extends IAcquirerClient {
         };
       }
 
-      // Create signature verification string
-      const signatureVerification = `${razorpay_order_id}|${razorpay_payment_id}`;
-      
-      // Generate expected signature
-      const expectedSignature = crypto
-        .createHmac('sha256', credentials.key_secret)
-        .update(signatureVerification)
-        .digest('hex');
-
-      // Verify signature
-      const verified = expectedSignature === razorpay_signature;
+      // Verify HMAC_SHA256(order_id|payment_id) with a constant-time comparison
+      const verified = verifyRazorpaySignature(
+        razorpay_order_id,
+        razorpay_payment_id,
+        razorpay_signature,
+        credentials.key_secret
+      );
 
       if (!verified) {
         logger.warn(`[Razorpay] Signature verification failed for payment: ${razorpay_payment_id}`);
@@ -323,16 +330,25 @@ class RazorpayNonSeamlessClient extends IAcquirerClient {
    */
   async handleWebhook(webhookData, credentials) {
     try {
-      const { body, signature } = webhookData;
+      const { body, rawBody, signature } = webhookData;
       const { webhook_secret } = credentials;
 
-      // Verify webhook signature
+      if (!webhook_secret || !signature || !rawBody) {
+        logger.warn('[Razorpay] Webhook rejected: missing secret, signature or raw body');
+        return {
+          success: false,
+          verified: false,
+          error: 'Invalid webhook signature'
+        };
+      }
+
+      // Razorpay signs the exact raw request body, not a re-serialized object
       const expectedSignature = crypto
         .createHmac('sha256', webhook_secret)
-        .update(JSON.stringify(body))
+        .update(rawBody)
         .digest('hex');
 
-      if (expectedSignature !== signature) {
+      if (!safeEqual(expectedSignature, signature)) {
         logger.warn('[Razorpay] Webhook signature verification failed');
         return {
           success: false,

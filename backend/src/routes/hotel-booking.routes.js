@@ -6,6 +6,7 @@ const express = require('express');
 const router = express.Router();
 const hotelBookingController = require('../controllers/hotel-booking.controller');
 const { authenticateToken, optionalAuth } = require('../middleware/auth.middleware');
+const { bookingLimiter, lookupLimiter } = require('../middleware/rateLimit.middleware');
 
 // ═══════════════════════════════════════════════════════════════
 // 📝 CREATE BOOKING
@@ -15,17 +16,18 @@ const { authenticateToken, optionalAuth } = require('../middleware/auth.middlewa
  * @route   POST /api/hotel-bookings/create
  * @desc    Create new hotel booking
  * @access  Public with optional auth
- * @body    { offerId, hotelData, guests, contactEmail, contactPhone, totalPrice, ... }
+ * @body    { offerId, guests, contactEmail, contactPhone, specialRequests?, ... }
+ *          Price/currency come from the supplier offer, not the request.
  */
-router.post('/create', optionalAuth, hotelBookingController.createHotelBooking);
+router.post('/create', bookingLimiter, optionalAuth, hotelBookingController.createHotelBooking);
 
 /**
  * @route   POST /api/hotel-bookings/create-and-pay
  * @desc    Create hotel booking and initiate payment (one-step flow)
  * @access  Public with optional auth
- * @body    { offerId, hotelData, guests, contactEmail, totalPrice, paymentAcquirer, ... }
+ * @body    { offerId, guests, contactEmail, contactPhone, paymentAcquirer?, successUrl?, failureUrl?, ... }
  */
-router.post('/create-and-pay', optionalAuth, hotelBookingController.createHotelBookingAndPay);
+router.post('/create-and-pay', bookingLimiter, optionalAuth, hotelBookingController.createHotelBookingAndPay);
 
 // ═══════════════════════════════════════════════════════════════
 // 📖 GET BOOKINGS
@@ -40,18 +42,18 @@ router.get('/my-bookings', authenticateToken, hotelBookingController.getMyHotelB
 
 /**
  * @route   GET /api/hotel-bookings/reference/:bookingReference
- * @desc    Get hotel booking by reference (with email for guests)
- * @access  Public
+ * @desc    Get hotel booking by reference
+ * @access  Owner (JWT) or ?email=<contact email>
  * @query   ?email=xxx
  */
-router.get('/reference/:bookingReference', optionalAuth, hotelBookingController.getHotelBookingByReference);
+router.get('/reference/:bookingReference', lookupLimiter, optionalAuth, hotelBookingController.getHotelBookingByReference);
 
 /**
  * @route   GET /api/hotel-bookings/:bookingId
  * @desc    Get hotel booking by ID
- * @access  Protected
+ * @access  Protected (owner only)
  */
-router.get('/:bookingId', optionalAuth, hotelBookingController.getHotelBooking);
+router.get('/:bookingId', authenticateToken, hotelBookingController.getHotelBooking);
 
 // ═══════════════════════════════════════════════════════════════
 // 🔄 UPDATE BOOKINGS
@@ -59,16 +61,16 @@ router.get('/:bookingId', optionalAuth, hotelBookingController.getHotelBooking);
 
 /**
  * @route   POST /api/hotel-bookings/:bookingId/confirm
- * @desc    Confirm hotel booking after payment
- * @access  Public with optional auth
+ * @desc    Record supplier confirmation for a PAID hotel booking
+ * @access  Protected (owner only, requires successful payment)
  */
-router.post('/:bookingId/confirm', optionalAuth, hotelBookingController.confirmHotelBooking);
+router.post('/:bookingId/confirm', authenticateToken, hotelBookingController.confirmHotelBooking);
 
 /**
  * @route   POST /api/hotel-bookings/:bookingId/cancel
  * @desc    Cancel hotel booking
- * @access  Public with optional auth
+ * @access  Protected (owner only)
  */
-router.post('/:bookingId/cancel', optionalAuth, hotelBookingController.cancelHotelBooking);
+router.post('/:bookingId/cancel', authenticateToken, hotelBookingController.cancelHotelBooking);
 
 module.exports = router;

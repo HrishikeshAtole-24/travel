@@ -61,7 +61,7 @@ Update `.env` with your Neon DB connection string:
 
 ```env
 # PostgreSQL - Neon DB Connection
-DATABASE_URL=postgresql://neondb_owner:npg_DPpTY3JEC9zx@ep-spring-recipe-ah71u1rn-pooler.c-3.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require
+DATABASE_URL=postgresql://<db-user>:<db-password>@<your-neon-host>/neondb?sslmode=require&channel_binding=require
 
 # Server Configuration
 PORT=5000
@@ -203,7 +203,7 @@ Expected response:
 
 **Option A: Using psql CLI**
 ```bash
-psql 'postgresql://neondb_owner:npg_DPpTY3JEC9zx@ep-spring-recipe-ah71u1rn-pooler.c-3.us-east-1.aws.neon.tech/neondb?sslmode=require'
+psql 'postgresql://<db-user>:<db-password>@<your-neon-host>/neondb?sslmode=require'
 
 -- List tables
 \dt

@@ -4,6 +4,7 @@
  */
 const { getPool } = require('../config/database');
 const logger = require('../config/winstonLogger');
+const { generateReference } = require('../utils/security');
 
 const createPaymentTable = async () => {
   const pool = getPool();
@@ -141,12 +142,50 @@ const createPaymentTable = async () => {
 };
 
 /**
+ * Allow payments to belong to either a flight booking (booking_id)
+ * or a hotel booking (hotel_booking_id). Must run after hotel_bookings exists.
+ */
+const addHotelPaymentSupport = async () => {
+  const pool = getPool();
+  const query = `
+    ALTER TABLE payments ADD COLUMN IF NOT EXISTS hotel_booking_id INTEGER;
+    ALTER TABLE payments ALTER COLUMN booking_id DROP NOT NULL;
+
+    DO $$ BEGIN
+      ALTER TABLE payments ADD CONSTRAINT fk_hotel_booking
+        FOREIGN KEY (hotel_booking_id) REFERENCES hotel_bookings(id) ON DELETE CASCADE;
+    EXCEPTION
+      WHEN duplicate_object THEN null;
+    END $$;
+
+    -- Every payment belongs to exactly one booking
+    DO $$ BEGIN
+      ALTER TABLE payments ADD CONSTRAINT chk_payment_single_booking
+        CHECK ((booking_id IS NULL) <> (hotel_booking_id IS NULL));
+    EXCEPTION
+      WHEN duplicate_object THEN null;
+    END $$;
+
+    CREATE INDEX IF NOT EXISTS idx_payments_hotel_booking_id ON payments(hotel_booking_id);
+  `;
+
+  try {
+    await pool.query(query);
+    logger.info('✅ Payments table hotel support verified');
+  } catch (error) {
+    logger.error('❌ Error adding hotel support to payments table:', error.message);
+    throw error;
+  }
+};
+
+/**
  * Create a new payment record
  */
 const createPayment = async (paymentData) => {
   const pool = getPool();
   const {
     bookingId,
+    bookingType = 'flight',
     userId,
     amount,
     currency = 'INR',
@@ -168,18 +207,21 @@ const createPayment = async (paymentData) => {
 
   const query = `
     INSERT INTO payments (
-      payment_reference, booking_id, user_id, amount, currency, acquirer,
+      payment_reference, booking_id, hotel_booking_id, user_id, amount, currency, acquirer,
       customer_email, customer_phone, customer_name,
       success_url, failure_url, callback_url,
       description, ip_address, user_agent, metadata, expires_at,
       status, initiated_at
     )
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
     RETURNING *;
   `;
 
   const values = [
-    paymentReference, bookingId, userId, amount, currency, acquirer,
+    paymentReference,
+    bookingType === 'hotel' ? null : bookingId,
+    bookingType === 'hotel' ? bookingId : null,
+    userId, amount, currency, acquirer,
     customerEmail, customerPhone, customerName,
     successUrl, failureUrl, callbackUrl,
     description, ipAddress, userAgent, JSON.stringify(metadata), expiresAt,
@@ -197,6 +239,24 @@ const createPayment = async (paymentData) => {
 };
 
 /**
+ * Map acquirer payment method names (e.g. Razorpay 'netbanking') to the payment_method enum.
+ * Returns null for unknown methods so the enum column never rejects the update.
+ */
+const PAYMENT_METHOD_MAP = {
+  card: 'CARD',
+  upi: 'UPI',
+  netbanking: 'NET_BANKING',
+  net_banking: 'NET_BANKING',
+  wallet: 'WALLET',
+  emi: 'EMI'
+};
+
+function normalizePaymentMethod(method) {
+  if (!method) return null;
+  return PAYMENT_METHOD_MAP[String(method).toLowerCase()] || null;
+}
+
+/**
  * Update payment status
  */
 const updatePaymentStatus = async (paymentReference, updateData) => {
@@ -211,7 +271,10 @@ const updatePaymentStatus = async (paymentReference, updateData) => {
     paymentDetails,
     gatewayFees,
     gstAmount,
-    netAmount
+    netAmount,
+    refundedAmount,
+    refundReference,
+    webhookData
   } = updateData;
 
   const setClauses = [];
@@ -228,6 +291,9 @@ const updatePaymentStatus = async (paymentReference, updateData) => {
       values.push(new Date());
     } else if (status === 'FAILED' || status === 'CANCELLED') {
       setClauses.push(`failed_at = $${paramCount++}`);
+      values.push(new Date());
+    } else if (status === 'REFUNDED' || status === 'PARTIAL_REFUND') {
+      setClauses.push(`refunded_at = $${paramCount++}`);
       values.push(new Date());
     }
   }
@@ -247,9 +313,10 @@ const updatePaymentStatus = async (paymentReference, updateData) => {
     values.push(acquirerTransactionId);
   }
 
-  if (paymentMethod) {
+  const normalizedMethod = normalizePaymentMethod(paymentMethod);
+  if (normalizedMethod) {
     setClauses.push(`payment_method = $${paramCount++}`);
-    values.push(paymentMethod);
+    values.push(normalizedMethod);
   }
 
   if (acquirerResponse) {
@@ -275,6 +342,21 @@ const updatePaymentStatus = async (paymentReference, updateData) => {
   if (netAmount !== undefined) {
     setClauses.push(`net_amount = $${paramCount++}`);
     values.push(netAmount);
+  }
+
+  if (refundedAmount !== undefined) {
+    setClauses.push(`refunded_amount = $${paramCount++}`);
+    values.push(refundedAmount);
+  }
+
+  if (refundReference) {
+    setClauses.push(`refund_reference = $${paramCount++}`);
+    values.push(refundReference);
+  }
+
+  if (webhookData) {
+    setClauses.push(`webhook_data = $${paramCount++}`);
+    values.push(JSON.stringify(webhookData));
   }
 
   if (setClauses.length === 0) {
@@ -335,6 +417,25 @@ const getPaymentByBookingId = async (bookingId) => {
 };
 
 /**
+ * Get all payments for a booking (newest first)
+ * @param {number} bookingId
+ * @param {'flight'|'hotel'} bookingType
+ */
+const getPaymentsByBookingId = async (bookingId, bookingType = 'flight') => {
+  const pool = getPool();
+  const column = bookingType === 'hotel' ? 'hotel_booking_id' : 'booking_id';
+  const query = `SELECT * FROM payments WHERE ${column} = $1 ORDER BY created_at DESC;`;
+
+  try {
+    const result = await pool.query(query, [bookingId]);
+    return result.rows;
+  } catch (error) {
+    logger.error('Error fetching payments by booking:', error.message);
+    throw error;
+  }
+};
+
+/**
  * Get payments by user ID
  */
 const getPaymentsByUserId = async (userId, options = {}) => {
@@ -364,21 +465,21 @@ const getPaymentsByUserId = async (userId, options = {}) => {
 };
 
 /**
- * Generate unique payment reference
- * Format: PAY-YYYYMMDD-XXXXX (e.g., PAY-20251211-A1B2C)
+ * Generate unique, unguessable payment reference
+ * Format: PAY-YYYYMMDD-XXXXXXXXXX (e.g., PAY-20251211-7KQ4M9XA2C)
  */
 function generatePaymentReference() {
-  const date = new Date();
-  const dateStr = date.toISOString().slice(0, 10).replace(/-/g, '');
-  const randomStr = Math.random().toString(36).substring(2, 7).toUpperCase();
-  return `PAY-${dateStr}-${randomStr}`;
+  return generateReference('PAY');
 }
 
 module.exports = {
   createPaymentTable,
+  addHotelPaymentSupport,
   createPayment,
   updatePaymentStatus,
   getPaymentByReference,
   getPaymentByBookingId,
-  getPaymentsByUserId
+  getPaymentsByBookingId,
+  getPaymentsByUserId,
+  normalizePaymentMethod
 };

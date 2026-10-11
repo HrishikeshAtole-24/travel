@@ -11,11 +11,6 @@
 const aiService = require('../services/ai.service');
 const logger = require('../config/winstonLogger');
 
-// Simple in-memory rate limiting
-const rateLimitMap = new Map();
-const RATE_LIMIT_WINDOW = 60000; // 1 minute
-const RATE_LIMIT_MAX = 20; // 20 messages per minute
-
 // Analytics storage (in production, use DB)
 const analyticsData = {
   totalQueries: 0,
@@ -23,35 +18,6 @@ const analyticsData = {
   avgResponseTime: 0,
   responseTimes: []
 };
-
-/**
- * Check rate limit for session
- */
-function checkRateLimit(sessionId) {
-  const key = sessionId || 'anonymous';
-  const now = Date.now();
-  
-  if (!rateLimitMap.has(key)) {
-    rateLimitMap.set(key, { count: 1, firstRequest: now });
-    return true;
-  }
-  
-  const limitData = rateLimitMap.get(key);
-  
-  // Reset if window expired
-  if (now - limitData.firstRequest > RATE_LIMIT_WINDOW) {
-    rateLimitMap.set(key, { count: 1, firstRequest: now });
-    return true;
-  }
-  
-  // Check limit
-  if (limitData.count >= RATE_LIMIT_MAX) {
-    return false;
-  }
-  
-  limitData.count++;
-  return true;
-}
 
 /**
  * Log analytics data
@@ -108,24 +74,17 @@ class ChatController {
         });
       }
 
-      // Rate limiting check
-      if (!checkRateLimit(sessionId)) {
-        logger.warn(`[Chat] Rate limit exceeded for session: ${sessionId}`);
-        return res.status(429).json({
-          success: false,
-          error: 'Too many messages. Please wait a moment.',
-          reply: "You're sending messages too quickly! Please wait a moment and try again. 😊"
-        });
-      }
+      // Rate limiting is enforced per IP by chatLimiter (routes/chat.routes.js)
 
       const sanitizedMessage = message.trim();
       
       logger.info(`[Chat] User: "${sanitizedMessage.substring(0, 50)}${sanitizedMessage.length > 50 ? '...' : ''}" | Session: ${sessionId || 'anon'}`);
 
       // Convert history to API format
-      const conversationHistory = history.slice(-8).map(msg => ({
+      // Cap history size so clients can't inflate token usage
+      const conversationHistory = (Array.isArray(history) ? history : []).slice(-8).map(msg => ({
         role: msg.sender === 'user' ? 'user' : 'assistant',
-        content: msg.text
+        content: String(msg.text || '').slice(0, 1000)
       }));
 
       // Get AI response with metadata

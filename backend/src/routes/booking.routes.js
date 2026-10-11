@@ -7,14 +7,16 @@ const express = require('express');
 const router = express.Router();
 const bookingController = require('../controllers/booking.controller');
 const { authenticateToken, optionalAuth } = require('../middleware/auth.middleware');
+const { bookingLimiter, lookupLimiter } = require('../middleware/rateLimit.middleware');
 
 /**
  * @route   POST /api/bookings/create
  * @desc    Create new booking (requires auth OR guest email/phone)
  * @access  Public with optional auth
- * @body    { flightId, flightData, travelers, contactEmail, contactPhone, totalPrice }
+ * @body    { flightId, flightData, validatedFlightOffer, travelers, contactEmail, contactPhone }
+ *          Price is taken from re-pricing validatedFlightOffer server-side.
  */
-router.post('/create', optionalAuth, bookingController.createBooking);
+router.post('/create', bookingLimiter, optionalAuth, bookingController.createBooking);
 
 /**
  * @route   POST /api/bookings/create-and-pay
@@ -22,7 +24,7 @@ router.post('/create', optionalAuth, bookingController.createBooking);
  * @access  Public with optional auth
  * @body    { flightData, travelers, contactEmail, totalPrice, paymentAcquirer }
  */
-router.post('/create-and-pay', optionalAuth, bookingController.createBookingAndInitiatePayment);
+router.post('/create-and-pay', bookingLimiter, optionalAuth, bookingController.createBookingAndInitiatePayment);
 
 /**
  * @route   GET /api/bookings/my-bookings
@@ -34,37 +36,37 @@ router.get('/my-bookings', authenticateToken, bookingController.getMyBookings);
 /**
  * @route   GET /api/bookings/reference/:bookingReference
  * @desc    Get booking by reference (with email verification for guests)
- * @access  Public
+ * @access  Owner (JWT) or ?email=<contact email>
  * @query   ?email=xxx
  */
-router.get('/reference/:bookingReference', optionalAuth, bookingController.getBookingByReference);
+router.get('/reference/:bookingReference', lookupLimiter, optionalAuth, bookingController.getBookingByReference);
 
 /**
  * @route   GET /api/bookings/:bookingReference/ticket
  * @desc    Download e-ticket PDF for a booking
- * @access  Public with optional auth
+ * @access  Owner (JWT) or ?email=<contact email>
  */
-router.get('/:bookingReference/ticket', optionalAuth, bookingController.downloadTicket);
+router.get('/:bookingReference/ticket', lookupLimiter, optionalAuth, bookingController.downloadTicket);
 
 /**
  * @route   POST /api/bookings/:bookingReference/send-confirmation
  * @desc    Send/resend confirmation email for a booking
- * @access  Public with optional auth
+ * @access  Owner (JWT) or { email } in body
  */
-router.post('/:bookingReference/send-confirmation', optionalAuth, bookingController.sendConfirmationEmail);
+router.post('/:bookingReference/send-confirmation', lookupLimiter, optionalAuth, bookingController.sendConfirmationEmail);
 
 /**
  * @route   GET /api/bookings/:bookingId
  * @desc    Get booking details by ID
- * @access  Public with optional auth
+ * @access  Protected (owner only)
  */
 router.get('/:bookingId', authenticateToken, bookingController.getBooking);
 
 /**
  * @route   POST /api/bookings/:bookingId/cancel
  * @desc    Cancel booking
- * @access  Public with optional auth
+ * @access  Protected (owner only)
  */
-router.post('/:bookingId/cancel', optionalAuth, bookingController.cancelBooking);
+router.post('/:bookingId/cancel', authenticateToken, bookingController.cancelBooking);
 
 module.exports = router;

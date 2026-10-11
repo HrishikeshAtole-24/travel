@@ -23,12 +23,13 @@ router.get('/payment-page/:paymentReference', async (req, res) => {
     const result = await pool.query(
       `SELECT 
         p.*,
-        b.booking_reference,
+        COALESCE(b.booking_reference, hb.booking_reference) AS booking_reference,
         b.flight_data,
-        b.contact_email,
-        b.contact_phone
+        COALESCE(b.contact_email, hb.contact_email) AS contact_email,
+        COALESCE(b.contact_phone, hb.contact_phone) AS contact_phone
        FROM payments p
-       JOIN bookings b ON p.booking_id = b.id
+       LEFT JOIN bookings b ON p.booking_id = b.id
+       LEFT JOIN hotel_bookings hb ON p.hotel_booking_id = hb.id
        WHERE p.payment_reference = $1`,
       [paymentReference]
     );

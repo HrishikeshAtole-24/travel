@@ -28,6 +28,22 @@ function PaymentSuccessContent() {
     }
   }, [bookingReference]);
 
+  // Guests prove access with the contact email used at booking time
+  // (saved in sessionStorage by the booking page before redirecting to payment)
+  const getContactEmail = () => {
+    try {
+      const saved = JSON.parse(sessionStorage.getItem('bookingData') || '{}');
+      return saved.contactEmail || '';
+    } catch {
+      return '';
+    }
+  };
+
+  const withEmail = (url) => {
+    const email = getContactEmail();
+    return email ? `${url}?email=${encodeURIComponent(email)}` : url;
+  };
+
   const showNotification = (message, type = 'success') => {
     setNotification({ message, type });
     setTimeout(() => setNotification(null), 4000);
@@ -38,7 +54,7 @@ function PaymentSuccessContent() {
       const token = localStorage.getItem('token');
       const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000/api';
       const response = await fetch(
-        `${baseUrl}/bookings/reference/${bookingReference}`,
+        withEmail(`${baseUrl}/bookings/reference/${bookingReference}`),
         {
           headers: token ? { 'Authorization': `Bearer ${token}` } : {}
         }
@@ -65,7 +81,7 @@ function PaymentSuccessContent() {
       const token = localStorage.getItem('token');
       const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000/api';
       const response = await fetch(
-        `${baseUrl}/bookings/${bookingReference}/ticket`,
+        withEmail(`${baseUrl}/bookings/${bookingReference}/ticket`),
         {
           headers: token ? { 'Authorization': `Bearer ${token}` } : {}
         }
@@ -107,7 +123,8 @@ function PaymentSuccessContent() {
           headers: {
             'Content-Type': 'application/json',
             ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-          }
+          },
+          body: JSON.stringify({ email: getContactEmail() || undefined })
         }
       );
       

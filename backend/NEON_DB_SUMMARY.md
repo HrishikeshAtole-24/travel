@@ -210,7 +210,7 @@ PORT=5000
 NODE_ENV=development
 
 # PostgreSQL (Neon DB)
-DATABASE_URL=postgresql://neondb_owner:npg_DPpTY3JEC9zx@ep-spring-recipe-ah71u1rn-pooler.c-3.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require
+DATABASE_URL=postgresql://<db-user>:<db-password>@<your-neon-host>/neondb?sslmode=require&channel_binding=require
 
 # Redis (Optional)
 REDIS_HOST=localhost

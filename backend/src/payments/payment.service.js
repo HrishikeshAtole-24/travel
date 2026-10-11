@@ -1,17 +1,44 @@
 /**
  * Payment Service
  * Business logic for payment processing
+ * Supports both flight bookings (bookings) and hotel bookings (hotel_bookings)
  */
 
 const acquirerFactory = require('./acquirers/AcquirerFactory');
 const paymentModel = require('../models/payment.model');
-const bookingModel = require('../models/booking.model');
-const { isBookingExpired, BOOKING_EXPIRY_MINUTES } = require('../services/booking.service');
-const { PaymentStatus, PaymentError, isValidStatusTransition } = require('../core/PaymentStatusCodes');
+const { BOOKING_EXPIRY_MINUTES, canAccessBooking } = require('../services/booking.service');
+const { PaymentStatus, PaymentError } = require('../core/PaymentStatusCodes');
 const ApiError = require('../core/ApiError');
-const { StatusCodes } = require('../core/StatusCodes');
 const logger = require('../config/winstonLogger');
 const { getPool } = require('../config/database');
+const { isAllowedRedirectUrl, getFrontendBaseUrl } = require('../utils/security');
+
+/**
+ * Booking types a payment can belong to.
+ * Table/column names come from this constant only - never from user input.
+ */
+const BOOKING_TYPES = {
+  flight: { table: 'bookings', paymentColumn: 'booking_id', label: 'Flight' },
+  hotel: { table: 'hotel_bookings', paymentColumn: 'hotel_booking_id', label: 'Hotel' }
+};
+
+function getBookingTypeConfig(bookingType = 'flight') {
+  const config = BOOKING_TYPES[bookingType];
+  if (!config) {
+    throw ApiError.badRequest(`Unsupported booking type: ${bookingType}`);
+  }
+  return config;
+}
+
+/**
+ * Which booking a payment row belongs to
+ * @returns {{ bookingType: string, bookingId: number, config: Object }}
+ */
+function getPaymentBooking(payment) {
+  const bookingType = payment.hotel_booking_id ? 'hotel' : 'flight';
+  const config = BOOKING_TYPES[bookingType];
+  return { bookingType, bookingId: payment[config.paymentColumn], config };
+}
 
 /**
  * Get payment credentials for acquirer
@@ -35,40 +62,68 @@ function getAcquirerCredentials(acquirer) {
 }
 
 /**
+ * Use the client-supplied redirect only if it points at our own frontend
+ */
+function resolveRedirectUrl(requestedUrl, fallbackPath) {
+  if (requestedUrl && isAllowedRedirectUrl(requestedUrl)) {
+    return requestedUrl;
+  }
+  if (requestedUrl) {
+    logger.warn(`[Payment] Rejected redirect URL outside allowlist: ${requestedUrl}`);
+  }
+  return `${getFrontendBaseUrl()}${fallbackPath}`;
+}
+
+/**
+ * Load the booking a payment is (or will be) for
+ */
+async function loadBooking(pool, bookingType, bookingId) {
+  const { table } = getBookingTypeConfig(bookingType);
+  const result = await pool.query(`SELECT * FROM ${table} WHERE id = $1`, [bookingId]);
+  return result.rows[0] || null;
+}
+
+/**
  * Initialize payment for a booking
  * Industry standard: Creates a NEW payment transaction each time user retries
  * This allows proper tracking of payment attempts and handles expired payments
+ *
+ * @param {number} bookingId - ID in bookings (flight) or hotel_bookings (hotel)
+ * @param {Object} paymentOptions
+ * @param {'flight'|'hotel'} [paymentOptions.bookingType='flight']
+ * @param {Object|null} paymentOptions.access - Caller identity { userId, email }.
+ *   Pass null only from trusted internal flows (booking just created in the same request).
  */
 const initiatePayment = async (bookingId, paymentOptions = {}) => {
   try {
     const pool = getPool();
+    const bookingType = paymentOptions.bookingType || 'flight';
+    const { table, paymentColumn, label } = getBookingTypeConfig(bookingType);
 
     // Fetch booking details
-    const bookingResult = await pool.query(
-      'SELECT * FROM bookings WHERE id = $1',
-      [bookingId]
-    );
+    const booking = await loadBooking(pool, bookingType, bookingId);
 
-    if (bookingResult.rows.length === 0) {
+    const access = paymentOptions.access === undefined ? {} : paymentOptions.access;
+    if (!booking || (access !== null && !canAccessBooking(booking, access))) {
       throw ApiError.notFound(PaymentError.BOOKING_NOT_FOUND.message);
     }
 
-    const booking = bookingResult.rows[0];
+    const expiredMessage = bookingType === 'hotel'
+      ? 'Booking has expired. Please create a new booking to ensure room availability.'
+      : `Booking has expired. Flight seats are only held for ${BOOKING_EXPIRY_MINUTES} minutes. Please create a new booking to ensure seat availability.`;
 
     // Check if booking has expired
     if (booking.expires_at && new Date() > new Date(booking.expires_at)) {
       // Auto-expire the booking if not already expired
       if (['pending', 'payment_initiated'].includes(booking.status)) {
         await pool.query(
-          'UPDATE bookings SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+          `UPDATE ${table} SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2`,
           ['expired', booking.id]
         );
         logger.info(`[Payment] Booking auto-expired: ${booking.booking_reference}`);
       }
-      
-      throw ApiError.badRequest(
-        `Booking has expired. Flight seats are only held for ${BOOKING_EXPIRY_MINUTES} minutes. Please create a new booking to ensure seat availability.`
-      );
+
+      throw ApiError.badRequest(expiredMessage);
     }
 
     // Check if booking is in a confirming/completed state
@@ -81,9 +136,7 @@ const initiatePayment = async (bookingId, paymentOptions = {}) => {
     }
 
     if (booking.status === 'expired') {
-      throw ApiError.badRequest(
-        `Booking has expired. Flight seats are only held for ${BOOKING_EXPIRY_MINUTES} minutes. Please create a new booking to ensure seat availability.`
-      );
+      throw ApiError.badRequest(expiredMessage);
     }
 
     // Validate booking status - allow pending or payment_initiated (for retries)
@@ -93,11 +146,11 @@ const initiatePayment = async (bookingId, paymentOptions = {}) => {
 
     // Cancel any existing pending payments for this booking (to avoid duplicate charges)
     await pool.query(
-      `UPDATE payments SET status = 'CANCELLED', updated_at = CURRENT_TIMESTAMP 
-       WHERE booking_id = $1 AND status IN ('CREATED', 'PENDING')`,
+      `UPDATE payments SET status = 'CANCELLED', updated_at = CURRENT_TIMESTAMP
+       WHERE ${paymentColumn} = $1 AND status IN ('CREATED', 'PENDING')`,
       [booking.id]
     );
-    logger.info(`[Payment] Cancelled pending payments for booking ${bookingId} before creating new one`);
+    logger.info(`[Payment] Cancelled pending payments for ${bookingType} booking ${bookingId} before creating new one`);
 
     // Select acquirer (default to Razorpay, can be based on amount, user preference, etc.)
     const acquirer = paymentOptions.acquirer || 'RAZORPAY';
@@ -108,27 +161,34 @@ const initiatePayment = async (bookingId, paymentOptions = {}) => {
       throw ApiError.internal('Payment gateway credentials not configured');
     }
 
-    // Create payment record
+    const successUrl = resolveRedirectUrl(paymentOptions.successUrl, '/payment-success');
+    const failureUrl = resolveRedirectUrl(paymentOptions.failureUrl, '/payment-failed');
+
+    // Create payment record (amount always comes from the stored booking, never the client)
     const paymentData = {
       bookingId: booking.id,
+      bookingType,
       userId: booking.user_id,
       amount: parseFloat(booking.total_price),
       currency: booking.currency || 'INR',
       acquirer: acquirer,
-      customerEmail: paymentOptions.customerEmail || 'customer@example.com',
-      customerPhone: paymentOptions.customerPhone || '',
+      customerEmail: paymentOptions.customerEmail || booking.contact_email || 'customer@example.com',
+      customerPhone: paymentOptions.customerPhone || booking.contact_phone || '',
       customerName: paymentOptions.customerName || '',
-      successUrl: paymentOptions.successUrl || `${process.env.APP_URL}/payment/success`,
-      failureUrl: paymentOptions.failureUrl || `${process.env.APP_URL}/payment/failure`,
-      callbackUrl: paymentOptions.callbackUrl || `${process.env.APP_URL}/api/payments/callback`,
-      description: `Flight booking payment for booking #${booking.booking_reference}`,
+      successUrl,
+      failureUrl,
+      callbackUrl: `${process.env.APP_URL}/api/payments/callback`,
+      description: `${label} booking payment for booking #${booking.booking_reference}`,
       ipAddress: paymentOptions.ipAddress,
       userAgent: paymentOptions.userAgent,
       metadata: {
+        booking_type: bookingType,
         booking_reference: booking.booking_reference,
-        flight_id: booking.flight_id,
-        success_url: paymentOptions.successUrl || `${process.env.APP_URL}/payment/success`,
-        failure_url: paymentOptions.failureUrl || `${process.env.APP_URL}/payment/failure`
+        ...(bookingType === 'hotel'
+          ? { hotel_id: booking.hotel_id, offer_id: booking.offer_id }
+          : { flight_id: booking.flight_id }),
+        success_url: successUrl,
+        failure_url: failureUrl
       }
     };
 
@@ -162,11 +222,11 @@ const initiatePayment = async (bookingId, paymentOptions = {}) => {
 
     // Update booking status
     await pool.query(
-      'UPDATE bookings SET status = $1 WHERE id = $2',
+      `UPDATE ${table} SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2`,
       ['payment_initiated', booking.id]
     );
 
-    logger.info(`Payment initiated: ${payment.payment_reference}, Acquirer: ${acquirer}`);
+    logger.info(`Payment initiated: ${payment.payment_reference}, Acquirer: ${acquirer}, Type: ${bookingType}`);
 
     return {
       success: true,
@@ -182,6 +242,85 @@ const initiatePayment = async (bookingId, paymentOptions = {}) => {
     logger.error('Payment initiation failed:', error.message);
     throw error;
   }
+};
+
+/**
+ * Mark a VERIFIED payment as successful and confirm its booking, atomically.
+ * Idempotent: a payment that is already SUCCESS is left untouched.
+ * Callers MUST have verified the acquirer signature before calling this.
+ *
+ * @param {Object} payment - payments row
+ * @param {Object} details - { acquirerPaymentId, acquirerTransactionId, paymentMethod, acquirerResponse }
+ * @returns {{ alreadyProcessed: boolean, bookingType: string, bookingId: number }}
+ */
+const markPaymentSuccessful = async (payment, details = {}) => {
+  const pool = getPool();
+  const client = await pool.connect();
+  const { bookingType, bookingId, config } = getPaymentBooking(payment);
+
+  try {
+    await client.query('BEGIN');
+
+    const updated = await client.query(
+      `UPDATE payments
+       SET status = 'SUCCESS',
+           acquirer_payment_id = COALESCE($1, acquirer_payment_id),
+           acquirer_transaction_id = COALESCE($2, acquirer_transaction_id),
+           payment_method = COALESCE($3, payment_method),
+           acquirer_response = COALESCE($4, acquirer_response),
+           completed_at = CURRENT_TIMESTAMP,
+           updated_at = CURRENT_TIMESTAMP
+       WHERE id = $5 AND status <> 'SUCCESS'
+       RETURNING id`,
+      [
+        details.acquirerPaymentId || null,
+        details.acquirerTransactionId || details.acquirerPaymentId || null,
+        paymentModel.normalizePaymentMethod(details.paymentMethod),
+        details.acquirerResponse ? JSON.stringify(details.acquirerResponse) : null,
+        payment.id
+      ]
+    );
+
+    if (updated.rows.length === 0) {
+      await client.query('ROLLBACK');
+      logger.info(`[Payment] ${payment.payment_reference} already marked SUCCESS - skipping`);
+      return { alreadyProcessed: true, bookingType, bookingId };
+    }
+
+    await client.query(
+      `UPDATE ${config.table} SET status = 'confirmed', updated_at = CURRENT_TIMESTAMP WHERE id = $1`,
+      [bookingId]
+    );
+
+    await client.query('COMMIT');
+    logger.info(`[Payment] ${payment.payment_reference} SUCCESS - ${bookingType} booking ${bookingId} confirmed`);
+    return { alreadyProcessed: false, bookingType, bookingId };
+  } catch (error) {
+    await client.query('ROLLBACK');
+    logger.error('[Payment] Failed to mark payment successful:', error.message);
+    throw error;
+  } finally {
+    client.release();
+  }
+};
+
+/**
+ * Find a payment by acquirer order ID, with its booking reference and contact email
+ */
+const findPaymentByOrderId = async (acquirerOrderId) => {
+  if (!acquirerOrderId) return null;
+  const pool = getPool();
+  const result = await pool.query(
+    `SELECT p.*,
+            COALESCE(b.booking_reference, hb.booking_reference) AS booking_reference,
+            COALESCE(b.contact_email, hb.contact_email) AS contact_email
+     FROM payments p
+     LEFT JOIN bookings b ON p.booking_id = b.id
+     LEFT JOIN hotel_bookings hb ON p.hotel_booking_id = hb.id
+     WHERE p.acquirer_order_id = $1`,
+    [acquirerOrderId]
+  );
+  return result.rows[0] || null;
 };
 
 /**
@@ -222,33 +361,34 @@ const verifyPaymentCallback = async (paymentReference, callbackData) => {
     const verificationResult = await acquirerClient.verifyPayment(callbackData, credentials);
 
     if (!verificationResult.success || !verificationResult.verified) {
-      await paymentModel.updatePaymentStatus(paymentReference, {
-        status: PaymentStatus.FAILED,
-        acquirerResponse: verificationResult
-      });
-
       throw ApiError.badRequest(verificationResult.error || PaymentError.INVALID_SIGNATURE.message);
     }
 
-    // Update payment status
-    await paymentModel.updatePaymentStatus(paymentReference, {
-      status: verificationResult.status,
-      acquirerPaymentId: verificationResult.acquirerPaymentId,
-      acquirerTransactionId: verificationResult.acquirerTransactionId,
-      paymentMethod: verificationResult.paymentMethod,
-      acquirerResponse: verificationResult.paymentDetails
-    });
-
-    // Update booking status if payment successful
-    if (verificationResult.status === PaymentStatus.SUCCESS) {
-      const pool = getPool();
-      await pool.query(
-        'UPDATE bookings SET status = $1 WHERE id = $2',
-        ['confirmed', payment.booking_id]
-      );
-
-      logger.info(`Payment verified successfully: ${paymentReference}`);
+    // The signed order must be the one this payment created
+    if (verificationResult.acquirerOrderId && payment.acquirer_order_id &&
+        verificationResult.acquirerOrderId !== payment.acquirer_order_id) {
+      throw ApiError.badRequest(PaymentError.INVALID_SIGNATURE.message);
     }
+
+    if (verificationResult.status === PaymentStatus.SUCCESS) {
+      await markPaymentSuccessful(payment, {
+        acquirerPaymentId: verificationResult.acquirerPaymentId,
+        acquirerTransactionId: verificationResult.acquirerTransactionId,
+        paymentMethod: verificationResult.paymentMethod,
+        acquirerResponse: verificationResult.paymentDetails
+      });
+      logger.info(`Payment verified successfully: ${paymentReference}`);
+    } else {
+      await paymentModel.updatePaymentStatus(paymentReference, {
+        status: verificationResult.status,
+        acquirerPaymentId: verificationResult.acquirerPaymentId,
+        acquirerTransactionId: verificationResult.acquirerTransactionId,
+        paymentMethod: verificationResult.paymentMethod,
+        acquirerResponse: verificationResult.paymentDetails
+      });
+    }
+
+    const { bookingType, bookingId } = getPaymentBooking(payment);
 
     return {
       success: true,
@@ -256,7 +396,8 @@ const verifyPaymentCallback = async (paymentReference, callbackData) => {
       status: verificationResult.status,
       amount: payment.amount,
       currency: payment.currency,
-      bookingId: payment.booking_id
+      bookingType,
+      bookingId
     };
   } catch (error) {
     logger.error('Payment verification failed:', error.message);
@@ -286,18 +427,21 @@ const checkPaymentStatus = async (paymentReference) => {
       };
     }
 
-    // Query acquirer for latest status
+    // Query acquirer for latest status (server-to-server, so it can be trusted)
     const acquirerClient = acquirerFactory.getAcquirer(payment.acquirer);
     const credentials = getAcquirerCredentials(payment.acquirer);
 
     const statusResult = await acquirerClient.checkStatus(payment.acquirer_order_id, credentials);
 
     if (statusResult.success && statusResult.status !== payment.status) {
-      // Update payment status if changed
-      await paymentModel.updatePaymentStatus(paymentReference, {
-        status: statusResult.status,
-        acquirerResponse: statusResult.paymentDetails
-      });
+      if (statusResult.status === PaymentStatus.SUCCESS) {
+        await markPaymentSuccessful(payment, { acquirerResponse: statusResult.paymentDetails });
+      } else {
+        await paymentModel.updatePaymentStatus(paymentReference, {
+          status: statusResult.status,
+          acquirerResponse: statusResult.paymentDetails
+        });
+      }
     }
 
     return {
@@ -325,14 +469,23 @@ const processRefund = async (paymentReference, refundAmount, reason) => {
       throw ApiError.notFound(PaymentError.PAYMENT_NOT_FOUND.message);
     }
 
-    // Validate payment status
-    if (payment.status !== PaymentStatus.SUCCESS) {
+    // Validate payment status (partial refunds can be refunded further)
+    if (![PaymentStatus.SUCCESS, PaymentStatus.PARTIAL_REFUND].includes(payment.status)) {
       throw ApiError.badRequest('Only successful payments can be refunded');
     }
 
+    // PG returns DECIMAL as strings - convert before doing arithmetic
+    const amount = parseFloat(refundAmount);
+    const paidAmount = parseFloat(payment.amount);
+    const alreadyRefunded = parseFloat(payment.refunded_amount || 0);
+
+    if (!Number.isFinite(amount) || amount <= 0) {
+      throw ApiError.badRequest('Valid refund amount is required');
+    }
+
     // Validate refund amount
-    const maxRefundAmount = payment.amount - payment.refunded_amount;
-    if (refundAmount > maxRefundAmount) {
+    const maxRefundAmount = Math.round((paidAmount - alreadyRefunded) * 100) / 100;
+    if (amount > maxRefundAmount) {
       throw ApiError.badRequest(`Refund amount exceeds available balance. Max: ${maxRefundAmount}`);
     }
 
@@ -342,8 +495,8 @@ const processRefund = async (paymentReference, refundAmount, reason) => {
 
     // Process refund with acquirer
     const refundData = {
-      acquirerPaymentId: payment.acquirer_payment_id,
-      amount: refundAmount,
+      acquirerPaymentId: payment.acquirer_payment_id || payment.acquirer_transaction_id,
+      amount,
       reason: reason,
       notes: {
         payment_reference: payment.payment_reference
@@ -357,8 +510,8 @@ const processRefund = async (paymentReference, refundAmount, reason) => {
     }
 
     // Update payment with refund details
-    const newRefundedAmount = payment.refunded_amount + refundAmount;
-    const newStatus = newRefundedAmount >= payment.amount ? PaymentStatus.REFUNDED : PaymentStatus.PARTIAL_REFUND;
+    const newRefundedAmount = Math.round((alreadyRefunded + amount) * 100) / 100;
+    const newStatus = newRefundedAmount >= paidAmount ? PaymentStatus.REFUNDED : PaymentStatus.PARTIAL_REFUND;
 
     await paymentModel.updatePaymentStatus(paymentReference, {
       status: newStatus,
@@ -366,13 +519,13 @@ const processRefund = async (paymentReference, refundAmount, reason) => {
       refundReference: refundResult.refundId
     });
 
-    logger.info(`Refund processed: ${paymentReference}, Amount: ${refundAmount}`);
+    logger.info(`Refund processed: ${paymentReference}, Amount: ${amount}`);
 
     return {
       success: true,
       paymentReference: payment.payment_reference,
       refundId: refundResult.refundId,
-      refundAmount: refundAmount,
+      refundAmount: amount,
       totalRefunded: newRefundedAmount,
       status: newStatus
     };
@@ -425,19 +578,18 @@ const handleWebhook = async (acquirer, webhookData) => {
       };
     }
 
-    // Update payment status
-    await paymentModel.updatePaymentStatus(payment.payment_reference, {
-      status: webhookResult.status,
-      acquirerPaymentId: webhookResult.acquirerPaymentId || payment.acquirer_payment_id,
-      webhookData: webhookResult
-    });
-
-    // Update booking if payment successful
     if (webhookResult.status === PaymentStatus.SUCCESS) {
-      await pool.query(
-        'UPDATE bookings SET status = $1 WHERE id = $2',
-        ['confirmed', payment.booking_id]
-      );
+      await markPaymentSuccessful(payment, {
+        acquirerPaymentId: webhookResult.acquirerPaymentId,
+        acquirerResponse: webhookResult
+      });
+    } else if (payment.status !== PaymentStatus.SUCCESS || [PaymentStatus.REFUNDED, PaymentStatus.PARTIAL_REFUND].includes(webhookResult.status)) {
+      // Never downgrade a successful payment except to a refund state
+      await paymentModel.updatePaymentStatus(payment.payment_reference, {
+        status: webhookResult.status,
+        acquirerPaymentId: webhookResult.acquirerPaymentId || payment.acquirer_payment_id,
+        acquirerResponse: webhookResult
+      });
     }
 
     return {
@@ -453,6 +605,9 @@ const handleWebhook = async (acquirer, webhookData) => {
 
 module.exports = {
   initiatePayment,
+  markPaymentSuccessful,
+  findPaymentByOrderId,
+  getPaymentBooking,
   verifyPaymentCallback,
   checkPaymentStatus,
   processRefund,

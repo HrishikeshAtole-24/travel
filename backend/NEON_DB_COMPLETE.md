@@ -109,7 +109,7 @@ travelers
 
 ```env
 # ✅ CONFIGURED
-DATABASE_URL=postgresql://neondb_owner:npg_DPpTY3JEC9zx@ep-spring-recipe-ah71u1rn-pooler.c-3.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require
+DATABASE_URL=postgresql://<db-user>:<db-password>@<your-neon-host>/neondb?sslmode=require&channel_binding=require
 
 PORT=5000
 NODE_ENV=development
@@ -151,7 +151,7 @@ curl http://localhost:5000/api/health
 ### **Verify Tables in Neon DB** ✅
 
 ```bash
-psql 'postgresql://neondb_owner:npg_DPpTY3JEC9zx@ep-spring-recipe-ah71u1rn-pooler.c-3.us-east-1.aws.neon.tech/neondb?sslmode=require'
+psql 'postgresql://<db-user>:<db-password>@<your-neon-host>/neondb?sslmode=require'
 
 -- List tables
 \dt
@@ -220,7 +220,7 @@ psql 'postgresql://neondb_owner:npg_DPpTY3JEC9zx@ep-spring-recipe-ah71u1rn-poole
 ## 🔗 **NEON DB CONNECTION DETAILS**
 
 ```
-Host: ep-spring-recipe-ah71u1rn-pooler.c-3.us-east-1.aws.neon.tech
+Host: <your-neon-host>
 Port: 5432
 Database: neondb
 User: neondb_owner

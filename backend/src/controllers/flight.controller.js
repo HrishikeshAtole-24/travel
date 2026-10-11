@@ -4,6 +4,7 @@
  */
 const flightService = require('../services/flight.service');
 const ApiResponse = require('../core/ApiResponse');
+const ApiError = require('../core/ApiError');
 const { StatusCodes } = require('../core/StatusCodes');
 const AsyncHandler = require('../core/AsyncHandler');
 
@@ -87,7 +88,7 @@ class FlightController {
     const { flightOffer } = req.body;
 
     if (!flightOffer) {
-      return ApiResponse.error(res, 'Flight offer is required', StatusCodes.BAD_REQUEST);
+      throw ApiError.badRequest('Flight offer is required');
     }
 
     const result = await flightService.priceFlights(flightOffer);

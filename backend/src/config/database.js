@@ -9,17 +9,6 @@ let pool;
 
 const connectDB = async () => {
   try {
-    // DEBUG: Log environment variables
-    console.log('🔍 DEBUG - Environment Variables:');
-    console.log('NODE_ENV:', process.env.NODE_ENV);
-    console.log('DB_HOST:', process.env.DB_HOST);
-    console.log('DB_PORT:', process.env.DB_PORT);
-    console.log('DB_NAME:', process.env.DB_NAME);
-    console.log('DB_USER:', process.env.DB_USER);
-    console.log('DB_PASSWORD:', process.env.DB_PASSWORD ? '***' + process.env.DB_PASSWORD.slice(-4) : 'NOT SET');
-    console.log('DB_SSL:', process.env.DB_SSL);
-    console.log('DATABASE_URL:', process.env.DATABASE_URL ? process.env.DATABASE_URL.replace(/:[^:@]+@/, ':***@') : 'NOT SET');
-    
     // Prioritize individual params (for Supabase with special chars in password)
     // Falls back to DATABASE_URL if DB_HOST not set
     const connectionConfig = process.env.DB_HOST
@@ -45,15 +34,8 @@ const connectDB = async () => {
           ssl: false,
         };
     
-    console.log('🔍 DEBUG - Connection Config:');
-    console.log('Using DB_HOST?', !!process.env.DB_HOST);
-    console.log('Using DATABASE_URL?', !!process.env.DATABASE_URL);
-    console.log('Config:', {
-      ...connectionConfig,
-      password: connectionConfig.password ? '***' : 'NOT SET',
-      connectionString: connectionConfig.connectionString ? connectionConfig.connectionString.replace(/:[^:@]+@/, ':***@') : undefined
-    });
-    
+    logger.info(`🔌 Connecting to PostgreSQL via ${process.env.DB_HOST ? 'DB_HOST params' : process.env.DATABASE_URL ? 'DATABASE_URL' : 'localhost defaults'}`);
+
     pool = new Pool({
       ...connectionConfig,
       max: 20, // Maximum pool size
