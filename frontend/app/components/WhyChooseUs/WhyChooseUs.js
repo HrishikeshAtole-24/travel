@@ -1,88 +1,58 @@
+import Link from 'next/link';
+import Icon from '../Icon/Icon';
 import './WhyChooseUs.css';
 
+// Only promises the product actually keeps
+const FEATURES = [
+  {
+    icon: 'tag',
+    title: 'See who you’re buying from',
+    description: 'Every fare and room shows its supplier — Duffel, Nuitée and more — so there are no mystery resellers.'
+  },
+  {
+    icon: 'check',
+    title: 'Prices checked before you pay',
+    description: 'We re-confirm the fare or room rate with the supplier right before payment, so the total doesn’t move.'
+  },
+  {
+    icon: 'shield-check',
+    title: 'Secure payments',
+    description: 'Pay by UPI, cards or net banking through Razorpay. We never store your card details.'
+  },
+  {
+    icon: 'headset',
+    title: 'Help when plans change',
+    description: 'Manage, cancel and track refunds from My trips, or reach our support team any time.'
+  }
+];
+
 export default function WhyChooseUs() {
-  const features = [
-    {
-      icon: 'fa-indian-rupee-sign',
-      title: 'Best Price Guarantee',
-      description: 'We guarantee the lowest fares. Found a lower price? We\'ll refund the difference.',
-    },
-    {
-      icon: 'fa-clock',
-      title: 'Quick & Easy Booking',
-      description: 'Complete your booking in under 2 minutes with our streamlined process.',
-    },
-    {
-      icon: 'fa-lock',
-      title: 'Secure Payments',
-      description: 'Your transactions are protected with bank-grade 256-bit SSL encryption.',
-    },
-    {
-      icon: 'fa-phone',
-      title: '24/7 Customer Support',
-      description: 'Our dedicated team is available round the clock to assist you.',
-    }
-  ];
-
-  const stats = [
-    { number: '10M+', label: 'Bookings Completed' },
-    { number: '500+', label: 'Partner Airlines' },
-    { number: '98%', label: 'Customer Satisfaction' },
-    { number: '24/7', label: 'Support Available' }
-  ];
-
   return (
-    <section className="why-choose-section">
+    <section className="sw-section">
       <div className="container">
-        {/* Header */}
-        <div className="why-header">
-          <h2>Why Book With SkyWings?</h2>
-          <p>Trusted by millions of travelers for reliable flight bookings</p>
+        <div className="sw-section__head">
+          <div>
+            <h2 className="sw-section__title">Booking, without the fine print</h2>
+            <p className="sw-section__sub">What you get every time you book with SkyWings.</p>
+          </div>
         </div>
 
-        {/* Features */}
-        <div className="why-features">
-          {features.map((feature, index) => (
-            <div key={index} className="why-feature">
-              <div className="why-feature-icon">
-                <i className={`fas ${feature.icon}`}></i>
-              </div>
-              <div className="why-feature-content">
-                <h3>{feature.title}</h3>
-                <p>{feature.description}</p>
-              </div>
+        <div className="why-grid">
+          {FEATURES.map(f => (
+            <div key={f.title} className="why-card">
+              <span className="why-card__icon"><Icon name={f.icon} size={22} /></span>
+              <h3 className="why-card__title">{f.title}</h3>
+              <p className="why-card__text">{f.description}</p>
             </div>
           ))}
         </div>
 
-        {/* Stats */}
-        <div className="why-stats">
-          {stats.map((stat, index) => (
-            <div key={index} className="why-stat">
-              <span className="why-stat-number">{stat.number}</span>
-              <span className="why-stat-label">{stat.label}</span>
-            </div>
-          ))}
-        </div>
-
-        {/* Trust Indicators */}
-        <div className="trust-indicators">
-          <div className="trust-item">
-            <i className="fas fa-shield-halved"></i>
-            <span>Secure Checkout</span>
+        <div className="why-banner">
+          <div>
+            <p className="sw-overline why-banner__eyebrow">Your trips, in one place</p>
+            <h3 className="why-banner__title">Sign in to keep every booking, voucher and refund together.</h3>
           </div>
-          <div className="trust-item">
-            <i className="fas fa-certificate"></i>
-            <span>IATA Accredited</span>
-          </div>
-          <div className="trust-item">
-            <i className="fas fa-credit-card"></i>
-            <span>All Major Cards Accepted</span>
-          </div>
-          <div className="trust-item">
-            <i className="fas fa-rotate-left"></i>
-            <span>Easy Cancellation</span>
-          </div>
+          <Link href="/auth/signup" className="btn btn-accent btn-lg">Create free account</Link>
         </div>
       </div>
     </section>

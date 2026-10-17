@@ -6,7 +6,9 @@ import Link from 'next/link';
 import Header from '../components/Header/Header';
 import Footer from '../components/Footer/Footer';
 import apiClient from '@/lib/api/client';
-import './confirmation.css';
+import Icon from '../components/Icon/Icon';
+import { Skeleton, PageSkeleton } from '../components/Skeleton/Skeleton';
+import '../styles/confirmation.css';
 
 function ConfirmationContent() {
   const searchParams = useSearchParams();
@@ -20,6 +22,8 @@ function ConfirmationContent() {
   useEffect(() => {
     if (bookingReference) {
       fetchBookingDetails();
+    } else {
+      setLoading(false);
     }
   }, [bookingReference]);
 
@@ -87,92 +91,71 @@ function ConfirmationContent() {
   return (
     <>
       <Header />
-      <main className="confirmation-page">
-        <div className="container">
-          <div className="confirmation-card">
-            <div className="success-icon">
-              <svg width="80" height="80" viewBox="0 0 80 80" fill="none">
-                <circle cx="40" cy="40" r="38" stroke="currentColor" strokeWidth="4"/>
-                <path d="M25 40L35 50L55 30" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </div>
-
-            <h1>Booking Confirmed!</h1>
-            <p className="confirmation-message">
-              Your flight has been successfully booked{paymentStatus === 'success' && ' and payment completed'}. 
-              Confirmation details have been sent to your email.
+      <main className="cf-page">
+        <section className="cf-hero">
+          <div className="container">
+            <span className="cf-tick"><Icon name="check" size={36} strokeWidth={2.5} /></span>
+            <h1 className="cf-title">
+              {flightInfo?.destination ? <>You’re flying to <em className="sw-editorial">{flightInfo.destination}</em></> : <>Booking <em className="sw-editorial">confirmed</em></>}
+            </h1>
+            <p className="cf-sub">
+              {paymentStatus === 'success' ? 'Payment complete. ' : ''}Your confirmation and e-ticket are on their way to {booking?.contactEmail || 'your inbox'}.
             </p>
+          </div>
+        </section>
 
-            <div className="booking-reference">
-              <span className="reference-label">Booking Reference</span>
-              <span className="reference-value">{bookingReference || 'Processing...'}</span>
+        <div className="cf-body">
+          <article className="cf-voucher">
+            <div className="cf-ref">
+              <div>
+                <span className="sw-overline">Booking reference</span>
+                <strong className="cf-ref__code">{bookingReference || 'Processing…'}</strong>
+              </div>
+              <div className="cf-ref__tags">
+                <span className="sw-badge sw-badge--success">Confirmed</span>
+                {booking?.pnr && <span className="sw-supplier">PNR <strong>{booking.pnr}</strong></span>}
+              </div>
             </div>
 
-            {loading && (
-              <div className="loading-details">
-                <i className="fas fa-spinner fa-spin"></i> Loading booking details...
-              </div>
+            {loading && bookingReference && (
+              <div className="cf-main"><div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10 }}><Skeleton w="40%" h={20} /><Skeleton w="60%" h={12} /><Skeleton w="30%" h={12} /></div></div>
             )}
 
-            {!loading && booking && flightInfo && (
-              <div className="booking-summary-card">
-                <h3><i className="fas fa-plane"></i> Flight Details</h3>
-                <div className="summary-route">
-                  <div className="route-point">
-                    <span className="airport-code">{flightInfo.origin}</span>
-                    <span className="time">{formatTime(flightInfo.departureTime)}</span>
-                    <span className="date">{formatDate(flightInfo.departureDate)}</span>
+            {!loading && flightInfo && (
+              <>
+                <div className="cf-main">
+                  <div className="cf-main__art">
+                    <span className="cf-codes">{flightInfo.origin} <Icon name="plane" size={20} /> {flightInfo.destination}</span>
+                    <small>{flightInfo.airline} {flightInfo.flightNumber}</small>
                   </div>
-                  <div className="route-arrow">
-                    <i className="fas fa-plane"></i>
-                  </div>
-                  <div className="route-point">
-                    <span className="airport-code">{flightInfo.destination}</span>
-                    <span className="time">{formatTime(flightInfo.arrivalTime)}</span>
+                  <div className="cf-main__info">
+                    <h2>{flightInfo.origin} → {flightInfo.destination}</h2>
+                    <p>{formatDate(flightInfo.departureDate)} · departs {formatTime(flightInfo.departureTime)}{flightInfo.arrivalTime ? `, arrives ${formatTime(flightInfo.arrivalTime)}` : ''}</p>
                   </div>
                 </div>
-                <div className="summary-details">
-                  <div className="detail-row">
-                    <span className="label"><i className="fas fa-plane-departure"></i> Airline</span>
-                    <span className="value">{flightInfo.airline} {flightInfo.flightNumber}</span>
-                  </div>
-                  <div className="detail-row">
-                    <span className="label"><i className="fas fa-indian-rupee-sign"></i> Total Amount</span>
-                    <span className="value price">{formatCurrency(booking.totalPrice, booking.currency)}</span>
-                  </div>
-                  <div className="detail-row">
-                    <span className="label"><i className="fas fa-envelope"></i> Contact Email</span>
-                    <span className="value">{booking.contactEmail}</span>
-                  </div>
-                  {booking.pnr && (
-                    <div className="detail-row">
-                      <span className="label"><i className="fas fa-barcode"></i> PNR</span>
-                      <span className="value pnr">{booking.pnr}</span>
-                    </div>
-                  )}
+                <div className="cf-perf" />
+                <div className="cf-facts">
+                  <div><span className="sw-overline">Departure</span><strong>{formatTime(flightInfo.departureTime)}</strong><small>{formatDate(flightInfo.departureDate)}</small></div>
+                  <div><span className="sw-overline">Flight</span><strong>{flightInfo.airline} {flightInfo.flightNumber}</strong></div>
+                  <div><span className="sw-overline">Paid</span><strong>{formatCurrency(booking.totalPrice, booking.currency)}</strong></div>
+                  <div><span className="sw-overline">Contact</span><strong>{booking.contactEmail}</strong></div>
                 </div>
-              </div>
+              </>
             )}
 
-            <div className="confirmation-actions">
-              <Link href="/my-bookings" className="btn btn-primary btn-lg">
-                <i className="fas fa-ticket"></i> View My Bookings
-              </Link>
-              <Link href="/" className="btn btn-outline btn-lg">
-                <i className="fas fa-home"></i> Back to Home
-              </Link>
+            <div className="cf-actions">
+              <Link href="/my-bookings" className="btn btn-primary"><Icon name="ticket" size={16} /> View in My trips</Link>
+              <Link href="/" className="btn btn-secondary">Back to home</Link>
+              <span className="spacer" />
+              <Link href="/contact" className="btn btn-ghost">Need help?</Link>
             </div>
+          </article>
 
-            <div className="confirmation-info">
-              <div className="info-box">
-                <h3><i className="fas fa-envelope"></i> Check Your Email</h3>
-                <p>We've sent your booking confirmation and e-ticket to your email address.</p>
-              </div>
-              <div className="info-box">
-                <h3>✈️ Travel Documents</h3>
-                <p>Don't forget to bring a valid ID and your e-ticket for check-in.</p>
-              </div>
-            </div>
+          <h2 className="cf-next-title">What happens next</h2>
+          <div className="cf-next">
+            <div><Icon name="mail" size={20} /><strong>E-ticket by email</strong><p>Keep it on your phone — you won’t need a printout.</p></div>
+            <div><Icon name="clock" size={20} /><strong>Web check-in</strong><p>Opens 48 hours before departure on the airline’s site.</p></div>
+            <div><Icon name="user" size={20} /><strong>Carry a photo ID</strong><p>The name must match the one on your booking.</p></div>
           </div>
         </div>
       </main>
@@ -183,7 +166,7 @@ function ConfirmationContent() {
 
 export default function ConfirmationPage() {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense fallback={<><Header /><PageSkeleton label="Loading your booking…" /></>}>
       <ConfirmationContent />
     </Suspense>
   );

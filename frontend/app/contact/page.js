@@ -1,321 +1,108 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import Header from '../components/Header/Header';
 import Footer from '../components/Footer/Footer';
+import Icon from '../components/Icon/Icon';
+import '../hotels/hotels.css';
 import './contact.css';
 
-function ContactPage() {
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    subject: '',
-    message: ''
-  });
-  const [loading, setLoading] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
+// Real contact channels come from env; nothing is shown that isn't configured
+const SUPPORT_EMAIL = process.env.NEXT_PUBLIC_SUPPORT_EMAIL || '';
+const SUPPORT_PHONE = process.env.NEXT_PUBLIC_SUPPORT_PHONE || '';
 
-  const handleChange = (e) => {
-    setFormData(prev => ({
-      ...prev,
-      [e.target.name]: e.target.value
-    }));
-  };
+const TOPICS = ['Booking question', 'Change or cancel', 'Refund status', 'Payment issue', 'Feedback', 'Partnership', 'Other'];
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    setLoading(false);
-    setSubmitted(true);
-    setFormData({ name: '', email: '', phone: '', subject: '', message: '' });
-  };
+const FAQ = [
+  { q: 'How do I cancel or change a booking?', a: 'Open My trips, choose the booking and use Cancel booking. Refunds follow the airline’s fare rules or the hotel’s cancellation policy shown when you booked.' },
+  { q: 'When will I get my refund?', a: 'Once a cancellation is approved, the refund goes back to your original payment method. Banks usually take 5–7 working days to show it.' },
+  { q: 'Which payment methods can I use?', a: 'UPI, credit and debit cards, and net banking — all through Razorpay’s secure checkout. We never see or store your card details.' },
+  { q: 'Why did my price change at checkout?', a: 'Fares and room rates are live. We re-confirm them with the supplier just before payment and always show you the final total before you pay.' }
+];
 
-  const contactInfo = [
-    {
-      icon: 'fas fa-phone-alt',
-      title: 'Call Us',
-      content: '+91 1800-123-4567',
-      subtext: 'Mon-Sun, 24/7 Support',
-      action: 'tel:+911800123456'
-    },
-    {
-      icon: 'fas fa-envelope',
-      title: 'Email Us',
-      content: 'support@skywings.com',
-      subtext: 'We reply within 24 hours',
-      action: 'mailto:support@skywings.com'
-    },
-    {
-      icon: 'fas fa-map-marker-alt',
-      title: 'Visit Us',
-      content: 'Cyber Hub, Gurugram',
-      subtext: 'Haryana, India 122002',
-      action: '#'
-    },
-    {
-      icon: 'fas fa-comments',
-      title: 'Live Chat',
-      content: 'Chat with our team',
-      subtext: 'Available 24/7',
-      action: '#'
-    }
-  ];
+export default function ContactPage() {
+  const [form, setForm] = useState({ name: '', email: '', reference: '', topic: TOPICS[0], message: '' });
+  const set = (k) => (e) => setForm(prev => ({ ...prev, [k]: e.target.value }));
 
-  const faqItems = [
-    {
-      question: 'How can I cancel or modify my booking?',
-      answer: 'You can cancel or modify your booking through the "My Bookings" section. Cancellation charges may apply based on the airline policy.'
-    },
-    {
-      question: 'What payment methods do you accept?',
-      answer: 'We accept all major credit/debit cards, UPI, net banking, and popular wallets like Paytm, PhonePe, and Google Pay.'
-    },
-    {
-      question: 'How do I get my refund?',
-      answer: 'Refunds are processed within 7-10 business days to your original payment method after cancellation approval.'
-    },
-    {
-      question: 'Is my payment information secure?',
-      answer: 'Yes, we use industry-standard SSL encryption and are PCI DSS compliant to ensure your payment data is always secure.'
-    }
-  ];
+  // Opens the visitor's mail app with everything filled in — no silent "sent" state
+  const mailto = SUPPORT_EMAIL
+    ? `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(`${form.topic}${form.reference ? ` · ${form.reference}` : ''}`)}&body=${encodeURIComponent(`${form.message}\n\n— ${form.name}${form.email ? ` (${form.email})` : ''}`)}`
+    : null;
 
   return (
     <>
       <Header />
       <main className="contact-page">
-        {/* Hero Section */}
         <section className="contact-hero">
-          <div className="contact-hero-overlay"></div>
-          <div className="contact-hero-content">
-            <h1>Get in Touch</h1>
-            <p>We're here to help you plan your perfect journey</p>
+          <div className="container">
+            <p className="sw-overline contact-eyebrow">Help &amp; support</p>
+            <h1>How can we <em className="sw-editorial">help?</em></h1>
+            <p>Most answers are a click away in My trips. For anything else, reach us below.</p>
           </div>
         </section>
 
-        {/* Contact Cards */}
-        <section className="contact-cards-section">
-          <div className="container">
-            <div className="contact-cards-grid">
-              {contactInfo.map((info, index) => (
-                <a href={info.action} key={index} className="contact-card">
-                  <div className="contact-card-icon">
-                    <i className={info.icon}></i>
-                  </div>
-                  <h3>{info.title}</h3>
-                  <p className="contact-card-content">{info.content}</p>
-                  <span className="contact-card-subtext">{info.subtext}</span>
-                </a>
+        <div className="container contact-quick">
+          <Link href="/my-bookings" className="contact-tile">
+            <Icon name="ticket" size={22} />
+            <strong>Manage a booking</strong>
+            <span>Cancel, download tickets, check refunds</span>
+          </Link>
+          {SUPPORT_EMAIL && (
+            <a href={`mailto:${SUPPORT_EMAIL}`} className="contact-tile">
+              <Icon name="mail" size={22} />
+              <strong>Email support</strong>
+              <span>{SUPPORT_EMAIL}</span>
+            </a>
+          )}
+          {SUPPORT_PHONE && (
+            <a href={`tel:${SUPPORT_PHONE.replace(/\s/g, '')}`} className="contact-tile">
+              <Icon name="headset" size={22} />
+              <strong>Call us</strong>
+              <span>{SUPPORT_PHONE}</span>
+            </a>
+          )}
+          <div className="contact-tile contact-tile--static">
+            <Icon name="info" size={22} />
+            <strong>Chat assistant</strong>
+            <span>Use the chat button at the bottom-right of any page</span>
+          </div>
+        </div>
+
+        <section className="container contact-main">
+          <div className="contact-form-card">
+            <h2>Write to us</h2>
+            <p className="hd-muted">Include your booking reference so we can find your trip quickly.</p>
+            <form className="contact-form" onSubmit={(e) => { e.preventDefault(); if (mailto) window.location.href = mailto; }}>
+              <div className="contact-grid">
+                <label><span className="form-label">Your name</span><input className="form-input" value={form.name} onChange={set('name')} required autoComplete="name" /></label>
+                <label><span className="form-label">Email</span><input className="form-input" type="email" value={form.email} onChange={set('email')} required autoComplete="email" /></label>
+                <label><span className="form-label">Booking reference <span className="hb-optional">optional</span></span><input className="form-input" value={form.reference} onChange={set('reference')} placeholder="e.g. SKY-H7K2Q9" /></label>
+                <label><span className="form-label">Topic</span>
+                  <select className="form-select" value={form.topic} onChange={set('topic')}>{TOPICS.map(t => <option key={t}>{t}</option>)}</select>
+                </label>
+              </div>
+              <label><span className="form-label">Message</span><textarea className="form-textarea" rows="5" value={form.message} onChange={set('message')} required placeholder="Tell us what happened" /></label>
+              {mailto ? (
+                <div className="contact-submit">
+                  <p className="hd-muted">This opens your email app with your message ready to send.</p>
+                  <button type="submit" className="btn btn-primary btn-lg"><Icon name="mail" size={18} /> Write email</button>
+                </div>
+              ) : (
+                <p className="hb-price-change"><Icon name="info" size={16} /> Email support isn’t set up on this site yet — please use the chat assistant.</p>
+              )}
+            </form>
+          </div>
+
+          <div className="contact-faq">
+            <h2>Common questions</h2>
+            <div className="faq-list">
+              {FAQ.map((item, i) => (
+                <details key={item.q} className="faq-item" open={i === 0}>
+                  <summary><span>{item.q}</span><Icon name="chevron-down" size={20} className="faq-item__chev" /></summary>
+                  <p>{item.a}</p>
+                </details>
               ))}
-            </div>
-          </div>
-        </section>
-
-        {/* Main Contact Section */}
-        <section className="contact-main-section">
-          <div className="container">
-            <div className="contact-grid">
-              {/* Contact Form */}
-              <div className="contact-form-wrapper">
-                <div className="contact-form-header">
-                  <h2>Send us a Message</h2>
-                  <p>Fill out the form below and we'll get back to you as soon as possible.</p>
-                </div>
-
-                {submitted ? (
-                  <div className="success-message">
-                    <div className="success-icon">
-                      <i className="fas fa-check-circle"></i>
-                    </div>
-                    <h3>Message Sent Successfully!</h3>
-                    <p>Thank you for reaching out. Our team will contact you within 24 hours.</p>
-                    <button 
-                      className="send-another-btn"
-                      onClick={() => setSubmitted(false)}
-                    >
-                      Send Another Message
-                    </button>
-                  </div>
-                ) : (
-                  <form onSubmit={handleSubmit} className="contact-form">
-                    <div className="form-row">
-                      <div className="form-group">
-                        <label htmlFor="name">
-                          <i className="fas fa-user"></i>
-                          Full Name
-                        </label>
-                        <input
-                          type="text"
-                          id="name"
-                          name="name"
-                          value={formData.name}
-                          onChange={handleChange}
-                          required
-                          placeholder="John Doe"
-                        />
-                      </div>
-                      <div className="form-group">
-                        <label htmlFor="email">
-                          <i className="fas fa-envelope"></i>
-                          Email Address
-                        </label>
-                        <input
-                          type="email"
-                          id="email"
-                          name="email"
-                          value={formData.email}
-                          onChange={handleChange}
-                          required
-                          placeholder="john@example.com"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="form-row">
-                      <div className="form-group">
-                        <label htmlFor="phone">
-                          <i className="fas fa-phone"></i>
-                          Phone Number
-                        </label>
-                        <input
-                          type="tel"
-                          id="phone"
-                          name="phone"
-                          value={formData.phone}
-                          onChange={handleChange}
-                          placeholder="+91 98765 43210"
-                        />
-                      </div>
-                      <div className="form-group">
-                        <label htmlFor="subject">
-                          <i className="fas fa-tag"></i>
-                          Subject
-                        </label>
-                        <select
-                          id="subject"
-                          name="subject"
-                          value={formData.subject}
-                          onChange={handleChange}
-                          required
-                        >
-                          <option value="">Select a topic</option>
-                          <option value="booking">Booking Inquiry</option>
-                          <option value="refund">Refund Request</option>
-                          <option value="cancellation">Cancellation</option>
-                          <option value="complaint">Complaint</option>
-                          <option value="feedback">Feedback</option>
-                          <option value="partnership">Partnership</option>
-                          <option value="other">Other</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    <div className="form-group full-width">
-                      <label htmlFor="message">
-                        <i className="fas fa-comment-alt"></i>
-                        Your Message
-                      </label>
-                      <textarea
-                        id="message"
-                        name="message"
-                        value={formData.message}
-                        onChange={handleChange}
-                        required
-                        rows="5"
-                        placeholder="Tell us how we can help you..."
-                      ></textarea>
-                    </div>
-
-                    <button type="submit" className="submit-btn" disabled={loading}>
-                      {loading ? (
-                        <>
-                          <i className="fas fa-spinner fa-spin"></i>
-                          Sending...
-                        </>
-                      ) : (
-                        <>
-                          <i className="fas fa-paper-plane"></i>
-                          Send Message
-                        </>
-                      )}
-                    </button>
-                  </form>
-                )}
-              </div>
-
-              {/* FAQ Section */}
-              <div className="contact-faq-wrapper">
-                <div className="faq-header">
-                  <h2>Frequently Asked Questions</h2>
-                  <p>Quick answers to common queries</p>
-                </div>
-
-                <div className="faq-list">
-                  {faqItems.map((item, index) => (
-                    <details key={index} className="faq-item">
-                      <summary className="faq-question">
-                        <span>{item.question}</span>
-                        <i className="fas fa-chevron-down"></i>
-                      </summary>
-                      <div className="faq-answer">
-                        <p>{item.answer}</p>
-                      </div>
-                    </details>
-                  ))}
-                </div>
-
-                <div className="need-more-help">
-                  <div className="help-icon">
-                    <i className="fas fa-headset"></i>
-                  </div>
-                  <div className="help-content">
-                    <h3>Need More Help?</h3>
-                    <p>Our support team is available 24/7</p>
-                    <a href="tel:+911800123456" className="call-btn">
-                      <i className="fas fa-phone-alt"></i>
-                      Call Now
-                    </a>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Map Section */}
-        <section className="contact-map-section">
-          <div className="container">
-            <div className="map-wrapper">
-              <div className="map-info">
-                <h3>Our Office</h3>
-                <p><i className="fas fa-building"></i> SkyWings Travel Pvt. Ltd.</p>
-                <p><i className="fas fa-map-marker-alt"></i> Tower A, Cyber Hub, DLF Phase 2</p>
-                <p><i className="fas fa-city"></i> Gurugram, Haryana 122002</p>
-                <p><i className="fas fa-clock"></i> Mon - Sat: 9:00 AM - 8:00 PM</p>
-                <div className="social-links">
-                  <a href="#" aria-label="Facebook"><i className="fab fa-facebook-f"></i></a>
-                  <a href="#" aria-label="Twitter"><i className="fab fa-twitter"></i></a>
-                  <a href="#" aria-label="Instagram"><i className="fab fa-instagram"></i></a>
-                  <a href="#" aria-label="LinkedIn"><i className="fab fa-linkedin-in"></i></a>
-                </div>
-              </div>
-              <div className="map-embed">
-                <iframe
-                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3507.2986154882373!2d77.08798731507937!3d28.459497082490867!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x390d18ed12a8ceb5%3A0x6e34e4b9a6a9c5d2!2sCyber%20Hub!5e0!3m2!1sen!2sin!4v1620000000000!5m2!1sen!2sin"
-                  width="100%"
-                  height="100%"
-                  style={{ border: 0 }}
-                  allowFullScreen=""
-                  loading="lazy"
-                  referrerPolicy="no-referrer-when-downgrade"
-                  title="SkyWings Office Location"
-                ></iframe>
-              </div>
             </div>
           </div>
         </section>
@@ -324,5 +111,3 @@ function ContactPage() {
     </>
   );
 }
-
-export default ContactPage;

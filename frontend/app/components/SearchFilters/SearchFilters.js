@@ -2,15 +2,23 @@
 
 import { useState, useEffect } from 'react';
 import getSymbolFromCurrency from 'currency-symbol-map';
+import Icon from '../Icon/Icon';
 import './SearchFilters.css';
 
+const STOPS = [['any', 'Any'], ['nonstop', 'Non-stop'], ['1stop', '1 stop']];
+const SLOTS = [
+  ['morning', 'Morning', '6 AM – 12 PM'],
+  ['afternoon', 'Afternoon', '12 – 6 PM'],
+  ['evening', 'Evening', '6 PM – 12 AM'],
+  ['any', 'Any time', 'All departures']
+];
+
+// Figma "Filters" rail (Flight Results · Desktop)
 export default function SearchFilters({ filters, priceRange = { min: 0, max: 100000, currency: 'INR' }, onApplyFilters, onResetFilters }) {
   const [localFilters, setLocalFilters] = useState(filters);
-  
-  // Get currency symbol
   const currencySymbol = getSymbolFromCurrency(priceRange.currency) || priceRange.currency;
 
-  // Sync localFilters when filters prop changes (e.g., when priceRange is calculated)
+  // Sync when the parent recalculates (e.g. the price range from results)
   useEffect(() => {
     setLocalFilters(filters);
   }, [filters]);
@@ -22,134 +30,76 @@ export default function SearchFilters({ filters, priceRange = { min: 0, max: 100
   };
 
   const handleReset = () => {
-    const defaultFilters = {
-      stops: 'any',
-      priceRange: [priceRange.min, priceRange.max],
-      departureTime: 'any',
-      airlines: []
-    };
+    const defaultFilters = { stops: 'any', priceRange: [priceRange.min, priceRange.max], departureTime: 'any', airlines: [] };
     setLocalFilters(defaultFilters);
-    if (onResetFilters) {
-      onResetFilters(defaultFilters);
-    } else {
-      onApplyFilters(defaultFilters);
-    }
+    if (onResetFilters) onResetFilters(defaultFilters);
+    else onApplyFilters(defaultFilters);
   };
+
+  const maxSelected = Math.min(Math.max(localFilters.priceRange[1] || priceRange.max, priceRange.min), priceRange.max);
+  const pct = priceRange.max > priceRange.min ? ((maxSelected - priceRange.min) / (priceRange.max - priceRange.min)) * 100 : 100;
+  const isDirty = localFilters.stops !== 'any' || localFilters.departureTime !== 'any' || maxSelected < priceRange.max;
 
   return (
     <div className="search-filters">
-      <h3 className="filters-title">Filters</h3>
+      <div className="filters-head">
+        <h3 className="filters-title">Filters</h3>
+        {isDirty && <button type="button" className="filters-reset" onClick={handleReset}>Clear all</button>}
+      </div>
 
-      {/* Stops Filter */}
       <div className="filter-section">
         <h4 className="filter-heading">Stops</h4>
-        <div className="filter-options">
-          <label className="filter-option">
-            <input
-              type="radio"
-              name="stops"
-              value="any"
-              checked={localFilters.stops === 'any'}
-              onChange={(e) => handleFilterChange('stops', e.target.value)}
-            />
-            <span>Any</span>
-          </label>
-          <label className="filter-option">
-            <input
-              type="radio"
-              name="stops"
-              value="nonstop"
-              checked={localFilters.stops === 'nonstop'}
-              onChange={(e) => handleFilterChange('stops', e.target.value)}
-            />
-            <span>Non-stop</span>
-          </label>
-          <label className="filter-option">
-            <input
-              type="radio"
-              name="stops"
-              value="1stop"
-              checked={localFilters.stops === '1stop'}
-              onChange={(e) => handleFilterChange('stops', e.target.value)}
-            />
-            <span>1 Stop</span>
-          </label>
+        <div className="filter-chips" role="radiogroup" aria-label="Stops">
+          {STOPS.map(([value, label]) => (
+            <button key={value} type="button" role="radio" aria-checked={localFilters.stops === value}
+              className={`filter-chip ${localFilters.stops === value ? 'active' : ''}`}
+              onClick={() => handleFilterChange('stops', value)}>
+              {label}
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* Price Range Filter */}
       <div className="filter-section">
-        <h4 className="filter-heading">Price Range</h4>
-        <div className="price-range">
-          <input
-            type="range"
-            min={priceRange.min}
-            max={priceRange.max}
-            step="1"
-            value={Math.min(Math.max(localFilters.priceRange[1] || priceRange.min, priceRange.min), priceRange.max)}
-            onChange={(e) => handleFilterChange('priceRange', [priceRange.min, parseInt(e.target.value)])}
-            className="price-slider"
-          />
-          <div className="price-values">
-            <span suppressHydrationWarning>{currencySymbol}{priceRange.min.toLocaleString()}</span>
-            <span suppressHydrationWarning>{currencySymbol}{Math.min(Math.max(localFilters.priceRange[1] || priceRange.max, priceRange.min), priceRange.max).toLocaleString()}</span>
-          </div>
+        <h4 className="filter-heading">Departure time</h4>
+        <div className="filter-slots" role="radiogroup" aria-label="Departure time">
+          {SLOTS.map(([value, label, hint]) => (
+            <button key={value} type="button" role="radio" aria-checked={localFilters.departureTime === value}
+              className={`filter-slot ${localFilters.departureTime === value ? 'active' : ''}`}
+              onClick={() => handleFilterChange('departureTime', value)}>
+              <strong>{label}</strong>
+              <span>{hint}</span>
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* Departure Time Filter */}
       <div className="filter-section">
-        <h4 className="filter-heading">Departure Time</h4>
-        <div className="filter-options">
-          <label className="filter-option">
-            <input
-              type="radio"
-              name="departureTime"
-              value="any"
-              checked={localFilters.departureTime === 'any'}
-              onChange={(e) => handleFilterChange('departureTime', e.target.value)}
-            />
-            <span>Any Time</span>
-          </label>
-          <label className="filter-option">
-            <input
-              type="radio"
-              name="departureTime"
-              value="morning"
-              checked={localFilters.departureTime === 'morning'}
-              onChange={(e) => handleFilterChange('departureTime', e.target.value)}
-            />
-            <span>Morning (6AM - 12PM)</span>
-          </label>
-          <label className="filter-option">
-            <input
-              type="radio"
-              name="departureTime"
-              value="afternoon"
-              checked={localFilters.departureTime === 'afternoon'}
-              onChange={(e) => handleFilterChange('departureTime', e.target.value)}
-            />
-            <span>Afternoon (12PM - 6PM)</span>
-          </label>
-          <label className="filter-option">
-            <input
-              type="radio"
-              name="departureTime"
-              value="evening"
-              checked={localFilters.departureTime === 'evening'}
-              onChange={(e) => handleFilterChange('departureTime', e.target.value)}
-            />
-            <span>Evening (6PM - 12AM)</span>
-          </label>
+        <div className="filter-heading-row">
+          <h4 className="filter-heading">Max price</h4>
+          <span className="filter-value" suppressHydrationWarning>{currencySymbol}{maxSelected.toLocaleString('en-IN')}</span>
+        </div>
+        <input
+          type="range"
+          min={priceRange.min}
+          max={priceRange.max}
+          step="1"
+          value={maxSelected}
+          onChange={(e) => handleFilterChange('priceRange', [priceRange.min, parseInt(e.target.value)])}
+          className="price-slider"
+          style={{ '--fill': `${pct}%` }}
+          aria-label="Maximum price"
+        />
+        <div className="price-values">
+          <span suppressHydrationWarning>{currencySymbol}{priceRange.min.toLocaleString('en-IN')}</span>
+          <span suppressHydrationWarning>{currencySymbol}{priceRange.max.toLocaleString('en-IN')}</span>
         </div>
       </div>
 
-      <button
-        className="btn btn-outline reset-btn"
-        onClick={handleReset}
-      >
-        Reset Filters
-      </button>
+      <div className="filter-note">
+        <Icon name="shield-check" size={16} />
+        <span>Fares are re-checked with the supplier before you pay.</span>
+      </div>
     </div>
   );
 }

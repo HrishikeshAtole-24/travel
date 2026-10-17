@@ -1,207 +1,72 @@
-/* Hotel Search Form - reuses the flight widget field styles (.search-field-mmt, .field-label, ...) */
+/* Hotel search form — Search Panel (Product=Hotels).
+   Shares .sw-search__form / .sw-cell from FlightSearchWidget.css
+   and field styles from app/styles/search-fields.css */
 
-.hotel-search-form {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-md);
-}
-
-.hotel-fields-row {
-  display: grid;
+.sw-search__fields--hotel {
   grid-template-columns: 1.6fr 1fr 1fr 1.2fr;
-  gap: var(--spacing-md);
-  align-items: stretch;
-  position: relative;
-  z-index: 2;
 }
 
-.hotel-search-form.compact .hotel-fields-row {
-  grid-template-columns: 1.6fr 1fr 1fr 1.2fr auto;
+.hotel-search-form .search-submit-btn-mmt {
+  height: auto;
+  min-height: 76px;
+  border-radius: var(--sw-radius-lg);
+  padding: 0 var(--sw-space-8);
 }
 
-/* Destination */
-.hsf-destination {
-  position: relative;
-}
-
-.hsf-suggestions {
-  min-width: 320px;
-}
-
-.hsf-suggestion {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-md);
-  width: 100%;
-  text-align: left;
-  background: none;
-  border: none;
-  cursor: pointer;
-  font: inherit;
-}
-
-.hsf-suggestion i {
-  color: var(--primary-color);
-  width: 18px;
-}
-
-.hsf-suggestion span {
-  display: flex;
-  flex-direction: column;
-}
-
-.hsf-suggestion small {
-  color: var(--gray-500);
-  font-size: var(--fs-xs);
-}
-
-/* Rooms & guests */
-.hsf-guests {
-  position: relative;
-}
-
-.hsf-guests-toggle {
-  background: none;
-  border: none;
-  padding: 0;
-  width: 100%;
-  font: inherit;
-  text-align: left;
-}
-
-.hsf-guests-dropdown {
-  position: absolute;
-  top: 100%;
-  right: 0;
-  width: 340px;
-  max-width: calc(100vw - 32px);
-  background: var(--white);
-  border: 1px solid var(--gray-200);
-  border-radius: var(--radius-lg);
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-  padding: var(--spacing-lg);
-  margin-top: var(--spacing-sm);
-  z-index: 9998;
-}
-
-.hsf-counter-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: var(--spacing-sm) 0;
-  border-bottom: 1px solid var(--gray-100);
-}
-
-.hsf-counter-label {
-  font-weight: 700;
-  color: var(--gray-900);
-}
-
-.hsf-counter-hint {
-  font-size: var(--fs-xs);
-  color: var(--gray-500);
-}
-
-.hsf-stepper {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-}
-
-.hsf-stepper button {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  border: 1px solid var(--primary-color);
-  background: var(--white);
-  color: var(--primary-color);
-  font-size: 18px;
-  line-height: 1;
-  cursor: pointer;
-}
-
-.hsf-stepper button:hover {
-  background: var(--primary-color);
-  color: var(--white);
-}
-
-.hsf-stepper span {
-  min-width: 20px;
-  text-align: center;
-  font-weight: 700;
-}
-
-.hsf-child-ages {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: var(--spacing-sm);
-  padding-top: var(--spacing-sm);
-}
-
-.hsf-child-ages label {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  font-size: var(--fs-xs);
-  color: var(--gray-600);
-}
-
-.hsf-child-ages select {
-  padding: 6px 8px;
-  border: 1px solid var(--gray-300);
-  border-radius: var(--radius-sm, 6px);
-  font: inherit;
-}
-
-.hsf-apply {
-  width: 100%;
-  margin-top: var(--spacing-md);
-  padding: var(--spacing-sm);
-  border: none;
-  border-radius: var(--radius-md);
-  background: var(--primary-color);
-  color: var(--white);
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.hsf-submit-compact {
-  width: auto;
-  padding: 0 var(--spacing-xl);
-  font-size: var(--fs-base);
-}
-
-.hsf-error {
-  color: #dc2626;
-  font-size: var(--fs-sm);
+.hotel-search-form .hsf-error {
+  grid-column: 1 / -1;
   margin: 0;
 }
 
-@media (max-width: 1024px) {
-  .hotel-fields-row,
-  .hotel-search-form.compact .hotel-fields-row {
-    grid-template-columns: 1fr 1fr;
-  }
+/* Compact: results-page search bar, one tighter row */
+.hotel-search-form.compact .sw-cell {
+  min-height: 64px;
+  padding: var(--sw-space-2) var(--sw-space-4);
+}
 
-  .hsf-destination {
-    grid-column: 1 / -1;
-  }
+.hotel-search-form.compact .search-submit-btn-mmt {
+  min-height: 64px;
+}
 
-  .hsf-submit-compact {
-    grid-column: 1 / -1;
-    padding: var(--spacing-md);
+.hotel-search-form.compact .field-input,
+.hotel-search-form.compact .date-value,
+.hotel-search-form.compact .travellers-count {
+  font-size: 1rem;
+}
+
+@media (max-width: 1180px) {
+  .hotel-search-form .search-submit-btn-mmt {
+    min-height: 56px;
+    border-radius: var(--sw-radius-full);
   }
 }
 
-@media (max-width: 600px) {
-  .hotel-fields-row,
-  .hotel-search-form.compact .hotel-fields-row {
-    grid-template-columns: 1fr;
+@media (max-width: 900px) {
+  .sw-search__fields--hotel {
+    grid-template-columns: 1fr 1fr;
   }
 
-  .hsf-guests-dropdown {
-    left: 0;
-    right: auto;
-    width: 100%;
+  .sw-search__fields--hotel .hsf-destination,
+  .sw-search__fields--hotel .hsf-guests {
+    grid-column: 1 / -1;
+    border-left: 0;
+  }
+
+  .sw-search__fields--hotel .hsf-destination {
+    border-radius: var(--sw-radius-lg) var(--sw-radius-lg) 0 0;
+  }
+
+  .sw-search__fields--hotel .date-field {
+    border-top: 1px solid var(--sw-color-border-default);
+    border-radius: 0;
+  }
+
+  .sw-search__fields--hotel .date-field:nth-child(2) {
+    border-left: 0;
+  }
+
+  .sw-search__fields--hotel .hsf-guests {
+    border-top: 1px solid var(--sw-color-border-default);
+    border-radius: 0 0 var(--sw-radius-lg) var(--sw-radius-lg);
   }
 }

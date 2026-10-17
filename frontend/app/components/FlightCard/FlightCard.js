@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import getSymbolFromCurrency from 'currency-symbol-map';
 import { validateFlightPrice } from '@/lib/api/flights';
+import Icon from '../Icon/Icon';
 import './FlightCard.css';
 
 export default function FlightCard({ flight }) {
@@ -90,234 +91,144 @@ export default function FlightCard({ flight }) {
   const hasCodeShare = segment.operatingAirlineCode && 
     segment.operatingAirlineCode !== segment.airlineCode;
 
+  const stopsLabel = segment.stops === 0 ? 'Non-stop' : `${segment.stops} stop${segment.stops > 1 ? 's' : ''}`;
+  const via = layovers.length > 0 ? layovers.map(l => l.airport).join(', ') : '';
+
   return (
-    <div className="flight-card">
+    <article className={`flight-card ${showDetails ? 'is-open' : ''}`}>
       <div className="flight-card-content">
-        {/* Airline Info */}
         <div className="flight-airline">
           <div className="airline-logo">
-            {segment.airlineLogo ? (
-              <img src={segment.airlineLogo} alt={segment.airlineName || segment.airlineCode} />
-            ) : (
-              segment.airlineCode || 'XX'
-            )}
+            {segment.airlineLogo ? <img src={segment.airlineLogo} alt="" /> : <span>{segment.airlineCode || 'XX'}</span>}
           </div>
           <div className="airline-info">
             <div className="airline-name">{segment.airlineName || 'Airline'}</div>
-            <div className="flight-number">{segment.flightNumber || '--'}</div>
-            {hasCodeShare && (
-              <div className="codeshare-info">
-                <i className="fas fa-info-circle"></i>
-                Operated by {segment.operatingAirlineCode}
-              </div>
-            )}
+            <div className="flight-number">
+              {segment.flightNumber || '--'}
+              {hasCodeShare && <> · Operated by {segment.operatingAirlineCode}</>}
+            </div>
           </div>
         </div>
 
-        {/* Flight Route */}
         <div className="flight-route">
           <div className="route-segment">
             <div className="route-time">{formatTime(segment.departure?.time)}</div>
             <div className="route-airport">
               {segment.departure?.airport || '--'}
-              {segment.departure?.terminal && (
-                <span className="terminal-info">T{segment.departure.terminal}</span>
-              )}
+              {segment.departure?.terminal && <span className="terminal-info"> · T{segment.departure.terminal}</span>}
             </div>
           </div>
 
           <div className="route-info">
-            <div className="route-duration">
-              {segment.durationFormatted || formatDuration(segment.duration)}
-            </div>
+            <div className="route-duration">{segment.durationFormatted || formatDuration(segment.duration)}</div>
             <div className="route-line">
-              <div className="route-dot"></div>
-              <div className="route-path">
-                {segment.stops > 0 && (
-                  <div className="stop-indicator">
-                    {segment.stops === 1 ? '1 stop' : `${segment.stops} stops`}
-                  </div>
-                )}
-              </div>
-              <div className="route-dot"></div>
+              <span className="route-dot" />
+              <span className="route-path">
+                {Array.from({ length: Math.min(segment.stops || 0, 2) }, (_, n) => <span key={n} className="route-stop" />)}
+              </span>
+              <span className="route-dot route-dot--end" />
             </div>
-            <div className="route-stops">
-              {segment.stops === 0 ? (
-                <span className="nonstop-badge">Non-stop</span>
-              ) : (
-                <span className="stops-text">
-                  {layovers.length > 0 ? layovers.map(l => l.airport).join(', ') : `${segment.stops} stop(s)`}
-                </span>
-              )}
+            <div className={`route-stops ${segment.stops === 0 ? 'is-nonstop' : 'has-stops'}`}>
+              {stopsLabel}{via && <span> · via {via}</span>}
             </div>
           </div>
 
-          <div className="route-segment">
+          <div className="route-segment route-segment--end">
             <div className="route-time">
               {formatTime(segment.arrival?.time)}
-              {segment.arrival?.nextDay && (
-                <span className="next-day-badge">+1</span>
-              )}
+              {segment.arrival?.nextDay && <sup className="next-day-badge">+1</sup>}
             </div>
             <div className="route-airport">
               {segment.arrival?.airport || '--'}
-              {segment.arrival?.terminal && (
-                <span className="terminal-info">T{segment.arrival.terminal}</span>
-              )}
+              {segment.arrival?.terminal && <span className="terminal-info"> · T{segment.arrival.terminal}</span>}
             </div>
           </div>
         </div>
 
-        {/* Price & Action */}
         <div className="flight-price-section">
           <div className="price-info">
             {flight.source?.supplierName && (
-              <div className="supplier-badge" title={`Fare supplied by ${flight.source.supplierName}`}>
-                via <strong>{flight.source.supplierName}</strong>
-              </div>
+              <span className="sw-supplier" title={`Fare supplied by ${flight.source.supplierName}`}>
+                <Icon name="shield-check" size={12} /> via <strong>{flight.source.supplierName}</strong>
+              </span>
             )}
-            <div className="price-amount">
-              {currencySymbol}{price.total?.toLocaleString() || '0'}
-            </div>
-            <div className="price-label">total for all travellers</div>
+            <div className="price-amount">{currencySymbol}{Math.round(price.total || 0).toLocaleString('en-IN')}</div>
+            <div className="price-label">total incl. taxes</div>
           </div>
-          <button 
-            className={`btn btn-primary select-flight-btn ${isValidating ? 'loading' : ''}`}
-            onClick={handleSelectFlight}
-            disabled={isValidating}
-          >
-            {isValidating ? (
-              <>
-                <span className="spinner-small"></span>
-                Validating...
-              </>
-            ) : (
-              'Select Flight'
-            )}
+          <button className="btn btn-accent select-flight-btn" onClick={handleSelectFlight} disabled={isValidating} aria-busy={isValidating}>
+            {isValidating ? (<><span className="spinner-small" /> Checking fare…</>) : 'Select'}
           </button>
         </div>
       </div>
 
-      {/* Validation Error Message */}
       {validationError && (
-        <div className="validation-error-banner">
-          <i className="fas fa-exclamation-triangle"></i>
+        <div className="validation-error-banner" role="alert">
+          <Icon name="alert" size={18} />
           <span>{validationError}</span>
-          <button 
-            className="close-error-btn"
-            onClick={() => setValidationError(null)}
-          >
-            <i className="fas fa-times"></i>
+          <button className="close-error-btn" onClick={() => setValidationError(null)} aria-label="Dismiss">
+            <Icon name="x" size={16} />
           </button>
         </div>
       )}
 
-      {/* Flight Card Footer - Quick Info */}
       <div className="flight-card-footer">
         <div className="flight-amenities">
-          {segment.cabinClass && (
-            <span className="amenity-badge">
-              <i className="fas fa-chair"></i> {formatCabinClass(segment.cabinClass)}
-            </span>
-          )}
-          {segment.baggage?.checkIn && (
-            <span className="amenity-badge">
-              <i className="fas fa-suitcase"></i> {segment.baggage.checkIn.pieces}x{segment.baggage.checkIn.weightKg}kg
-            </span>
+          {segment.baggage?.checkIn?.pieces > 0 && (
+            <span className="amenity-badge"><Icon name="luggage" size={14} /> {segment.baggage.checkIn.weightKg ? `${segment.baggage.checkIn.weightKg} kg check-in` : `${segment.baggage.checkIn.pieces} checked bag${segment.baggage.checkIn.pieces > 1 ? 's' : ''}`}</span>
           )}
           {segment.baggage?.cabin && (
-            <span className="amenity-badge cabin-bag">
-              <i className="fas fa-briefcase"></i> {segment.baggage.cabin.weightKg}kg cabin
-            </span>
+            <span className="amenity-badge"><Icon name="briefcase" size={14} /> {segment.baggage.cabin.weightKg ? `${segment.baggage.cabin.weightKg} kg cabin` : 'Cabin bag'}</span>
           )}
-          {segment.aircraftName && (
-            <span className="amenity-badge aircraft">
-              <i className="fas fa-plane"></i> {segment.aircraftName}
-            </span>
-          )}
-          {price.isRefundable && (
-            <span className="amenity-badge refundable">
-              <i className="fas fa-undo"></i> Refundable
-            </span>
-          )}
-          {computed.isOvernight && (
-            <span className="amenity-badge overnight">
-              <i className="fas fa-moon"></i> Overnight
-            </span>
-          )}
+          <span className="amenity-badge">{formatCabinClass(segment.cabinClass)}</span>
+          {price.isRefundable
+            ? <span className="amenity-badge is-good"><Icon name="check" size={14} /> Refundable</span>
+            : <span className="amenity-badge">Non-refundable</span>}
+          {computed.isOvernight && <span className="amenity-badge">Overnight</span>}
         </div>
-        
-        {/* View Details Toggle */}
-        <button 
-          className="view-details-btn"
-          onClick={() => setShowDetails(!showDetails)}
-        >
-          {showDetails ? 'Hide Details' : 'Flight Details'}
-          <i className={`fas fa-chevron-${showDetails ? 'up' : 'down'}`}></i>
+
+        <button className="view-details-btn" onClick={() => setShowDetails(!showDetails)} aria-expanded={showDetails}>
+          {showDetails ? 'Hide details' : 'Flight details'}
+          <Icon name={showDetails ? 'chevron-up' : 'chevron-down'} size={16} />
         </button>
       </div>
 
-      {/* Expanded Flight Details */}
       {showDetails && (
         <div className="flight-details-expanded">
-          {/* All Segments */}
           {allSegments.length > 0 && (
             <div className="segments-detail">
-              <h4>Flight Segments</h4>
+              <h4>Itinerary</h4>
               {allSegments.map((seg, idx) => (
                 <div key={idx} className="segment-item">
                   <div className="segment-header">
                     <span className="segment-airline">
-                      <strong>{seg.airlineCode}{seg.flightNumber?.replace(seg.airlineCode, '')}</strong>
-                      {' '}{seg.airlineName}
+                      <strong>{seg.airlineName}</strong> · {seg.airlineCode}{seg.flightNumber?.replace(seg.airlineCode, '')}
                     </span>
-                    {seg.aircraftName && (
-                      <span className="segment-aircraft">{seg.aircraftName}</span>
-                    )}
+                    {seg.aircraftName && <span className="segment-aircraft">{seg.aircraftName}</span>}
                   </div>
                   <div className="segment-route">
                     <div className="segment-point">
                       <div className="segment-time">{formatTime(seg.departure?.time)}</div>
-                      <div className="segment-airport">
-                        {seg.departure?.airport}
-                        {seg.departure?.terminal && <span className="terminal"> (T{seg.departure.terminal})</span>}
-                      </div>
-                      {seg.departure?.formatted?.date && (
-                        <div className="segment-date">{seg.departure.formatted.date}</div>
-                      )}
+                      <div className="segment-airport">{seg.departure?.airport}{seg.departure?.terminal && ` · T${seg.departure.terminal}`}</div>
+                      {seg.departure?.formatted?.date && <div className="segment-date">{seg.departure.formatted.date}</div>}
                     </div>
                     <div className="segment-duration">
                       <span>{formatDuration(seg.duration)}</span>
-                      <div className="segment-line"></div>
+                      <div className="segment-line" />
                     </div>
                     <div className="segment-point">
                       <div className="segment-time">{formatTime(seg.arrival?.time)}</div>
-                      <div className="segment-airport">
-                        {seg.arrival?.airport}
-                        {seg.arrival?.terminal && <span className="terminal"> (T{seg.arrival.terminal})</span>}
-                      </div>
-                      {seg.arrival?.formatted?.date && (
-                        <div className="segment-date">{seg.arrival.formatted.date}</div>
-                      )}
+                      <div className="segment-airport">{seg.arrival?.airport}{seg.arrival?.terminal && ` · T${seg.arrival.terminal}`}</div>
+                      {seg.arrival?.formatted?.date && <div className="segment-date">{seg.arrival.formatted.date}</div>}
                     </div>
                   </div>
                   <div className="segment-info">
-                    <span className="info-item">
-                      <i className="fas fa-chair"></i> {formatCabinClass(seg.cabinClass)}
-                      {seg.bookingClass && ` (${seg.bookingClass})`}
-                    </span>
-                    {seg.baggage?.checkIn && (
-                      <span className="info-item">
-                        <i className="fas fa-suitcase"></i> Check-in: {seg.baggage.checkIn.pieces}x{seg.baggage.checkIn.weightKg}kg
-                      </span>
-                    )}
+                    <span className="info-item">{formatCabinClass(seg.cabinClass)}{seg.bookingClass && ` (${seg.bookingClass})`}</span>
+                    {seg.baggage?.checkIn?.pieces > 0 && <span className="info-item">Check-in {seg.baggage.checkIn.weightKg ? `${seg.baggage.checkIn.weightKg} kg` : `${seg.baggage.checkIn.pieces} bag${seg.baggage.checkIn.pieces > 1 ? 's' : ''}`}</span>}
                   </div>
-                  
-                  {/* Layover info after segment (except last) */}
                   {idx < allSegments.length - 1 && layovers[idx] && (
                     <div className="layover-info">
-                      <i className="fas fa-clock"></i>
-                      <span>Layover at {layovers[idx].airport}: {layovers[idx].durationFormatted || formatDuration(layovers[idx].durationMinutes)}</span>
+                      <Icon name="clock" size={16} />
+                      <span>{layovers[idx].durationFormatted || formatDuration(layovers[idx].durationMinutes)} layover in {layovers[idx].airport}</span>
                     </div>
                   )}
                 </div>
@@ -325,54 +236,24 @@ export default function FlightCard({ flight }) {
             </div>
           )}
 
-          {/* Price Breakdown */}
-          <div className="price-breakdown">
-            <h4>Fare Breakdown</h4>
-            <div className="price-row">
-              <span>Base Fare</span>
-              <span>{currencySymbol}{price.base?.toLocaleString() || '0'}</span>
+          <div className="flight-details-side">
+            <div className="price-breakdown">
+              <h4>Fare breakdown</h4>
+              <div className="price-row"><span>Base fare</span><span>{currencySymbol}{Math.round(price.base || 0).toLocaleString('en-IN')}</span></div>
+              <div className="price-row"><span>Taxes &amp; fees</span><span>{currencySymbol}{Math.round(price.taxes || 0).toLocaleString('en-IN')}</span></div>
+              <div className="price-row total"><span>Total</span><span>{currencySymbol}{Math.round(price.total || 0).toLocaleString('en-IN')}</span></div>
+              {price.fareFamily && <div className="fare-family"><Icon name="tag" size={14} /> {price.fareFamily}</div>}
             </div>
-            <div className="price-row">
-              <span>Taxes & Fees</span>
-              <span>{currencySymbol}{price.taxes?.toLocaleString() || '0'}</span>
-            </div>
-            <div className="price-row total">
-              <span>Total</span>
-              <span>{currencySymbol}{price.total?.toLocaleString() || '0'}</span>
-            </div>
-            {price.fareFamily && (
-              <div className="fare-family">
-                <i className="fas fa-tag"></i> {price.fareFamily}
+            <div className="fare-conditions">
+              <h4>Fare rules</h4>
+              <div className="condition-badges">
+                <span className={`sw-badge ${price.isRefundable ? 'sw-badge--success' : 'sw-badge--danger'}`}>{price.isRefundable ? 'Refundable' : 'Non-refundable'}</span>
+                <span className={`sw-badge ${price.isChangeable ? 'sw-badge--brand' : ''}`}>{price.isChangeable ? 'Changes allowed (fees apply)' : 'No changes'}</span>
               </div>
-            )}
-          </div>
-
-          {/* Fare Conditions */}
-          <div className="fare-conditions">
-            <h4>Fare Conditions</h4>
-            <div className="condition-badges">
-              {price.isRefundable ? (
-                <span className="condition-badge refundable">
-                  <i className="fas fa-check-circle"></i> Refundable
-                </span>
-              ) : (
-                <span className="condition-badge non-refundable">
-                  <i className="fas fa-times-circle"></i> Non-refundable
-                </span>
-              )}
-              {price.isChangeable ? (
-                <span className="condition-badge changeable">
-                  <i className="fas fa-exchange-alt"></i> Changeable (fees apply)
-                </span>
-              ) : (
-                <span className="condition-badge non-changeable">
-                  <i className="fas fa-ban"></i> No changes allowed
-                </span>
-              )}
             </div>
           </div>
         </div>
       )}
-    </div>
+    </article>
   );
 }

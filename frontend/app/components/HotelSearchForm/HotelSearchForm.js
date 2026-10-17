@@ -166,12 +166,12 @@ export default function HotelSearchForm({ initial = {}, compact = false }) {
   const guestsSummary = `${rooms} Room${rooms > 1 ? 's' : ''}, ${adults} Adult${adults > 1 ? 's' : ''}${childrenAges.length ? `, ${childrenAges.length} Child${childrenAges.length > 1 ? 'ren' : ''}` : ''}`;
 
   return (
-    <form onSubmit={handleSubmit} className={`hotel-search-form ${compact ? 'compact' : ''}`}>
-      <div className="hotel-fields-row">
+    <form onSubmit={handleSubmit} className={`sw-search__form hotel-search-form ${compact ? 'compact' : ''}`}>
+      <div className="sw-search__fields sw-search__fields--hotel">
         {/* Destination */}
-        <div className="search-field-mmt hsf-destination" ref={destinationRef}>
+        <div className="search-field-mmt sw-cell hsf-destination" ref={destinationRef}>
           <label className="field-label" htmlFor="hotel-destination">
-            <i className="fas fa-map-marker-alt"></i> CITY / DESTINATION
+            <i className="fas fa-map-marker-alt"></i> Destination
           </label>
           <input
             id="hotel-destination"
@@ -225,9 +225,9 @@ export default function HotelSearchForm({ initial = {}, compact = false }) {
         </div>
 
         {/* Check-in */}
-        <div className="search-field-mmt date-field">
+        <div className="search-field-mmt sw-cell date-field">
           <DatePicker
-            label="CHECK-IN"
+            label="Check-in"
             icon="fa-calendar-alt"
             value={checkInDate}
             onChange={handleCheckIn}
@@ -243,9 +243,9 @@ export default function HotelSearchForm({ initial = {}, compact = false }) {
         </div>
 
         {/* Check-out */}
-        <div className="search-field-mmt date-field">
+        <div className="search-field-mmt sw-cell date-field">
           <DatePicker
-            label={`CHECK-OUT${nights > 0 ? ` · ${nights} NIGHT${nights > 1 ? 'S' : ''}` : ''}`}
+            label={`Check-out${nights > 0 ? ` · ${nights} night${nights > 1 ? 's' : ''}` : ''}`}
             icon="fa-calendar-alt"
             value={checkOutDate}
             onChange={handleCheckOut}
@@ -261,9 +261,9 @@ export default function HotelSearchForm({ initial = {}, compact = false }) {
         </div>
 
         {/* Rooms & Guests */}
-        <div className="search-field-mmt hsf-guests" ref={guestsRef}>
+        <div className="search-field-mmt sw-cell hsf-guests" ref={guestsRef}>
           <label className="field-label">
-            <i className="fas fa-user-friends"></i> ROOMS & GUESTS
+            <i className="fas fa-user-friends"></i> Rooms & guests
           </label>
           <button type="button" className="travellers-selector hsf-guests-toggle" onClick={() => setGuestsOpen(!guestsOpen)}>
             <span className="travellers-count">{guestsSummary}</span>
@@ -309,26 +309,19 @@ export default function HotelSearchForm({ initial = {}, compact = false }) {
               )}
 
               <button type="button" className="apply-btn hsf-apply" onClick={() => setGuestsOpen(false)}>
-                APPLY
+                Done
               </button>
             </div>
           )}
         </div>
-
-        {compact && (
-          <button type="submit" className="search-submit-btn-mmt hsf-submit-compact">
-            <i className="fas fa-search"></i> Search
-          </button>
-        )}
       </div>
 
-      {error && <p className="hsf-error" role="alert">{error}</p>}
+      <button type="submit" className="search-submit-btn-mmt">
+        <i className="fas fa-search" aria-hidden="true"></i>
+        <span>Search</span>
+      </button>
 
-      {!compact && (
-        <button type="submit" className="search-submit-btn-mmt">
-          <i className="fas fa-search"></i> SEARCH HOTELS
-        </button>
-      )}
+      {error && <p className="hsf-error" role="alert">{error}</p>}
     </form>
   );
 }

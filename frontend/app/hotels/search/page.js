@@ -7,14 +7,16 @@ import Header from '../../components/Header/Header';
 import Footer from '../../components/Footer/Footer';
 import HotelSearchForm from '../../components/HotelSearchForm/HotelSearchForm';
 import { searchHotels, readStay, stayQuery, formatMoney, formatStayDate } from '@/lib/api/hotels';
+import Icon from '../../components/Icon/Icon';
+import { HotelListSkeleton, StateMessage } from '../../components/Skeleton/Skeleton';
 import '../hotels.css';
 
 const SORTS = [
-  { id: 'POPULARITY', label: 'Popularity' },
-  { id: 'PRICE_ASC', label: 'Price: Low to High' },
-  { id: 'PRICE_DESC', label: 'Price: High to Low' },
-  { id: 'STARS_DESC', label: 'Star Rating' },
-  { id: 'RATING_DESC', label: 'Guest Rating' }
+  { id: 'POPULARITY', label: 'Recommended' },
+  { id: 'PRICE_ASC', label: 'Lowest price' },
+  { id: 'PRICE_DESC', label: 'Highest price' },
+  { id: 'STARS_DESC', label: 'Stars' },
+  { id: 'RATING_DESC', label: 'Top rated' }
 ];
 
 const SORTERS = {
@@ -35,6 +37,8 @@ const EMPTY_FILTERS = {
   minRating: 0
 };
 
+const cleanRoomName = (name) => (name || '').replace(/^\d+(?=[A-Za-z])/, '');
+
 const ratingLabel = (rating) => {
   if (rating >= 9) return 'Exceptional';
   if (rating >= 8) return 'Excellent';
@@ -47,7 +51,7 @@ function Stars({ count }) {
   if (!count) return null;
   return (
     <span className="hotel-stars" aria-label={`${count} star hotel`}>
-      {Array.from({ length: Math.round(count) }, (_, i) => <i key={i} className="fas fa-star"></i>)}
+      {Array.from({ length: Math.round(count) }, (_, i) => <span key={i}>★</span>)}
     </span>
   );
 }
@@ -62,7 +66,7 @@ function HotelCard({ hotel, stay }) {
         {hotel.photo && !imageFailed ? (
           <img src={hotel.thumbnail || hotel.photo} alt={hotel.name} loading="lazy" onError={() => setImageFailed(true)} />
         ) : (
-          <div className="hotel-image-placeholder"><i className="fas fa-hotel"></i></div>
+          <div className="hotel-image-placeholder"><Icon name="hotel" size={32} /></div>
         )}
       </Link>
 
@@ -72,17 +76,17 @@ function HotelCard({ hotel, stay }) {
           <Link href={detailsHref}>{hotel.name}</Link>
         </h3>
         <p className="hotel-card-address">
-          <i className="fas fa-map-marker-alt"></i> {[hotel.address, hotel.cityName].filter(Boolean).join(', ')}
+          <Icon name="map-pin" size={14} /> {[hotel.address, hotel.cityName].filter(Boolean).join(', ')}
         </p>
 
         {hotel.cheapestRoomName && (
-          <p className="hotel-card-room">{hotel.cheapestRoomName}{hotel.cheapestBoardName ? ` · ${hotel.cheapestBoardName}` : ''}</p>
+          <p className="hotel-card-room">{cleanRoomName(hotel.cheapestRoomName)}{hotel.cheapestBoardName ? ` · ${hotel.cheapestBoardName}` : ''}</p>
         )}
 
         <div className="hotel-tags">
-          {hotel.hasFreeCancellation && <span className="hotel-tag success"><i className="fas fa-check"></i> Free cancellation</span>}
-          {hotel.hasBreakfast && <span className="hotel-tag"><i className="fas fa-mug-hot"></i> Breakfast available</span>}
-          {hotel.offersCount > 1 && <span className="hotel-tag muted">{hotel.offersCount} room options</span>}
+          {hotel.hasFreeCancellation && <span className="sw-badge sw-badge--success"><Icon name="check" size={12} /> Free cancellation</span>}
+          {hotel.hasBreakfast && <span className="sw-badge"><Icon name="coffee" size={12} /> Breakfast available</span>}
+          {hotel.offersCount > 1 && <span className="sw-badge">{hotel.offersCount} room options</span>}
         </div>
       </div>
 
@@ -99,8 +103,8 @@ function HotelCard({ hotel, stay }) {
 
         <div className="hotel-price-block">
           {hotel.supplierName && (
-            <span className="supplier-badge" title={`Rates supplied by ${hotel.supplierName}`}>
-              via <strong>{hotel.supplierName}</strong>
+            <span className="sw-supplier" title={`Rates supplied by ${hotel.supplierName}`}>
+              <Icon name="shield-check" size={12} /> via <strong>{hotel.supplierName}</strong>
             </span>
           )}
           <div className="hotel-price-amount">{formatMoney(hotel.minPricePerNight, hotel.currency)}</div>
@@ -111,7 +115,7 @@ function HotelCard({ hotel, stay }) {
           {hotel.payAtPropertyAmount > 0 && (
             <div className="hotel-price-note warn">+ {formatMoney(hotel.payAtPropertyAmount, hotel.currency)} taxes payable at hotel</div>
           )}
-          <Link href={detailsHref} className="btn btn-primary hotel-select-btn">Select</Link>
+          <Link href={detailsHref} className="btn btn-primary hotel-select-btn">See rooms</Link>
         </div>
       </div>
     </article>
@@ -196,32 +200,34 @@ function HotelSearchContent() {
     <>
       <Header />
       <main className="hotels-page">
-        <div className="container">
-          <nav className="hotels-breadcrumb" aria-label="Breadcrumb">
-            <Link href="/">Home</Link> <span>/</span> <span>Hotel Search</span>
-          </nav>
-
-          <div className="hotels-search-bar">
+        <div className="hotels-search-bar">
+          <div className="container">
             <HotelSearchForm
               compact
               initial={{ cityName, countryCode, checkInDate: stay.checkInDate, checkOutDate: stay.checkOutDate, adults: stay.adults, rooms: stay.rooms, childrenAges: stay.childrenAges }}
             />
           </div>
+        </div>
+
+        <div className="container">
+          <nav className="hotels-breadcrumb" aria-label="Breadcrumb">
+            <Link href="/">Home</Link> <Icon name="chevron-right" size={14} /> <span>Hotels in {cityName || '—'}</span>
+          </nav>
 
           <div className="hotels-layout">
             {/* Filters */}
             <aside className={`hotels-filters ${filtersOpen ? 'open' : ''}`}>
               <div className="filters-header">
-                <h2>Filter By</h2>
+                <h2>Filters</h2>
                 <button type="button" className="link-btn" onClick={() => setFilters(EMPTY_FILTERS)} disabled={activeFilterCount === 0}>
-                  Clear All
+                  Clear all
                 </button>
               </div>
 
               <section className="filter-group">
                 <h3>Search by property name</h3>
                 <div className="filter-search">
-                  <i className="fas fa-search"></i>
+                  <Icon name="search" size={16} />
                   <input
                     value={filters.name}
                     placeholder="e.g. Taj, Marriott"
@@ -231,14 +237,14 @@ function HotelSearchContent() {
               </section>
 
               <section className="filter-group">
-                <h3>Popular Filters</h3>
+                <h3>Popular</h3>
                 <label className="filter-check">
                   <input type="checkbox" checked={filters.freeCancellation} onChange={(e) => setFilters(prev => ({ ...prev, freeCancellation: e.target.checked }))} />
-                  Free Cancellation
+                  Free cancellation
                 </label>
                 <label className="filter-check">
                   <input type="checkbox" checked={filters.breakfast} onChange={(e) => setFilters(prev => ({ ...prev, breakfast: e.target.checked }))} />
-                  Breakfast Included
+                  Breakfast included
                 </label>
               </section>
 
@@ -262,18 +268,18 @@ function HotelSearchContent() {
               </section>
 
               <section className="filter-group">
-                <h3>Star Rating</h3>
+                <h3>Star rating</h3>
                 {[5, 4, 3, 2, 1].map(star => (
                   <label className="filter-check" key={star}>
                     <input type="checkbox" checked={filters.stars.includes(star)} onChange={() => toggleStar(star)} />
-                    {star} Star
+                    <span className="filter-stars">{'★'.repeat(star)}</span>
                   </label>
                 ))}
               </section>
 
               <section className="filter-group">
-                <h3>Guest Rating</h3>
-                {[[9, 'Exceptional 9+'], [8, 'Excellent 8+'], [7, 'Very Good 7+'], [0, 'Any']].map(([value, label]) => (
+                <h3>Guest rating</h3>
+                {[[9, 'Exceptional 9+'], [8, 'Excellent 8+'], [7, 'Very good 7+'], [0, 'Any']].map(([value, label]) => (
                   <label className="filter-check" key={value}>
                     <input type="radio" name="minRating" checked={filters.minRating === value}
                       onChange={() => setFilters(prev => ({ ...prev, minRating: value }))} />
@@ -299,13 +305,12 @@ function HotelSearchContent() {
                   </p>
                 </div>
                 <button type="button" className="btn btn-outline filters-toggle" onClick={() => setFiltersOpen(true)}>
-                  <i className="fas fa-sliders-h"></i> Filters{activeFilterCount ? ` (${activeFilterCount})` : ''}
+                  <Icon name="sliders" size={16} /> Filters{activeFilterCount ? ` (${activeFilterCount})` : ''}
                 </button>
               </div>
 
               <div className="hotels-sort" role="tablist" aria-label="Sort hotels">
-                <span className="sort-label">Sort by</span>
-                {SORTS.map(sort => (
+                                {SORTS.map(sort => (
                   <button
                     key={sort.id}
                     type="button"
@@ -319,34 +324,26 @@ function HotelSearchContent() {
                 ))}
               </div>
 
-              {loading && (
-                <div className="hotels-list">
-                  {[1, 2, 3].map(i => <div key={i} className="hotel-card skeleton" aria-hidden="true" />)}
-                  <p className="hotels-loading-text"><i className="fas fa-spinner fa-spin"></i> Finding the best rates in {cityName}…</p>
-                </div>
-              )}
+              {loading && <HotelListSkeleton />}
 
               {!loading && error && (
-                <div className="hotels-state">
-                  <i className="fas fa-exclamation-circle"></i>
-                  <p>{error}</p>
-                  {cityName && <button type="button" className="btn btn-primary" onClick={load}>Try again</button>}
-                </div>
+                <StateMessage icon="alert" tone="danger" title="We couldn’t load stays"
+                  action={cityName && <button type="button" className="btn btn-primary" onClick={load}>Try again</button>}>
+                  {error}
+                </StateMessage>
               )}
 
               {!loading && !error && hotels.length === 0 && (
-                <div className="hotels-state">
-                  <i className="fas fa-bed"></i>
-                  <p>No rooms available in {cityName} for these dates. Try different dates or a nearby city.</p>
-                </div>
+                <StateMessage icon="bed" tone="brand" title={`No rooms in ${cityName || 'this city'} for these dates`}>
+                  Try different dates or a nearby city.
+                </StateMessage>
               )}
 
               {!loading && !error && hotels.length > 0 && visible.length === 0 && (
-                <div className="hotels-state">
-                  <i className="fas fa-filter"></i>
-                  <p>No properties match your filters.</p>
-                  <button type="button" className="btn btn-outline" onClick={() => setFilters(EMPTY_FILTERS)}>Clear filters</button>
-                </div>
+                <StateMessage icon="sliders" title="No properties match your filters"
+                  action={<button type="button" className="btn btn-primary" onClick={() => setFilters(EMPTY_FILTERS)}>Clear filters</button>}>
+                  Try removing a filter or widening the price range.
+                </StateMessage>
               )}
 
               {!loading && !error && visible.length > 0 && (
@@ -366,7 +363,7 @@ function HotelSearchContent() {
 
 export default function HotelSearchPage() {
   return (
-    <Suspense fallback={<div className="hotels-page"><div className="container">Loading…</div></div>}>
+    <Suspense fallback={<main className="hotels-page"><div className="container" style={{ paddingTop: 32 }}><HotelListSkeleton /></div></main>}>
       <HotelSearchContent />
     </Suspense>
   );

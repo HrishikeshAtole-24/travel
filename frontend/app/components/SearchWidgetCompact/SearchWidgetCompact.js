@@ -4,6 +4,8 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import AirportAutocomplete from '../AirportAutocomplete/AirportAutocomplete';
 import DatePicker from '../DatePicker/DatePicker';
+import Icon from '../Icon/Icon';
+import '../FlightSearchWidget/FlightSearchWidget.css';
 import './SearchWidgetCompact.css';
 
 export default function SearchWidgetCompact({ onSearch }) {
@@ -157,15 +159,18 @@ export default function SearchWidgetCompact({ onSearch }) {
     }));
   };
 
+  const setCount = (key, value) => {
+    setSearchData(prev => {
+      const next = { ...prev, [key]: value };
+      if (key === 'adults') next.infants = Math.min(prev.infants, value);
+      return { ...next, passengers: next.adults + next.children + next.infants };
+    });
+  };
+
   const formatDate = (dateStr) => {
     if (!dateStr) return '';
     const date = new Date(dateStr);
-    return date.toLocaleDateString('en-US', { 
-      weekday: 'short', 
-      day: 'numeric', 
-      month: 'short',
-      year: 'numeric'
-    });
+    return date.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' });
   };
 
   const getCabinClassDisplay = () => {
@@ -183,289 +188,127 @@ export default function SearchWidgetCompact({ onSearch }) {
     return `${total} Traveller${total > 1 ? 's' : ''}`;
   };
 
+  const stepper = (key, min, canAdd) => (
+    <div className="hsf-stepper">
+      <button type="button" aria-label={`Fewer ${key}`} disabled={searchData[key] <= min} onClick={() => setCount(key, searchData[key] - 1)}>−</button>
+      <span>{searchData[key]}</span>
+      <button type="button" aria-label={`More ${key}`} disabled={!canAdd} onClick={() => setCount(key, searchData[key] + 1)}>+</button>
+    </div>
+  );
+  const total = searchData.adults + searchData.children + searchData.infants;
+
   return (
     <div className="search-widget-compact" ref={widgetRef}>
-      {/* Collapsed View - Summary Bar */}
-      {!isExpanded && (
-        <div className="compact-summary" onClick={() => setIsExpanded(true)}>
-          <div className="summary-route">
-            <span className="summary-city">{searchData.fromCode || 'From'}</span>
-            <i className="fas fa-exchange-alt summary-swap"></i>
-            <span className="summary-city">{searchData.toCode || 'To'}</span>
-          </div>
-          <div className="summary-divider"></div>
-          <div className="summary-dates">
-            <i className="fas fa-calendar-alt"></i>
-            <span>{formatDate(searchData.departDate)}</span>
-            {searchData.tripType === 'roundtrip' && searchData.returnDate && (
-              <>
-                <span className="date-separator">-</span>
-                <span>{formatDate(searchData.returnDate)}</span>
-              </>
-            )}
-          </div>
-          <div className="summary-divider"></div>
-          <div className="summary-travellers">
-            <i className="fas fa-user"></i>
-            <span>{getTravellerSummary()}, {getCabinClassDisplay()}</span>
-          </div>
-          <button type="button" className="modify-search-btn">
-            <i className="fas fa-edit"></i> Modify
+      {!isExpanded ? (
+        <div className="swc-summary">
+          <button type="button" className="swc-summary__pill" onClick={() => setIsExpanded(true)}>
+            <span className="swc-summary__route">
+              <strong>{searchData.fromCode || 'From'}</strong>
+              <Icon name={searchData.tripType === 'roundtrip' ? 'swap' : 'arrow-right'} size={16} />
+              <strong>{searchData.toCode || 'To'}</strong>
+            </span>
+            <span className="swc-summary__meta">
+              <Icon name="calendar" size={16} />
+              {formatDate(searchData.departDate)}
+              {searchData.tripType === 'roundtrip' && searchData.returnDate && <> – {formatDate(searchData.returnDate)}</>}
+            </span>
+            <span className="swc-summary__meta">
+              <Icon name="users" size={16} />
+              {getTravellerSummary()} · {getCabinClassDisplay()}
+            </span>
+          </button>
+          <button type="button" className="btn btn-primary swc-summary__btn" onClick={() => setIsExpanded(true)}>
+            <Icon name="search" size={16} /> Modify search
           </button>
         </div>
-      )}
-
-      {/* Expanded View - Full Search Form */}
-      {isExpanded && (
-        <div className="compact-expanded">
-          <div className="compact-header">
-            <h3>Modify Search</h3>
-            <button 
-              type="button" 
-              className="close-expanded-btn"
-              onClick={() => setIsExpanded(false)}
-            >
-              <i className="fas fa-times"></i>
+      ) : (
+        <div className="swc-expanded">
+          <div className="swc-expanded__top">
+            <div className="sw-search__trip" role="radiogroup" aria-label="Trip type">
+              {[['roundtrip', 'Round trip'], ['oneway', 'One way']].map(([value, label]) => (
+                <button key={value} type="button" role="radio" aria-checked={searchData.tripType === value}
+                  className={`sw-chip ${searchData.tripType === value ? 'active' : ''}`} onClick={() => handleChange('tripType', value)}>
+                  {label}
+                </button>
+              ))}
+            </div>
+            <button type="button" className="header-icon-btn" onClick={() => setIsExpanded(false)} aria-label="Close">
+              <Icon name="x" size={20} />
             </button>
           </div>
 
-          <form onSubmit={handleSubmit} className="compact-form">
-            {/* Trip Type */}
-            <div className="compact-trip-type">
-              <label className={`trip-type-option ${searchData.tripType === 'roundtrip' ? 'active' : ''}`}>
-                <input
-                  type="radio"
-                  name="tripType"
-                  value="roundtrip"
-                  checked={searchData.tripType === 'roundtrip'}
-                  onChange={(e) => handleChange('tripType', e.target.value)}
-                />
-                <span>Round Trip</span>
-              </label>
-              <label className={`trip-type-option ${searchData.tripType === 'oneway' ? 'active' : ''}`}>
-                <input
-                  type="radio"
-                  name="tripType"
-                  value="oneway"
-                  checked={searchData.tripType === 'oneway'}
-                  onChange={(e) => handleChange('tripType', e.target.value)}
-                />
-                <span>One Way</span>
-              </label>
-            </div>
-
-            {/* Search Fields */}
-            <div className="compact-fields-row">
-              {/* From */}
-              <div className="compact-field from-field">
-                <AirportAutocomplete
-                  label="FROM"
-                  icon="fa-plane-departure"
-                  placeholder="City or Airport"
-                  value={searchData.fromAirport?.displayText || ''}
-                  onChange={handleFromChange}
-                  required
-                />
+          <form onSubmit={handleSubmit} className="sw-search__form">
+            <div className="sw-search__fields sw-search__fields--flight">
+              <div className="search-field-mmt sw-cell from-field">
+                <AirportAutocomplete label="From" icon="fa-plane-departure" placeholder="City or airport"
+                  value={searchData.fromAirport?.displayText || ''} onChange={handleFromChange} required />
               </div>
-
-              {/* Swap Button */}
-              <button 
-                type="button" 
-                className="compact-swap-btn" 
-                onClick={swapLocations}
-                title="Swap locations"
-              >
-                <i className="fas fa-exchange-alt"></i>
+              <button type="button" className="sw-swap" onClick={swapLocations} aria-label="Swap origin and destination">
+                <Icon name="swap" size={18} />
               </button>
-
-              {/* To */}
-              <div className="compact-field to-field">
-                <AirportAutocomplete
-                  label="TO"
-                  icon="fa-plane-arrival"
-                  placeholder="City or Airport"
-                  value={searchData.toAirport?.displayText || ''}
-                  onChange={handleToChange}
-                  required
-                />
+              <div className="search-field-mmt sw-cell to-field">
+                <AirportAutocomplete label="To" icon="fa-plane-arrival" placeholder="City or airport"
+                  value={searchData.toAirport?.displayText || ''} onChange={handleToChange} required />
               </div>
-
-              {/* Departure Date */}
-              <div className="compact-field date-field">
-                <DatePicker
-                  label="DEPARTURE"
-                  icon="fa-calendar-alt"
-                  value={searchData.departDate}
-                  onChange={(date) => handleDateSelection('departDate', date)}
-                  isOpen={calendarOpen === 'departure'}
-                  onToggle={() => handleCalendarToggle('departure')}
-                  onClose={handleCalendarClose}
-                  departureDate={searchData.departDate}
-                  returnDate={searchData.returnDate}
-                  placeholder="Select Date"
-                  isReturn={false}
-                  required
-                />
+              <div className="search-field-mmt sw-cell date-field">
+                <DatePicker label="Depart" icon="fa-calendar-alt" value={searchData.departDate}
+                  onChange={(date) => handleDateSelection('departDate', date)} isOpen={calendarOpen === 'departure'}
+                  onToggle={() => handleCalendarToggle('departure')} onClose={handleCalendarClose}
+                  departureDate={searchData.departDate} returnDate={searchData.returnDate} placeholder="Select date" isReturn={false} required />
               </div>
-
-              {/* Return Date */}
-              {searchData.tripType === 'roundtrip' && (
-                <div className="compact-field date-field">
-                  <DatePicker
-                    label="RETURN"
-                    icon="fa-calendar-alt"
-                    value={searchData.returnDate}
-                    onChange={(date) => handleDateSelection('returnDate', date)}
-                    isOpen={calendarOpen === 'return'}
-                    onToggle={() => handleCalendarToggle('return')}
-                    onClose={handleCalendarClose}
-                    isReturn={true}
-                    departureDate={searchData.departDate}
-                    returnDate={searchData.returnDate}
-                    placeholder="Select Date"
-                    required
-                  />
+              {searchData.tripType === 'roundtrip' ? (
+                <div className="search-field-mmt sw-cell date-field">
+                  <DatePicker label="Return" icon="fa-calendar-alt" value={searchData.returnDate}
+                    onChange={(date) => handleDateSelection('returnDate', date)} isOpen={calendarOpen === 'return'}
+                    onToggle={() => handleCalendarToggle('return')} onClose={handleCalendarClose} isReturn={true}
+                    departureDate={searchData.departDate} returnDate={searchData.returnDate} placeholder="Add return" required />
                 </div>
+              ) : (
+                <button type="button" className="search-field-mmt sw-cell sw-cell--ghost" onClick={() => handleChange('tripType', 'roundtrip')}>
+                  <span className="field-label">Return</span>
+                  <span className="sw-cell__add"><Icon name="plus" size={16} /> Add return</span>
+                </button>
               )}
-
-              {/* Travelers & Class */}
-              <div className="compact-field travellers-field" ref={travellersRef}>
-                <label className="compact-field-label">
-                  <i className="fas fa-user"></i> TRAVELLERS & CLASS
-                </label>
-                <div 
-                  className="compact-travellers-selector"
-                  onClick={() => setTravellersOpen(!travellersOpen)}
-                >
-                  <span>{getTravellerSummary()}</span>
-                  <span className="traveller-class">{getCabinClassDisplay()}</span>
+              <div className="search-field-mmt sw-cell travelers-field" ref={travellersRef}>
+                <span className="field-label">Travellers &amp; class</span>
+                <button type="button" className="travellers-selector" onClick={() => setTravellersOpen(!travellersOpen)} aria-expanded={travellersOpen}>
+                  <span className="travellers-count">{getTravellerSummary()}</span>
                   <i className={`fas fa-chevron-down ${travellersOpen ? 'rotated' : ''}`}></i>
-                </div>
+                </button>
+                <div className="field-subtext">{getCabinClassDisplay()}</div>
 
                 {travellersOpen && (
-                  <div className="compact-travellers-dropdown">
-                    {/* Adults */}
-                    <div className="traveller-row">
-                      <div className="traveller-info">
-                        <span className="traveller-type">Adults</span>
-                        <span className="traveller-hint">(12+ years)</span>
+                  <div className="hsf-guests-dropdown">
+                    {[
+                      ['adults', 'Adults', '12+ years', 1, total < 9],
+                      ['children', 'Children', '2–12 years', 0, total < 9],
+                      ['infants', 'Infants', 'Under 2, on lap', 0, total < 9 && searchData.infants < searchData.adults]
+                    ].map(([key, label, hint, min, canAdd]) => (
+                      <div className="hsf-counter-row" key={key}>
+                        <div>
+                          <div className="hsf-counter-label">{label}</div>
+                          <div className="hsf-counter-hint">{hint}</div>
+                        </div>
+                        {stepper(key, min, canAdd)}
                       </div>
-                      <div className="traveller-controls">
-                        <button
-                          type="button"
-                          className="control-btn"
-                          onClick={() => setSearchData(prev => {
-                            const newAdults = Math.max(1, prev.adults - 1);
-                            const newInfants = Math.min(prev.infants, newAdults);
-                            return { ...prev, adults: newAdults, infants: newInfants, passengers: newAdults + prev.children + newInfants };
-                          })}
-                          disabled={searchData.adults <= 1}
-                        >-</button>
-                        <span className="count">{searchData.adults}</span>
-                        <button
-                          type="button"
-                          className="control-btn"
-                          onClick={() => setSearchData(prev => {
-                            if (prev.adults + prev.children + prev.infants >= 9) return prev;
-                            return { ...prev, adults: prev.adults + 1, passengers: prev.adults + 1 + prev.children + prev.infants };
-                          })}
-                        >+</button>
-                      </div>
+                    ))}
+                    <div className="travel-class-options" style={{ marginTop: 16 }}>
+                      {['economy', 'premium_economy', 'business', 'first'].map(cabin => (
+                        <button key={cabin} type="button" className={`class-btn ${searchData.cabinClass === cabin ? 'active' : ''}`}
+                          onClick={() => handleChange('cabinClass', cabin)}>
+                          {{ economy: 'Economy', premium_economy: 'Premium', business: 'Business', first: 'First' }[cabin]}
+                        </button>
+                      ))}
                     </div>
-
-                    {/* Children */}
-                    <div className="traveller-row">
-                      <div className="traveller-info">
-                        <span className="traveller-type">Children</span>
-                        <span className="traveller-hint">(2-12 years)</span>
-                      </div>
-                      <div className="traveller-controls">
-                        <button
-                          type="button"
-                          className="control-btn"
-                          onClick={() => setSearchData(prev => {
-                            const newChildren = Math.max(0, prev.children - 1);
-                            return { ...prev, children: newChildren, passengers: prev.adults + newChildren + prev.infants };
-                          })}
-                          disabled={searchData.children <= 0}
-                        >-</button>
-                        <span className="count">{searchData.children}</span>
-                        <button
-                          type="button"
-                          className="control-btn"
-                          onClick={() => setSearchData(prev => {
-                            if (prev.adults + prev.children + prev.infants >= 9) return prev;
-                            return { ...prev, children: prev.children + 1, passengers: prev.adults + prev.children + 1 + prev.infants };
-                          })}
-                        >+</button>
-                      </div>
-                    </div>
-
-                    {/* Infants */}
-                    <div className="traveller-row">
-                      <div className="traveller-info">
-                        <span className="traveller-type">Infants</span>
-                        <span className="traveller-hint">(below 2 years)</span>
-                      </div>
-                      <div className="traveller-controls">
-                        <button
-                          type="button"
-                          className="control-btn"
-                          onClick={() => setSearchData(prev => {
-                            const newInfants = Math.max(0, prev.infants - 1);
-                            return { ...prev, infants: newInfants, passengers: prev.adults + prev.children + newInfants };
-                          })}
-                          disabled={searchData.infants <= 0}
-                        >-</button>
-                        <span className="count">{searchData.infants}</span>
-                        <button
-                          type="button"
-                          className="control-btn"
-                          onClick={() => setSearchData(prev => {
-                            if (prev.infants >= prev.adults || prev.adults + prev.children + prev.infants >= 9) return prev;
-                            return { ...prev, infants: prev.infants + 1, passengers: prev.adults + prev.children + prev.infants + 1 };
-                          })}
-                          disabled={searchData.infants >= searchData.adults}
-                        >+</button>
-                      </div>
-                    </div>
-
-                    {/* Cabin Class */}
-                    <div className="cabin-class-row">
-                      <span className="cabin-label">Cabin Class</span>
-                      <div className="cabin-options">
-                        {['economy', 'premium_economy', 'business', 'first'].map(cabin => (
-                          <button
-                            key={cabin}
-                            type="button"
-                            className={`cabin-option ${searchData.cabinClass === cabin ? 'active' : ''}`}
-                            onClick={() => handleChange('cabinClass', cabin)}
-                          >
-                            {cabin === 'economy' ? 'Economy' : 
-                             cabin === 'premium_economy' ? 'Premium' : 
-                             cabin === 'business' ? 'Business' : 'First'}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    <button 
-                      type="button" 
-                      className="apply-travellers-btn"
-                      onClick={() => setTravellersOpen(false)}
-                    >
-                      Apply
-                    </button>
+                    <button type="button" className="apply-btn" onClick={() => setTravellersOpen(false)}>Done</button>
                   </div>
                 )}
               </div>
-
-              {/* Search Button */}
-              <button type="submit" className="compact-search-btn">
-                <i className="fas fa-search"></i>
-                SEARCH
-              </button>
             </div>
+            <button type="submit" className="search-submit-btn-mmt">
+              <Icon name="search" size={20} strokeWidth={2.5} />
+              <span>Search</span>
+            </button>
           </form>
         </div>
       )}

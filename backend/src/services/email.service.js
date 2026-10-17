@@ -46,74 +46,60 @@ const getTransporter = () => {
   return transporter;
 };
 
+const FRONTEND_URL = () => (process.env.FRONTEND_URL || 'http://localhost:3000').replace(/\/$/, '');
+
+/** HTML-escape anything that came from users or suppliers */
+const esc = (v) => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
 /**
- * Generate SkyWings branded email template
+ * Horizon email shell (table layout + inline styles for email clients)
+ * @param {string} content - inner HTML
+ * @param {'success'|'failed'} type - accent for the status line
  */
 const generateEmailTemplate = (content, type = 'success') => {
-  const brandColor = type === 'success' ? '#22c55e' : '#ef4444';
-  const brandBg = type === 'success' ? '#f0fdf4' : '#fef2f2';
-  
-  return `
-<!DOCTYPE html>
+  const supportLine = process.env.SUPPORT_EMAIL
+    ? `Questions? Reply to this email or write to <a href="mailto:${esc(process.env.SUPPORT_EMAIL)}" style="color:#1F5EFF;text-decoration:none;">${esc(process.env.SUPPORT_EMAIL)}</a>.`
+    : 'Questions? Reply to this email and our team will help.';
+  return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light">
   <title>SkyWings</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Segoe UI', Arial, sans-serif; background: #f1f5f9; }
-  </style>
 </head>
-<body style="margin: 0; padding: 0; background: #f1f5f9;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background: #f1f5f9; padding: 40px 20px;">
-    <tr>
-      <td align="center">
-        <table width="600" cellpadding="0" cellspacing="0" style="background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
-          <!-- Header -->
-          <tr>
-            <td style="background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); padding: 32px; text-align: center;">
-              <h1 style="color: white; font-size: 28px; font-weight: 700; margin: 0;">
-                ✈️ SkyWings
-              </h1>
-              <p style="color: rgba(255,255,255,0.8); font-size: 14px; margin-top: 8px;">
-                Your Journey Begins Here
-              </p>
-            </td>
-          </tr>
-          
-          <!-- Content -->
-          <tr>
-            <td style="padding: 40px 32px;">
-              ${content}
-            </td>
-          </tr>
-          
-          <!-- Footer -->
-          <tr>
-            <td style="background: #f8fafc; padding: 24px 32px; text-align: center; border-top: 1px solid #e5e7eb;">
-              <p style="color: #64748b; font-size: 14px; margin-bottom: 12px;">
-                Need help? Contact us at support@skywings.com
-              </p>
-              <p style="color: #94a3b8; font-size: 12px;">
-                © 2026 SkyWings. All rights reserved.
-              </p>
-              <div style="margin-top: 16px;">
-                <a href="#" style="color: #2563eb; text-decoration: none; margin: 0 8px; font-size: 13px;">Terms</a>
-                <span style="color: #cbd5e1;">|</span>
-                <a href="#" style="color: #2563eb; text-decoration: none; margin: 0 8px; font-size: 13px;">Privacy</a>
-                <span style="color: #cbd5e1;">|</span>
-                <a href="#" style="color: #2563eb; text-decoration: none; margin: 0 8px; font-size: 13px;">Contact</a>
-              </div>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
+<body style="margin:0;padding:0;background:#F6F7FB;font-family:Inter,'Segoe UI',Helvetica,Arial,sans-serif;color:#151B2E;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F6F7FB;padding:32px 12px;">
+    <tr><td align="center">
+      <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="width:100%;max-width:600px;background:#FFFFFF;border:1px solid #E2E6EF;border-radius:20px;overflow:hidden;">
+        <tr>
+          <td style="background:#0B1630;padding:24px 32px;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
+              <td style="vertical-align:middle;">
+                <span style="display:inline-block;width:30px;height:30px;line-height:30px;border-radius:8px;background:#1F5EFF;color:#FFFFFF;text-align:center;font-size:15px;font-weight:700;vertical-align:middle;">&#9992;</span>
+                <span style="font-size:19px;font-weight:800;color:#FFFFFF;letter-spacing:-0.3px;vertical-align:middle;margin-left:8px;">SkyWings</span>
+              </td>
+              <td align="right" style="vertical-align:middle;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:${type === 'success' ? '#6FDB9C' : '#FF8A8E'};">
+                ${type === 'success' ? 'Booking confirmed' : 'Action needed'}
+              </td>
+            </tr></table>
+          </td>
+        </tr>
+        <tr><td style="padding:32px;">${content}</td></tr>
+        <tr>
+          <td style="background:#F6F7FB;padding:20px 32px;border-top:1px solid #E2E6EF;font-size:12px;line-height:1.6;color:#6B7590;">
+            ${supportLine}<br>
+            <a href="${FRONTEND_URL()}/my-bookings" style="color:#1F5EFF;text-decoration:none;">My trips</a> &nbsp;·&nbsp;
+            <a href="${FRONTEND_URL()}/terms-and-conditions" style="color:#1F5EFF;text-decoration:none;">Terms</a> &nbsp;·&nbsp;
+            <a href="${FRONTEND_URL()}/privacy-policy" style="color:#1F5EFF;text-decoration:none;">Privacy</a><br>
+            © ${new Date().getFullYear()} SkyWings Travel
+          </td>
+        </tr>
+      </table>
+    </td></tr>
   </table>
 </body>
-</html>
-  `;
+</html>`;
 };
 
 /**
@@ -403,7 +389,150 @@ const sendPaymentFailed = async (booking, email, reason) => {
   }
 };
 
+/* ================= Flight e-ticket email (itinerary + PDF attachment) ================= */
+
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const stampTime = (s) => (typeof s === 'string' && s.match(/T(\d{2}:\d{2})/) ? s.match(/T(\d{2}:\d{2})/)[1] : (s && /^\d{2}:\d{2}/.test(s) ? s.slice(0, 5) : '--:--'));
+const stampDate = (s) => {
+  const m = typeof s === 'string' && s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return '';
+  const d = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));
+  return `${DAYS[d.getUTCDay()]}, ${+m[3]} ${MONTHS[+m[2] - 1]} ${m[1]}`;
+};
+const dur = (min) => (min ? `${Math.floor(min / 60)}h ${String(min % 60).padStart(2, '0')}m` : '');
+const inr = (n, cur = 'INR') => (n === null || n === undefined || isNaN(n) ? '-' : `${cur === 'INR' ? '&#8377;' : `${esc(cur)} `}${Number(n).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`);
+
+function flightTicketContent(booking, it) {
+  const segs = (it?.slices || []).flatMap(s => s.segments);
+  const last = segs[segs.length - 1];
+  const destination = last?.arrival?.city || (last?.arrival?.name || '').replace(/\s+(International\s+)?Airport.*$/i, '') || last?.arrival?.code || 'your trip';
+  const pnrs = it?.airlineLocators?.length ? it.airlineLocators.map(a => a.pnr) : (booking.pnr ? [booking.pnr] : []);
+
+  const segRows = segs.map(s => `
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #E2E6EF;border-radius:14px;margin-bottom:12px;">
+      <tr><td style="padding:14px 18px 0;font-size:13px;color:#4E5872;">
+        <strong style="color:#151B2E;">${esc(s.airline?.name || s.airline?.code)}</strong> &nbsp;·&nbsp; ${esc(s.flightNumber)} &nbsp;·&nbsp; ${esc(s.cabin || it.cabin)}
+      </td></tr>
+      <tr><td style="padding:10px 18px 16px;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
+          <td width="38%" style="vertical-align:top;">
+            <div style="font-size:26px;font-weight:800;color:#0B1630;letter-spacing:-0.5px;">${esc(s.departure?.code)}</div>
+            <div style="font-size:16px;font-weight:700;color:#151B2E;">${stampTime(s.departure?.time)}</div>
+            <div style="font-size:12px;color:#4E5872;">${stampDate(s.departure?.time)}</div>
+            <div style="font-size:11px;color:#6B7590;">${esc(s.departure?.name || '')}${s.departure?.terminal ? ` · T${esc(s.departure.terminal)}` : ''}</div>
+          </td>
+          <td width="24%" align="center" style="vertical-align:top;padding-top:10px;font-size:11px;color:#4E5872;">
+            ${dur(s.durationMinutes)}<br><span style="color:#1F5EFF;font-size:16px;">&#9992;</span><br><span style="color:#0B7A3B;font-weight:600;">Non-stop</span>
+          </td>
+          <td width="38%" align="right" style="vertical-align:top;">
+            <div style="font-size:26px;font-weight:800;color:#0B1630;letter-spacing:-0.5px;">${esc(s.arrival?.code)}</div>
+            <div style="font-size:16px;font-weight:700;color:#151B2E;">${stampTime(s.arrival?.time)}</div>
+            <div style="font-size:12px;color:#4E5872;">${stampDate(s.arrival?.time)}</div>
+            <div style="font-size:11px;color:#6B7590;">${esc(s.arrival?.name || '')}${s.arrival?.terminal ? ` · T${esc(s.arrival.terminal)}` : ''}</div>
+          </td>
+        </tr></table>
+      </td></tr>
+    </table>`).join('');
+
+  const paxRows = (booking.travelers || []).map((t, i) => {
+    const ticket = it?.tickets?.find(k => k.name && k.name.toUpperCase().includes(String(t.last_name || '').toUpperCase()))?.ticketNumber
+      || it?.tickets?.[i]?.ticketNumber || (i === 0 ? booking.ticketNumber : null);
+    return `<tr>
+      <td style="padding:10px 0;border-top:1px solid #E2E6EF;font-size:13px;font-weight:600;color:#151B2E;">${esc(String(t.last_name || '').toUpperCase())}/${esc(String(t.first_name || '').toUpperCase())}</td>
+      <td align="right" style="padding:10px 0;border-top:1px solid #E2E6EF;font-size:13px;color:#4E5872;">${ticket ? `E-ticket <strong style="color:#151B2E;">${esc(ticket)}</strong>` : 'E-ticket pending'}</td>
+    </tr>`;
+  }).join('');
+
+  const total = it?.price?.total ?? booking.totalPrice;
+  const cur = it?.price?.currency || booking.currency;
+
+  return `
+    <p style="margin:0 0 6px;font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#C93C14;">You're all set</p>
+    <h1 style="margin:0 0 8px;font-size:28px;line-height:1.2;font-weight:800;color:#151B2E;letter-spacing:-0.6px;">You're flying to <span style="font-family:Georgia,serif;font-style:italic;font-weight:400;color:#1F5EFF;">${esc(destination)}</span></h1>
+    <p style="margin:0 0 24px;font-size:15px;line-height:1.55;color:#4E5872;">Your e-ticket is attached as a PDF. Show it with a valid photo ID at check-in.</p>
+
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#EEF3FF;border-radius:14px;margin-bottom:20px;">
+      <tr>
+        <td style="padding:16px 18px;">
+          <div style="font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#1F5EFF;">Booking reference</div>
+          <div style="font-size:18px;font-weight:800;color:#151B2E;margin-top:2px;">${esc(booking.bookingReference)}</div>
+        </td>
+        ${pnrs.length ? `<td align="right" style="padding:16px 18px;">
+          <div style="font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#1F5EFF;">Airline PNR</div>
+          <div style="font-size:18px;font-weight:800;color:#151B2E;margin-top:2px;letter-spacing:2px;">${esc(pnrs.join(' / '))}</div>
+        </td>` : ''}
+      </tr>
+    </table>
+
+    ${segRows || '<p style="font-size:14px;color:#4E5872;">Flight details are in the attached e-ticket.</p>'}
+
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:8px 0 20px;">
+      <tr><td colspan="2" style="padding-bottom:6px;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#6B7590;">Passengers</td></tr>
+      ${paxRows}
+      <tr>
+        <td style="padding:14px 0 0;border-top:1px solid #E2E6EF;font-size:15px;font-weight:700;color:#151B2E;">Total paid</td>
+        <td align="right" style="padding:14px 0 0;border-top:1px solid #E2E6EF;font-size:18px;font-weight:800;color:#151B2E;">${inr(total, cur)}</td>
+      </tr>
+    </table>
+
+    <table role="presentation" cellpadding="0" cellspacing="0" style="margin-bottom:24px;"><tr>
+      <td style="border-radius:999px;background:#1F5EFF;">
+        <a href="${FRONTEND_URL()}/my-bookings" style="display:inline-block;padding:13px 26px;font-size:14px;font-weight:600;color:#FFFFFF;text-decoration:none;">Manage in My trips</a>
+      </td>
+    </tr></table>
+
+    <p style="margin:0;font-size:12px;line-height:1.6;color:#6B7590;">
+      Web check-in usually opens 24-48 hours before departure on the airline's website. Times shown are local to each airport.
+      ${it?.supplierName ? `Fare supplied by ${esc(it.supplierName)}${it.supplierRef ? ` (order ${esc(it.supplierRef)})` : ''}.` : ''}
+    </p>`;
+}
+
+/**
+ * E-ticket email: itinerary summary + PDF attachment. Marks bookings.email_sent_at.
+ * @param {Object} booking - camelCase booking from booking.service (with travelers, payments)
+ * @returns {{ success: boolean, messageId?: string, error?: string }}
+ */
+const sendFlightTicketEmail = async (booking) => {
+  const transport = getTransporter();
+  if (!transport) {
+    logger.warn(`[Email] Not configured - e-ticket email for ${booking.bookingReference} not sent`);
+    return { success: false, error: 'not_configured' };
+  }
+
+  try {
+    const itineraryService = require('./itinerary.service');
+    const ticketService = require('./ticket.service');
+    const { toTicketBooking } = require('../controllers/booking.controller');
+
+    const itinerary = await itineraryService.getTicketItinerary(booking);
+    const pdf = await ticketService.generateTicketPDF(toTicketBooking(booking), itinerary);
+    const segs = (itinerary?.slices || []).flatMap(s => s.segments);
+    const route = segs.length ? `${segs[0].departure.code} to ${segs[segs.length - 1].arrival.code}` : 'your flight';
+
+    const info = await transport.sendMail({
+      from: `"SkyWings" <${process.env.EMAIL_FROM || process.env.EMAIL_USER || process.env.SMTP_USER}>`,
+      to: booking.contactEmail,
+      subject: `Your e-ticket: ${route} · ${booking.bookingReference}`,
+      html: generateEmailTemplate(flightTicketContent(booking, itinerary), 'success'),
+      attachments: [{ filename: `SkyWings-E-Ticket-${booking.bookingReference}.pdf`, content: pdf, contentType: 'application/pdf' }]
+    });
+
+    if (booking.id) {
+      const { getPool } = require('../config/database');
+      await getPool().query('UPDATE bookings SET email_sent_at = CURRENT_TIMESTAMP WHERE id = $1', [booking.id]);
+    }
+    logger.info(`[Email] E-ticket sent to ${booking.contactEmail} for ${booking.bookingReference}`);
+    return { success: true, messageId: info.messageId };
+  } catch (error) {
+    logger.error(`[Email] E-ticket email failed for ${booking.bookingReference}:`, error.message);
+    return { success: false, error: error.message };
+  }
+};
+
 module.exports = {
+  sendFlightTicketEmail,
+  flightTicketContent,
   sendBookingConfirmation,
   sendPaymentFailed,
   generateEmailTemplate,

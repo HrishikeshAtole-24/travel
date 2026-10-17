@@ -6,6 +6,9 @@ import Header from '../components/Header/Header';
 import Footer from '../components/Footer/Footer';
 import apiClient from '@/lib/api/client';
 import { useAuth } from '@/app/contexts/AuthContext';
+import Link from 'next/link';
+import Icon from '../components/Icon/Icon';
+import { BookingListSkeleton, StateMessage } from '../components/Skeleton/Skeleton';
 import './my-bookings.css';
 import MyHotelBookings from './MyHotelBookings';
 
@@ -68,16 +71,16 @@ export default function MyBookingsPage() {
   const getStatusInfo = (status, isExpired = false) => {
     // Handle expired bookings
     if (isExpired || status === 'expired') {
-      return { label: 'Expired', class: 'status-expired', icon: 'fa-clock-rotate-left' };
+      return { label: 'Expired', tone: 'neutral' };
     }
     
     const statusMap = {
-      confirmed: { label: 'Confirmed', class: 'status-confirmed', icon: 'fa-circle-check' },
-      pending: { label: 'Payment Pending', class: 'status-payment', icon: 'fa-credit-card' },
-      cancelled: { label: 'Cancelled', class: 'status-cancelled', icon: 'fa-circle-xmark' },
-      completed: { label: 'Completed', class: 'status-completed', icon: 'fa-check-double' },
-      payment_initiated: { label: 'Payment Pending', class: 'status-payment', icon: 'fa-credit-card' },
-      expired: { label: 'Expired', class: 'status-expired', icon: 'fa-clock-rotate-left' }
+      confirmed: { label: 'Confirmed', tone: 'success' },
+      pending: { label: 'Payment pending', tone: 'warning' },
+      cancelled: { label: 'Cancelled', tone: 'danger' },
+      completed: { label: 'Completed', tone: 'neutral' },
+      payment_initiated: { label: 'Payment pending', tone: 'warning' },
+      expired: { label: 'Expired', tone: 'neutral' }
     };
     return statusMap[status?.toLowerCase()] || statusMap.pending;
   };
@@ -156,317 +159,120 @@ export default function MyBookingsPage() {
   };
 
   const tabs = [
-    { id: 'all', label: 'All Bookings', icon: 'fa-list' },
-    { id: 'upcoming', label: 'Upcoming', icon: 'fa-plane-departure' },
-    { id: 'completed', label: 'Completed', icon: 'fa-circle-check' },
-    { id: 'cancelled', label: 'Cancelled', icon: 'fa-ban' }
+    { id: 'all', label: 'All' },
+    { id: 'upcoming', label: 'Upcoming' },
+    { id: 'completed', label: 'Completed' },
+    { id: 'cancelled', label: 'Cancelled' }
   ];
+
+  const countFor = (id) => id === 'all' ? bookings.length : bookings.filter(b => {
+    if (id === 'upcoming') return ['confirmed', 'pending', 'payment_initiated'].includes(b.status) && !b.isExpired;
+    if (id === 'completed') return b.status === 'completed';
+    if (id === 'cancelled') return b.status === 'cancelled' || b.status === 'expired' || b.isExpired;
+    return false;
+  }).length;
+
+  const signedOut = !authLoading && !isLoggedIn;
 
   return (
     <>
       <Header />
-      <main className="my-bookings-page">
+      <main className="trips-page">
         <div className="container">
-          {/* Page Header */}
-          <div className="page-header-section">
-            <div className="page-header-content">
-              <h1><i className="fas fa-ticket"></i> My Bookings</h1>
-              <p>Manage and track all your flight and hotel bookings in one place</p>
+          <div className="trips-head">
+            <div>
+              <h1>My trips</h1>
+              <p>Every flight and stay booked with SkyWings, in one place.</p>
             </div>
-            <button 
-              className="btn btn-primary btn-book-new"
-              onClick={() => router.push('/')}
-            >
-              <i className="fas fa-plane"></i> Book New Flight
-            </button>
-          </div>
-
-          {/* Flights / Hotels */}
-          <div className="booking-tabs-container">
-            <div className="booking-tabs" role="tablist" aria-label="Booking type">
-              {[['flights', 'Flights', 'fa-plane'], ['hotels', 'Hotels', 'fa-hotel']].map(([id, label, icon]) => (
-                <button
-                  key={id}
-                  role="tab"
-                  aria-selected={product === id}
-                  className={`tab-btn ${product === id ? 'active' : ''}`}
-                  onClick={() => setProduct(id)}
-                >
-                  <i className={`fas ${icon}`}></i>
-                  <span className="tab-label">{label}</span>
+            <div className="sw-segment" role="tablist" aria-label="Booking type">
+              {[['flights', 'Flights', 'plane'], ['hotels', 'Hotels', 'hotel']].map(([id, label, icon]) => (
+                <button key={id} role="tab" type="button" aria-pressed={product === id} aria-selected={product === id} onClick={() => setProduct(id)}>
+                  <Icon name={icon} size={16} /> {label}
                 </button>
               ))}
             </div>
           </div>
 
-          {product === 'hotels' ? <MyHotelBookings /> : (<>
-          {/* Tabs */}
-          <div className="booking-tabs-container">
-            <div className="booking-tabs">
-              {tabs.map(tab => {
-                const count = tab.id === 'all' 
-                  ? bookings.length 
-                  : bookings.filter(b => {
-                      if (tab.id === 'upcoming') return ['confirmed', 'pending', 'payment_initiated'].includes(b.status);
-                      if (tab.id === 'completed') return b.status === 'completed';
-                      if (tab.id === 'cancelled') return b.status === 'cancelled';
-                      return false;
-                    }).length;
-                
-                return (
-                  <button 
-                    key={tab.id}
-                    className={`tab-btn ${activeTab === tab.id ? 'active' : ''}`}
-                    onClick={() => setActiveTab(tab.id)}
-                  >
-                    <i className={`fas ${tab.icon}`}></i>
-                    <span className="tab-label">{tab.label}</span>
-                    <span className="tab-count">{count}</span>
+          {signedOut ? (
+            <StateMessage icon="ticket" tone="brand" title="Sign in to see your trips"
+              action={<><Link href="/auth/login" className="btn btn-primary">Sign in</Link><Link href="/auth/signup" className="btn btn-secondary">Create account</Link></>}>
+              Bookings made while signed in show up here, with vouchers, PNRs and refund status.
+            </StateMessage>
+          ) : product === 'hotels' ? <MyHotelBookings /> : (
+            <>
+              <div className="trips-tabs" role="tablist" aria-label="Filter trips">
+                {tabs.map(tab => (
+                  <button key={tab.id} type="button" role="tab" aria-selected={activeTab === tab.id}
+                    className={`trips-tab ${activeTab === tab.id ? 'active' : ''}`} onClick={() => setActiveTab(tab.id)}>
+                    {tab.label} <span className="trips-tab__count">{countFor(tab.id)}</span>
                   </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Loading State */}
-          {loading && (
-            <div className="state-container loading-state">
-              <div className="state-icon">
-                <i className="fas fa-spinner fa-spin"></i>
+                ))}
               </div>
-              <h3>Loading your bookings...</h3>
-              <p>Please wait while we fetch your travel history</p>
-            </div>
-          )}
 
-          {/* Error State */}
-          {error && !loading && (
-            <div className="state-container error-state">
-              <div className="state-icon error">
-                <i className="fas fa-exclamation-triangle"></i>
-              </div>
-              <h3>Something went wrong</h3>
-              <p>{error}</p>
-              <button className="btn btn-primary" onClick={fetchBookings}>
-                <i className="fas fa-redo"></i> Try Again
-              </button>
-            </div>
-          )}
+              {(loading || authLoading) && <BookingListSkeleton />}
 
-          {/* Empty State */}
-          {!loading && !error && filteredBookings.length === 0 && (
-            <div className="state-container empty-state">
-              <div className="state-icon empty">
-                <i className="fas fa-suitcase-rolling"></i>
-              </div>
-              <h3>{activeTab === 'all' ? 'No bookings yet' : `No ${activeTab} bookings`}</h3>
-              <p>
-                {activeTab === 'all' 
-                  ? 'Your travel journey starts here. Search and book your first flight!' 
-                  : 'Check other tabs or book a new flight to get started.'}
-              </p>
-              <button 
-                className="btn btn-primary btn-lg"
-                onClick={() => router.push('/')}
-              >
-                <i className="fas fa-search"></i> Search Flights
-              </button>
-            </div>
-          )}
+              {error && !loading && (
+                <StateMessage icon="alert" tone="danger" title="We couldn’t load your trips"
+                  action={<button className="btn btn-primary" onClick={fetchBookings}>Try again</button>}>
+                  {error}
+                </StateMessage>
+              )}
 
-          {/* Bookings List */}
-          {!loading && !error && filteredBookings.length > 0 && (
-            <div className="bookings-grid">
-              {filteredBookings.map((booking) => {
-                const statusInfo = getStatusInfo(booking.status, booking.isExpired);
-                const flightInfo = getFlightInfo(booking);
-                const canPay = ['pending', 'payment_initiated'].includes(booking.status) && !booking.isExpired && booking.status !== 'expired';
-                
-                return (
-                  <div key={booking.id} className={`booking-card ${booking.isExpired || booking.status === 'expired' ? 'booking-expired' : ''}`}>
-                    {/* Card Header */}
-                    <div className="booking-card-header">
-                      <div className="booking-ref">
-                        <span className="ref-label">
-                          <i className="fas fa-hashtag"></i> Booking Reference
-                        </span>
-                        <span className="ref-value">{booking.bookingReference}</span>
-                      </div>
-                      <span className={`status-badge ${statusInfo.class}`}>
-                        <i className={`fas ${statusInfo.icon}`}></i>
-                        {statusInfo.label}
-                      </span>
-                    </div>
+              {!loading && !authLoading && !error && filteredBookings.length === 0 && (
+                <StateMessage icon="plane" tone="brand" title={activeTab === 'all' ? 'No flights booked yet' : `No ${activeTab} flights`}
+                  action={<Link href="/" className="btn btn-primary"><Icon name="search" size={16} /> Search flights</Link>}>
+                  {activeTab === 'all' ? 'Your next trip starts with a search.' : 'Check the other tabs, or book a new flight.'}
+                </StateMessage>
+              )}
 
-                    {/* Flight Info */}
-                    <div className="booking-card-body">
-                      <div className="flight-route-info">
-                        <div className="airline-badge">
-                          <div className="airline-logo">
-                            <i className="fas fa-plane"></i>
+              {!loading && !error && filteredBookings.length > 0 && (
+                <div className="trips-list">
+                  {filteredBookings.map((booking) => {
+                    const statusInfo = getStatusInfo(booking.status, booking.isExpired);
+                    const flightInfo = getFlightInfo(booking);
+                    const canPay = ['pending', 'payment_initiated'].includes(booking.status) && !booking.isExpired && booking.status !== 'expired';
+                    const expired = booking.isExpired || booking.status === 'expired';
+
+                    return (
+                      <article key={booking.id} className={`trip-card ${expired ? 'is-muted' : ''}`}>
+                        <div className="trip-card__art">
+                          <span className="trip-card__codes">{flightInfo.origin} <Icon name="plane" size={18} /> {flightInfo.destination}</span>
+                          <small>{flightInfo.airline}</small>
+                        </div>
+                        <div className="trip-card__body">
+                          <div className="trip-card__tags">
+                            <span className={`sw-badge sw-badge--${statusInfo.tone}`}>{statusInfo.label}</span>
+                            {booking.pnr && <span className="sw-supplier">PNR <strong>{booking.pnr}</strong></span>}
                           </div>
-                          <div className="airline-details">
-                            <span className="airline-name">{flightInfo.airline}</span>
-                            <span className="flight-number">
-                              <i className="fas fa-hashtag"></i> {flightInfo.flightNumber}
-                            </span>
+                          <h3>{flightInfo.origin} → {flightInfo.destination}</h3>
+                          <p>{flightInfo.airline} {flightInfo.flightNumber !== '--' ? `· ${flightInfo.flightNumber}` : ''}{flightInfo.stops !== undefined ? ` · ${flightInfo.stops === 0 ? 'Non-stop' : `${flightInfo.stops} stop`}` : ''}</p>
+                          <div className="trip-card__meta">
+                            <span><Icon name="calendar" size={14} /> {flightInfo.departureDate ? formatDate(flightInfo.departureDate) : `Booked ${formatDate(booking.createdAt)}`}{flightInfo.departureTime ? ` · ${flightInfo.departureTime}` : ''}</span>
+                            <span><Icon name="tag" size={14} /> {booking.bookingReference}</span>
                           </div>
                         </div>
-
-                        <div className="route-visual">
-                          <div className="route-endpoint">
-                            <span className="airport-code">{flightInfo.origin}</span>
-                            {flightInfo.departureTime && (
-                              <span className="time">{flightInfo.departureTime}</span>
-                            )}
-                            {flightInfo.departureDate && (
-                              <span className="date">{formatDate(flightInfo.departureDate)}</span>
-                            )}
+                        <div className="trip-card__side">
+                          <div className="trip-card__price">
+                            <strong>{formatCurrency(booking.totalPrice, booking.currency)}</strong>
+                            <small>{canPay ? 'due' : 'paid'}</small>
                           </div>
-                          
-                          <div className="route-connector">
-                            <div className="connector-line">
-                              <i className="fas fa-plane"></i>
-                            </div>
-                            {flightInfo.stops !== undefined && (
-                              <span className="stops-info">
-                                {flightInfo.stops === 0 ? 'Non-stop' : `${flightInfo.stops} Stop`}
-                              </span>
-                            )}
-                          </div>
-                          
-                          <div className="route-endpoint">
-                            <span className="airport-code">{flightInfo.destination}</span>
-                            {flightInfo.arrivalTime && (
-                              <span className="time">{flightInfo.arrivalTime}</span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Booking Details Grid */}
-                      <div className="booking-details-grid">
-                        <div className="detail-item">
-                          <span className="detail-label">
-                            <i className="fas fa-calendar"></i> Booked On
-                          </span>
-                          <span className="detail-value">{formatDate(booking.createdAt)}</span>
-                        </div>
-                        <div className="detail-item">
-                          <span className="detail-label">
-                            <i className="fas fa-indian-rupee-sign"></i> Total Amount
-                          </span>
-                          <span className="detail-value price">
-                            {formatCurrency(booking.totalPrice, booking.currency)}
-                          </span>
-                        </div>
-                        <div className="detail-item">
-                          <span className="detail-label">
-                            <i className="fas fa-barcode"></i> PNR
-                          </span>
-                          <span className="detail-value pnr">{booking.pnr || 'Pending'}</span>
-                        </div>
-                        <div className="detail-item">
-                          <span className="detail-label">
-                            <i className="fas fa-envelope"></i> Contact
-                          </span>
-                          <span className="detail-value email">{booking.contactEmail}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Card Actions */}
-                    <div className="booking-card-footer">
-                      <button 
-                        className="btn btn-outline"
-                        onClick={() => handleViewDetails(booking.id)}
-                      >
-                        <i className="fas fa-eye"></i> View Details
-                      </button>
-                      {booking.status === 'confirmed' && (
-                        <button className="btn btn-ghost">
-                          <i className="fas fa-download"></i> E-Ticket
-                        </button>
-                      )}
-                      {canPay && (
-                        <button 
-                          className="btn btn-primary"
-                          onClick={() => handlePayNow(booking)}
-                          disabled={paymentLoading === booking.id}
-                        >
-                          {paymentLoading === booking.id ? (
-                            <>
-                              <span className="spinner-small"></span>
-                              Processing...
-                            </>
+                          {canPay ? (
+                            <button className="btn btn-accent btn-sm" onClick={() => handlePayNow(booking)} disabled={paymentLoading === booking.id}>
+                              {paymentLoading === booking.id ? 'Opening…' : 'Complete payment'}
+                            </button>
+                          ) : expired ? (
+                            <button className="btn btn-secondary btn-sm" onClick={() => router.push('/')}>Book again</button>
                           ) : (
-                            <>
-                              <i className="fas fa-credit-card"></i> Pay Now
-                            </>
+                            <button className="btn btn-secondary btn-sm" onClick={() => handleViewDetails(booking.id)}>View details</button>
                           )}
-                        </button>
-                      )}
-                      {(booking.isExpired || booking.status === 'expired') && (
-                        <button 
-                          className="btn btn-secondary"
-                          onClick={() => router.push('/')}
-                        >
-                          <i className="fas fa-redo"></i> Book Again
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
+              )}
+            </>
           )}
-
-          {/* Bottom Stats */}
-          {!loading && !error && bookings.length > 0 && (
-            <div className="bookings-summary">
-              <div className="summary-item">
-                <i className="fas fa-plane-departure"></i>
-                <span className="summary-value">{bookings.length}</span>
-                <span className="summary-label">Total Bookings</span>
-              </div>
-              <div className="summary-item">
-                <i className="fas fa-circle-check"></i>
-                <span className="summary-value">
-                  {bookings.filter(b => b.status === 'confirmed').length}
-                </span>
-                <span className="summary-label">Confirmed</span>
-              </div>
-              <div className="summary-item">
-                <i className="fas fa-indian-rupee-sign"></i>
-                <span className="summary-value">
-                  {formatCurrency(bookings.reduce((sum, b) => sum + (parseFloat(b.totalPrice) || 0), 0))}
-                </span>
-                <span className="summary-label">Total Spent</span>
-              </div>
-            </div>
-          )}
-
-          </>)}
-
-          {/* Trust Indicators */}
-          <div className="trust-section">
-            <div className="trust-item">
-              <i className="fas fa-shield-halved"></i>
-              <span>Secure Booking</span>
-            </div>
-            <div className="trust-item">
-              <i className="fas fa-headset"></i>
-              <span>24/7 Support</span>
-            </div>
-            <div className="trust-item">
-              <i className="fas fa-certificate"></i>
-              <span>IATA Accredited</span>
-            </div>
-            <div className="trust-item">
-              <i className="fas fa-rotate-left"></i>
-              <span>Easy Cancellation</span>
-            </div>
-          </div>
         </div>
       </main>
       <Footer />

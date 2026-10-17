@@ -5,6 +5,7 @@
 
 const { getPool } = require('../config/database');
 const ApiError = require('../core/ApiError');
+const itineraryService = require('./itinerary.service');
 const logger = require('../config/winstonLogger');
 const flightService = require('./flight.service');
 const { generateReference } = require('../utils/security');
@@ -61,7 +62,7 @@ async function resolveFlightPrice(flightOffer) {
     throw ApiError.badRequest('Unable to confirm flight price. Please search again.');
   }
 
-  return { totalPrice, currency: price.currency || 'INR', pricedOffer };
+  return { totalPrice, currency: price.currency || 'INR', pricedOffer, dictionaries: pricing?.dictionaries || {} };
 }
 
 /**
@@ -107,7 +108,7 @@ const createBooking = async (bookingData, userId = null) => {
 
   // Authoritative price from the supplier (client-submitted price is ignored).
   // Done before opening the transaction so no DB connection is held during the API call.
-  const { totalPrice: quotedPrice, currency, pricedOffer } = await resolveFlightPrice(validatedFlightOffer);
+  const { totalPrice: quotedPrice, currency, pricedOffer, dictionaries } = await resolveFlightPrice(validatedFlightOffer);
 
   // Validate passengers against what the airline needs to ticket - BEFORE taking payment
   const validTravelers = validateTravelersForOffer(travelers, pricedOffer, {
@@ -172,7 +173,8 @@ const createBooking = async (bookingData, userId = null) => {
         bookingReference,
         userId,
         flightId || null,
-        JSON.stringify(flightData),
+        // Full itinerary from the supplier's priced offer - tickets/emails never depend on the client summary
+        JSON.stringify({ ...flightData, itinerary: itineraryService.fromStandardOffer(pricedOffer, dictionaries) || undefined }),
         totalPrice,
         currency || 'INR',
         'pending',
@@ -298,6 +300,10 @@ const getBookingById = async (bookingId, access = {}) => {
         pnr: booking.pnr,
         ticketNumber: booking.ticket_number,
         ticketingStatus: booking.ticketing_status || null,
+        supplier: booking.supplier || null,
+        supplierOrderId: booking.supplier_order_id || null,
+        emailSent: Boolean(booking.email_sent_at),
+        emailSentAt: booking.email_sent_at || null,
         createdAt: booking.created_at,
         updatedAt: booking.updated_at,
         expiresAt: booking.expires_at,
@@ -359,6 +365,10 @@ const getBookingByReference = async (bookingReference, access = {}) => {
         pnr: booking.pnr,
         ticketNumber: booking.ticket_number,
         ticketingStatus: booking.ticketing_status || null,
+        supplier: booking.supplier || null,
+        supplierOrderId: booking.supplier_order_id || null,
+        emailSent: Boolean(booking.email_sent_at),
+        emailSentAt: booking.email_sent_at || null,
         createdAt: booking.created_at,
         travelers: travelersResult.rows,
         payments: paymentsResult.rows

@@ -7,6 +7,9 @@ import Header from '../../components/Header/Header';
 import Footer from '../../components/Footer/Footer';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { confirmHotelOffer, createHotelBookingAndPay, formatMoney, formatStayDate } from '@/lib/api/hotels';
+import Icon from '../../components/Icon/Icon';
+import CheckoutSteps, { CheckoutSection } from '../../components/CheckoutSteps/CheckoutSteps';
+import { PageSkeleton } from '../../components/Skeleton/Skeleton';
 import '../hotels.css';
 
 const NAME_PATTERN = /^[A-Za-z][A-Za-z\s'-]{0,49}$/;
@@ -66,7 +69,7 @@ export default function HotelBookingPage() {
     setGuests(prev => [{ ...prev[0], firstName: prev[0].firstName || user.firstName || '', lastName: prev[0].lastName || user.lastName || '' }, ...prev.slice(1)]);
   }, [authLoading, isLoggedIn, user]);
 
-  if (!selection) return null;
+  if (!selection) return <><Header /><PageSkeleton label="Loading your room…" /></>;
 
   const { hotel, room, rate, stay } = selection;
   const total = confirmed?.pricing?.totalAmount ?? rate.totalAmount;
@@ -138,126 +141,119 @@ export default function HotelBookingPage() {
     }
   };
 
+  const nights = stay.nights || rate.nights;
+
   return (
     <>
       <Header />
-      <main className="hotels-page">
+      <main className="hotels-page checkout-page">
         <div className="container">
-          <nav className="hotels-breadcrumb" aria-label="Breadcrumb">
-            <Link href="/">Home</Link> <span>/</span>
-            <a href="#" onClick={(e) => { e.preventDefault(); router.back(); }}>{hotel.name}</a>
-            <span>/</span> <span>Review & Book</span>
-          </nav>
+          <button type="button" className="sw-link co-back" onClick={() => router.back()}>
+            <Icon name="chevron-left" size={16} /> Back to rooms
+          </button>
+          <CheckoutSteps steps={['Room', 'Guest details', 'Payment', 'Confirmed']} current={1} />
+          <h1 className="co-title">Who’s checking in?</h1>
+          <p className="co-sub">We’ll send the confirmation and hotel voucher to these details.</p>
 
           <div className="hb-layout">
-            {/* Guest details */}
             <form className="hb-form" onSubmit={handleSubmit} noValidate>
-              {error && <div className="hb-error" role="alert">{error}</div>}
+              {error && <div className="hb-error" role="alert"><Icon name="alert" size={18} /> {error}</div>}
 
               {guests.map((guest, index) => (
-                <div className="hd-card" key={index}>
-                  <h2>Room {index + 1} · Lead guest</h2>
-                  <p className="hb-sub">Name must match the ID shown at check-in</p>
-                  <div className="hb-grid">
+                <CheckoutSection key={index} number={index + 1} title={guests.length > 1 ? `Room ${index + 1} · lead guest` : 'Lead guest'}
+                  subtitle="Name must match the government ID shown at check-in">
+                  <div className="title-chips" role="radiogroup" aria-label="Title">
+                    {['Mr', 'Ms', 'Mrs'].map(t => (
+                      <button key={t} type="button" role="radio" aria-checked={guest.title === t}
+                        className={`sw-chip-outline ${guest.title === t ? 'active' : ''}`} onClick={() => updateGuest(index, 'title', t)}>{t}</button>
+                    ))}
+                  </div>
+                  <div className="hb-grid two">
                     <label className="hb-field">
-                      Title
-                      <select value={guest.title} onChange={(e) => updateGuest(index, 'title', e.target.value)}>
-                        <option>Mr</option>
-                        <option>Ms</option>
-                        <option>Mrs</option>
-                      </select>
-                    </label>
-                    <label className="hb-field">
-                      First name *
-                      <input value={guest.firstName} autoComplete={index === 0 ? 'given-name' : 'off'} required
+                      <span className="form-label">First name</span>
+                      <input className="form-input" value={guest.firstName} autoComplete={index === 0 ? 'given-name' : 'off'} required
                         onChange={(e) => updateGuest(index, 'firstName', e.target.value)} />
                     </label>
                     <label className="hb-field">
-                      Last name *
-                      <input value={guest.lastName} autoComplete={index === 0 ? 'family-name' : 'off'} required
+                      <span className="form-label">Last name</span>
+                      <input className="form-input" value={guest.lastName} autoComplete={index === 0 ? 'family-name' : 'off'} required
                         onChange={(e) => updateGuest(index, 'lastName', e.target.value)} />
                     </label>
                   </div>
-                </div>
+                </CheckoutSection>
               ))}
 
-              <div className="hd-card">
-                <h2>Contact details</h2>
-                <p className="hb-sub">Your booking confirmation will be sent here</p>
+              <CheckoutSection number={guests.length + 1} title="Contact details" subtitle="Your voucher and updates go here">
                 <div className="hb-grid two">
                   <label className="hb-field">
-                    Email *
-                    <input type="email" value={contact.email} autoComplete="email" required
+                    <span className="form-label">Email</span>
+                    <input className="form-input" type="email" value={contact.email} autoComplete="email" required
                       onChange={(e) => setContact(prev => ({ ...prev, email: e.target.value }))} />
                   </label>
                   <label className="hb-field">
-                    Mobile number *
-                    <input type="tel" value={contact.phone} autoComplete="tel" placeholder="+91 98765 43210" required
+                    <span className="form-label">Mobile number</span>
+                    <input className="form-input" type="tel" value={contact.phone} autoComplete="tel" placeholder="+91 98765 43210" required
                       onChange={(e) => setContact(prev => ({ ...prev, phone: e.target.value }))} />
                   </label>
                 </div>
                 <label className="hb-field">
-                  Special requests (optional)
-                  <textarea rows="3" value={specialRequests} maxLength={500}
-                    placeholder="e.g. late check-in, high floor. Requests are subject to availability."
+                  <span className="form-label">Special requests <span className="hb-optional">optional</span></span>
+                  <textarea className="form-textarea" rows="3" value={specialRequests} maxLength={500}
+                    placeholder="e.g. late check-in, high floor — subject to availability"
                     onChange={(e) => setSpecialRequests(e.target.value)} />
                 </label>
-              </div>
+              </CheckoutSection>
 
-              <button type="submit" className="btn btn-primary btn-lg hb-submit" disabled={submitting || confirming || Boolean(confirmError)}>
-                {submitting ? 'Creating booking…' : `Pay ${formatMoney(total, currency)} & Book`}
-              </button>
-              <p className="hb-fineprint">
-                By booking you agree to the hotel's cancellation policy and our <Link href="/terms-and-conditions">terms</Link>.
-              </p>
+              {cancellation && (
+                <CheckoutSection number={guests.length + 2} title="Cancellation policy">
+                  <div className={`hb-policy ${rate.refundable ? 'is-free' : 'is-strict'}`}>
+                    <Icon name={rate.refundable ? 'check' : 'info'} size={18} />
+                    <p>{cancellation}</p>
+                  </div>
+                </CheckoutSection>
+              )}
+
+              <div className="hb-actions">
+                <p className="hb-fineprint">
+                  By continuing you agree to the hotel’s policies and our <Link href="/terms-and-conditions">terms</Link>.
+                </p>
+                <button type="submit" className="btn btn-accent btn-lg hb-submit" disabled={submitting || confirming || Boolean(confirmError)}>
+                  {submitting ? 'Creating booking…' : `Pay ${formatMoney(total, currency)}`}
+                </button>
+              </div>
             </form>
 
-            {/* Summary */}
             <aside className="hb-summary">
-              <div className="hd-card">
-                <div className="hb-summary-hotel">
-                  {hotel.photo && <img src={hotel.photo} alt={hotel.name} />}
-                  <div>
-                    <h3>{hotel.name}</h3>
-                    <small className="hotel-card-address">{hotel.address}</small>
+              <div className="hb-card">
+                {hotel.photo && <img className="hb-card__photo" src={hotel.photo} alt="" />}
+                <div className="hb-card__body">
+                  {hotel.stars ? <span className="hotel-stars">{'★'.repeat(Math.round(hotel.stars))}</span> : null}
+                  <h3>{hotel.name}</h3>
+                  <p className="hb-card__room">{room.name} · {rate.boardName || 'Room only'}</p>
+                  <div className="hb-stay">
+                    <div><span className="sw-overline">Check-in</span><strong>{formatStayDate(stay.checkInDate)}</strong></div>
+                    <div><span className="sw-overline">Check-out</span><strong>{formatStayDate(stay.checkOutDate)}</strong></div>
                   </div>
+                  <p className="hb-card__guests"><Icon name="users" size={16} /> {nights} night{nights > 1 ? 's' : ''} · {stay.rooms} room{stay.rooms > 1 ? 's' : ''} · {stay.adults} adult{stay.adults > 1 ? 's' : ''}{stay.childrenAges?.length ? ` · ${stay.childrenAges.length} child` : ''}</p>
                 </div>
+              </div>
 
-                <div className="hb-stay">
-                  <div><span>Check-in</span>{formatStayDate(stay.checkInDate)}</div>
-                  <div><span>Check-out</span>{formatStayDate(stay.checkOutDate)}</div>
-                  <div><span>Guests</span>{stay.rooms} Room{stay.rooms > 1 ? 's' : ''}, {stay.adults} Adult{stay.adults > 1 ? 's' : ''}{stay.childrenAges?.length ? `, ${stay.childrenAges.length} Child` : ''}</div>
-                  <div><span>Nights</span>{stay.nights || rate.nights}</div>
-                </div>
+              <div className="hb-card hb-price">
+                <h3>Price details</h3>
+                <div className="hb-row"><span>Room price · {nights} night{nights > 1 ? 's' : ''}</span><span>{formatMoney(total - taxesIncluded, currency)}</span></div>
+                {taxesIncluded > 0 && <div className="hb-row"><span>Taxes &amp; fees</span><span>{formatMoney(taxesIncluded, currency)}</span></div>}
+                <div className="hb-row total"><span>Pay now</span><span>{formatMoney(total, currency)}</span></div>
+                {payAtHotel > 0 && <div className="hb-row warn"><span>Pay at hotel (local taxes)</span><span>{formatMoney(payAtHotel, currency)}</span></div>}
 
-                <p><strong>{room.name}</strong><br /><small>{rate.boardName || 'Room Only'}</small></p>
-                <div className="hotel-tags">
-                  {rate.refundable
-                    ? <span className="hotel-tag success"><i className="fas fa-check"></i> Refundable</span>
-                    : <span className="hotel-tag danger">Non-refundable</span>}
-                </div>
-                {cancellation && <p className="hd-rate-policy">{cancellation}</p>}
-
-                {confirming && <p className="hb-sub"><i className="fas fa-spinner fa-spin"></i> Confirming live price with the hotel…</p>}
-                {confirmError && (
-                  <div className="hb-error">
-                    {confirmError} <Link href="/">Search again</Link>
-                  </div>
-                )}
-                {confirmed && !priceChanged && <div className="hb-confirmed"><i className="fas fa-shield-alt"></i> Price confirmed with the hotel</div>}
+                {confirming && <div className="hb-status"><span className="spinner-dark" /> Confirming live price…</div>}
+                {confirmError && <div className="hb-error">{confirmError} <Link href="/?tab=hotels">Search again</Link></div>}
+                {confirmed && !priceChanged && <div className="hb-confirmed"><Icon name="shield-check" size={16} /> Price confirmed with the hotel</div>}
                 {priceChanged && (
                   <div className="hb-price-change">
-                    The price changed from {formatMoney(rate.totalAmount, rate.currency)} to {formatMoney(total, currency)} since you searched.
+                    <Icon name="info" size={16} /> Price changed from {formatMoney(rate.totalAmount, rate.currency)} to {formatMoney(total, currency)} since you searched.
                   </div>
                 )}
-
-                <div className="hb-row"><span>Room price ({stay.nights || rate.nights} night{(stay.nights || rate.nights) > 1 ? 's' : ''})</span><span>{formatMoney(total - taxesIncluded, currency)}</span></div>
-                {taxesIncluded > 0 && <div className="hb-row"><span>Taxes & fees</span><span>{formatMoney(taxesIncluded, currency)}</span></div>}
-                <div className="hb-row total"><span>Pay now</span><span>{formatMoney(total, currency)}</span></div>
-                {payAtHotel > 0 && (
-                  <div className="hb-row"><span>Payable at hotel (local taxes)</span><span>{formatMoney(payAtHotel, currency)}</span></div>
-                )}
-                {rate.supplierName && <span className="supplier-badge">via <strong>{rate.supplierName}</strong></span>}
+                {rate.supplierName && <span className="sw-supplier"><Icon name="shield-check" size={12} /> via <strong>{rate.supplierName}</strong></span>}
               </div>
             </aside>
           </div>

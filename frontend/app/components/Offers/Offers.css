@@ -2,7 +2,7 @@
 
 .offers-section {
   padding: 60px 0;
-  background-color: #f8f9fa;
+  background-color: var(--sw-color-slate-50);
 }
 
 /* Header */
@@ -17,7 +17,7 @@
 .offers-header h2 {
   font-size: 28px;
   font-weight: 700;
-  color: #1a1a2e;
+  color: var(--sw-color-slate-900);
   margin: 0;
 }
 
@@ -35,19 +35,19 @@
   padding: 8px 16px;
   font-size: 14px;
   font-weight: 500;
-  color: #6b7280;
+  color: var(--sw-color-slate-500);
   cursor: pointer;
   border-radius: 20px;
   transition: all 0.2s ease;
 }
 
 .offers-tab:hover {
-  color: #0066ff;
+  color: var(--sw-color-blue-600);
   background-color: rgba(0, 102, 255, 0.05);
 }
 
 .offers-tab.active {
-  color: #0066ff;
+  color: var(--sw-color-blue-600);
   background-color: rgba(0, 102, 255, 0.1);
   font-weight: 600;
 }
@@ -59,7 +59,7 @@
   gap: 8px;
   font-size: 14px;
   font-weight: 600;
-  color: #0066ff;
+  color: var(--sw-color-blue-600);
   text-decoration: none;
   transition: gap 0.2s ease;
 }
@@ -136,7 +136,7 @@
 
   .offers-tab.active {
     background-color: rgba(0, 102, 255, 0.15) !important;
-    color: #0066ff !important;
+    color: var(--sw-color-blue-600) !important;
     font-weight: 700 !important;
   }
 
@@ -203,17 +203,17 @@
 
 /* Offer Card */
 .offer-card {
-  background: #ffffff;
+  background: var(--sw-color-white);
   border-radius: 8px;
   overflow: hidden;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--sw-color-slate-200);
   transition: all 0.2s ease;
   display: flex;
   flex-direction: row;
 }
 
 .offer-card:hover {
-  border-color: #0066ff;
+  border-color: var(--sw-color-blue-600);
   box-shadow: 0 4px 20px rgba(0, 102, 255, 0.1);
 }
 
@@ -236,12 +236,12 @@
   position: absolute;
   bottom: 8px;
   left: 8px;
-  background: #ffffff;
+  background: var(--sw-color-white);
   padding: 4px 12px;
   border-radius: 4px;
   font-size: 12px;
   font-weight: 700;
-  color: #1a1a2e;
+  color: var(--sw-color-slate-900);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
@@ -263,20 +263,20 @@
 .offer-tag {
   font-size: 11px;
   font-weight: 700;
-  color: #0066ff;
+  color: var(--sw-color-blue-600);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
 .offer-tnc {
   font-size: 10px;
-  color: #9ca3af;
+  color: var(--sw-color-slate-400);
 }
 
 .offer-title {
   font-size: 15px;
   font-weight: 700;
-  color: #1a1a2e;
+  color: var(--sw-color-slate-900);
   margin-bottom: 6px;
   line-height: 1.3;
 }
@@ -286,13 +286,13 @@
   display: block;
   width: 40px;
   height: 2px;
-  background: #0066ff;
+  background: var(--sw-color-blue-600);
   margin-top: 6px;
 }
 
 .offer-description {
   font-size: 13px;
-  color: #6b7280;
+  color: var(--sw-color-slate-500);
   line-height: 1.4;
   margin-bottom: 8px;
   flex: 1;
@@ -300,13 +300,13 @@
 
 .offer-code {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--sw-color-slate-500);
   margin-bottom: 12px;
 }
 
 .offer-code strong {
-  color: #1a1a2e;
-  background: #f3f4f6;
+  color: var(--sw-color-slate-900);
+  background: var(--sw-color-slate-100);
   padding: 2px 8px;
   border-radius: 4px;
   font-family: monospace;
@@ -316,7 +316,7 @@
   align-self: flex-start;
   background: none;
   border: none;
-  color: #0066ff;
+  color: var(--sw-color-blue-600);
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
@@ -325,7 +325,7 @@
 }
 
 .offer-cta:hover {
-  color: #0052cc;
+  color: var(--sw-color-blue-700);
 }
 
 /* Responsive */

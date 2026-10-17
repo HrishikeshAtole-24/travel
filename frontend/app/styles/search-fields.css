@@ -1,0 +1,681 @@
+/* ============================================
+   SEARCH FIELDS — Figma "Search Field" + popovers
+   One home for the field, autocomplete, calendar and
+   traveller-picker styles shared by every search form.
+   ============================================ */
+
+/* ---------- Field ---------- */
+.search-field-mmt {
+  position: relative;
+  min-width: 0;
+}
+
+.field-label {
+  display: block;
+  margin: 0 0 4px;
+  font: 600 0.6875rem/1.45 var(--sw-font-ui);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--sw-color-text-tertiary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Font Awesome glyphs inside labels are legacy — the overline carries the meaning */
+.field-label i {
+  display: none;
+}
+
+.field-input {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  font: 700 1.125rem/1.35 var(--sw-font-display);
+  letter-spacing: -0.01em;
+  color: var(--sw-color-text-primary);
+  text-overflow: ellipsis;
+}
+
+.field-input::placeholder {
+  color: var(--sw-color-text-disabled);
+  font-weight: 600;
+}
+
+.field-subtext {
+  margin-top: 2px;
+  font: 500 0.75rem/1.33 var(--sw-font-ui);
+  color: var(--sw-color-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.travellers-selector {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sw-space-2);
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+}
+
+.travellers-count {
+  font: 700 1.125rem/1.35 var(--sw-font-display);
+  letter-spacing: -0.01em;
+  color: var(--sw-color-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.travellers-selector i {
+  font-size: 0.75rem;
+  color: var(--sw-color-text-tertiary);
+  transition: transform var(--transition-fast);
+}
+
+.travellers-selector i.rotated {
+  transform: rotate(180deg);
+}
+
+/* ---------- Popover shell ---------- */
+.autocomplete-dropdown,
+.calendar-dropdown,
+.travellers-dropdown,
+.hsf-guests-dropdown {
+  position: absolute;
+  top: calc(100% + 14px);
+  left: -16px;
+  z-index: var(--z-popover);
+  background: var(--sw-color-bg-surface-raised);
+  border: 1px solid var(--sw-color-border-default);
+  border-radius: var(--sw-radius-lg);
+  box-shadow: var(--sw-shadow-3);
+  animation: sw-pop var(--sw-duration-base) var(--sw-ease);
+}
+
+@keyframes sw-pop {
+  from { opacity: 0; transform: translateY(-4px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+
+/* ---------- Autocomplete ---------- */
+.airport-autocomplete,
+.autocomplete-container {
+  position: relative;
+}
+
+.autocomplete-dropdown {
+  width: 360px;
+  max-height: 380px;
+  overflow-y: auto;
+  padding: var(--sw-space-2);
+}
+
+.autocomplete-dropdown .dropdown-header {
+  padding: var(--sw-space-2) var(--sw-space-3);
+  font: 600 0.6875rem/1.45 var(--sw-font-ui);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--sw-color-text-tertiary);
+}
+
+.autocomplete-dropdown .dropdown-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  padding: var(--sw-space-3);
+  border: 0;
+  border-radius: var(--sw-radius-sm);
+  background: transparent;
+  text-align: left;
+  font: 500 0.875rem/1.4 var(--sw-font-ui);
+  color: var(--sw-color-text-secondary);
+  cursor: pointer;
+}
+
+.autocomplete-dropdown .dropdown-item:hover {
+  background: var(--sw-color-bg-subtle);
+}
+
+.autocomplete-dropdown .loading-item,
+.autocomplete-dropdown .error-item,
+.autocomplete-dropdown .no-results {
+  flex-direction: row;
+  align-items: center;
+  gap: var(--sw-space-2);
+  cursor: default;
+}
+
+.autocomplete-dropdown .error-item {
+  color: var(--sw-color-text-danger);
+}
+
+.autocomplete-dropdown .loading-item:hover,
+.autocomplete-dropdown .error-item:hover,
+.autocomplete-dropdown .no-results:hover {
+  background: transparent;
+}
+
+.airport-main {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sw-space-2);
+}
+
+.airport-city {
+  font: 600 0.9375rem/1.3 var(--sw-font-ui);
+  color: var(--sw-color-text-primary);
+}
+
+.airport-code {
+  font: 700 0.75rem/1 var(--sw-font-display);
+  color: var(--sw-color-text-brand);
+}
+
+.airport-sub {
+  font: 500 0.75rem/1.33 var(--sw-font-ui);
+  color: var(--sw-color-text-tertiary);
+}
+
+/* Hotel destination suggestion rows */
+.autocomplete-dropdown .hsf-suggestion {
+  flex-direction: row;
+  align-items: center;
+  gap: var(--sw-space-3);
+}
+
+.hsf-suggestion i {
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border-radius: var(--sw-radius-sm);
+  background: var(--sw-color-bg-subtle);
+  color: var(--sw-color-text-secondary);
+  font-size: 0.875rem;
+}
+
+.hsf-suggestion span {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.hsf-suggestion strong {
+  font: 600 0.9375rem/1.3 var(--sw-font-ui);
+  color: var(--sw-color-text-primary);
+}
+
+.hsf-suggestion small {
+  font: 500 0.75rem/1.33 var(--sw-font-ui);
+  color: var(--sw-color-text-tertiary);
+}
+
+/* ---------- Date picker ---------- */
+.date-picker-mmt,
+.date-picker-container {
+  position: relative;
+}
+
+.date-input-display {
+  cursor: pointer;
+}
+
+.date-value {
+  display: block;
+  font: 700 1.125rem/1.35 var(--sw-font-display);
+  letter-spacing: -0.01em;
+  color: var(--sw-color-text-primary);
+  white-space: nowrap;
+}
+
+.date-picker-mmt.return-cleared .date-value {
+  color: var(--sw-color-text-disabled);
+  font-weight: 600;
+}
+
+.calendar-dropdown {
+  width: 680px;
+  padding: var(--sw-space-5);
+}
+
+.calendar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--sw-space-3);
+}
+
+.nav-button {
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--sw-color-border-default);
+  border-radius: var(--sw-radius-full);
+  background: var(--sw-color-bg-surface);
+  color: var(--sw-color-text-primary);
+  cursor: pointer;
+}
+
+.nav-button:hover {
+  background: var(--sw-color-bg-subtle);
+}
+
+.months-display {
+  display: flex;
+  flex: 1;
+  justify-content: space-around;
+}
+
+.month-name {
+  font: 600 1rem/1.4 var(--sw-font-display);
+  color: var(--sw-color-text-primary);
+}
+
+.dual-calendar {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--sw-space-8);
+}
+
+.weekday-headers,
+.calendar-week {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+}
+
+.weekday-header {
+  padding: var(--sw-space-2) 0;
+  text-align: center;
+  font: 600 0.6875rem/1 var(--sw-font-ui);
+  color: var(--sw-color-text-tertiary);
+}
+
+.calendar-day {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  margin: 1px 0;
+  border-radius: var(--sw-radius-sm);
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+}
+
+.day-number {
+  font: 600 0.875rem/1 var(--sw-font-ui);
+  color: var(--sw-color-text-primary);
+}
+
+.day-price {
+  margin-top: 3px;
+  font: 500 0.625rem/1 var(--sw-font-ui);
+  color: var(--sw-color-text-success);
+}
+
+.calendar-day.available:hover {
+  background: var(--sw-color-bg-subtle);
+}
+
+.calendar-day.other-month {
+  visibility: hidden;
+}
+
+.calendar-day.disabled {
+  cursor: not-allowed;
+}
+
+.calendar-day.disabled .day-number {
+  color: var(--sw-color-text-disabled);
+  font-weight: 500;
+}
+
+.calendar-day.today .day-number {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  text-decoration-thickness: 2px;
+  text-decoration-color: var(--sw-color-border-brand);
+}
+
+.calendar-day.in-range {
+  border-radius: 0;
+  background: var(--sw-color-bg-brand-subtle);
+}
+
+.calendar-day.selected,
+.calendar-day.endpoint {
+  background: var(--sw-color-bg-brand);
+}
+
+.calendar-day.selected .day-number,
+.calendar-day.endpoint .day-number,
+.calendar-day.selected .day-price,
+.calendar-day.endpoint .day-price {
+  color: var(--sw-color-text-on-brand);
+}
+
+.calendar-day.selected:hover,
+.calendar-day.endpoint:hover {
+  background: var(--sw-color-bg-brand-hover);
+}
+
+.calendar-footer {
+  margin-top: var(--sw-space-3);
+  padding-top: var(--sw-space-3);
+  border-top: 1px solid var(--sw-color-border-default);
+  text-align: left;
+}
+
+.calendar-footer:empty {
+  display: none;
+}
+
+.price-note {
+  font: 500 0.75rem/1.33 var(--sw-font-ui);
+  color: var(--sw-color-text-tertiary);
+}
+
+/* ---------- Traveller picker (flights) ---------- */
+.travellers-dropdown {
+  left: auto;
+  right: -16px;
+  width: 440px;
+  padding: var(--sw-space-5);
+}
+
+.traveller-type-row {
+  padding-bottom: var(--sw-space-4);
+  margin-bottom: var(--sw-space-4);
+  border-bottom: 1px solid var(--sw-color-border-default);
+}
+
+.traveller-type-info {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sw-space-2);
+  margin-bottom: var(--sw-space-2);
+}
+
+.traveller-type-label,
+.travel-class-label {
+  font: 600 0.8125rem/1.3 var(--sw-font-ui);
+  color: var(--sw-color-text-primary);
+}
+
+.traveller-type-hint {
+  font: 500 0.75rem/1.33 var(--sw-font-ui);
+  color: var(--sw-color-text-tertiary);
+}
+
+.traveller-counter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.counter-btn {
+  min-width: 36px;
+  height: 36px;
+  padding: 0 var(--sw-space-2);
+  border: 1px solid var(--sw-color-border-default);
+  border-radius: var(--sw-radius-sm);
+  background: var(--sw-color-bg-surface);
+  font: 600 0.8125rem/1 var(--sw-font-ui);
+  color: var(--sw-color-text-primary);
+  cursor: pointer;
+}
+
+.counter-btn:hover:not(:disabled) {
+  border-color: var(--sw-color-border-brand);
+}
+
+.counter-btn.active {
+  background: var(--sw-color-bg-brand);
+  border-color: var(--sw-color-bg-brand);
+  color: var(--sw-color-text-on-brand);
+}
+
+.counter-btn.more {
+  color: var(--sw-color-text-tertiary);
+}
+
+.counter-btn:disabled,
+.counter-btn.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.travel-class-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sw-space-2);
+  margin-top: var(--sw-space-2);
+}
+
+.class-btn {
+  height: 36px;
+  padding: 0 var(--sw-space-4);
+  border: 1px solid var(--sw-color-border-strong);
+  border-radius: var(--sw-radius-full);
+  background: var(--sw-color-bg-surface);
+  font: 600 0.8125rem/1 var(--sw-font-ui);
+  color: var(--sw-color-text-primary);
+  cursor: pointer;
+}
+
+.class-btn.active {
+  background: var(--sw-color-bg-brand-subtle);
+  border-color: var(--sw-color-border-brand);
+  color: var(--sw-color-text-brand);
+}
+
+.apply-btn {
+  display: block;
+  width: 100%;
+  height: 44px;
+  margin-top: var(--sw-space-5);
+  border: 0;
+  border-radius: var(--sw-radius-full);
+  background: var(--sw-color-bg-brand);
+  color: var(--sw-color-text-on-brand);
+  font: 600 0.875rem/1 var(--sw-font-ui);
+  cursor: pointer;
+}
+
+.apply-btn:hover {
+  background: var(--sw-color-bg-brand-hover);
+}
+
+/* ---------- Rooms & guests (hotels) ---------- */
+.hsf-guests-dropdown {
+  left: auto;
+  right: -16px;
+  width: 340px;
+  padding: var(--sw-space-5);
+}
+
+.hsf-counter-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--sw-space-3) 0;
+  border-bottom: 1px solid var(--sw-color-border-default);
+}
+
+.hsf-counter-label {
+  font: 600 0.9375rem/1.3 var(--sw-font-ui);
+  color: var(--sw-color-text-primary);
+}
+
+.hsf-counter-hint {
+  font: 500 0.75rem/1.33 var(--sw-font-ui);
+  color: var(--sw-color-text-tertiary);
+}
+
+/* Figma "Stepper" */
+.hsf-stepper {
+  display: flex;
+  align-items: center;
+  gap: var(--sw-space-3);
+}
+
+.hsf-stepper button {
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  min-height: 36px;
+  border: 1px solid var(--sw-color-border-strong);
+  border-radius: var(--sw-radius-full);
+  background: var(--sw-color-bg-surface);
+  font: 500 1.125rem/1 var(--sw-font-ui);
+  color: var(--sw-color-text-brand);
+  cursor: pointer;
+}
+
+.hsf-stepper button:hover {
+  border-color: var(--sw-color-border-brand);
+  background: var(--sw-color-bg-brand-subtle);
+}
+
+.hsf-stepper span {
+  min-width: 20px;
+  text-align: center;
+  font: 700 1rem/1 var(--sw-font-display);
+  color: var(--sw-color-text-primary);
+}
+
+.hsf-child-ages {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--sw-space-3);
+  margin-top: var(--sw-space-4);
+}
+
+.hsf-child-ages label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font: 600 0.75rem/1.33 var(--sw-font-ui);
+  color: var(--sw-color-text-secondary);
+}
+
+.hsf-child-ages select {
+  height: 40px;
+  padding: 0 var(--sw-space-3);
+  border: 1px solid var(--sw-color-border-strong);
+  border-radius: var(--sw-radius-sm);
+  background: var(--sw-color-bg-surface);
+  font: 500 0.875rem/1 var(--sw-font-ui);
+}
+
+.hsf-error {
+  margin: var(--sw-space-3) 0 0;
+  padding: var(--sw-space-2) var(--sw-space-3);
+  border-radius: var(--sw-radius-sm);
+  background: var(--sw-color-bg-danger-subtle);
+  font: 500 0.8125rem/1.4 var(--sw-font-ui);
+  color: var(--sw-color-text-danger);
+}
+
+/* ---------- Primary search CTA (Sunrise) ---------- */
+.search-submit-btn-mmt {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sw-space-2);
+  height: 56px;
+  padding: 0 var(--sw-space-8);
+  border: 0;
+  border-radius: var(--sw-radius-full);
+  background: var(--sw-color-bg-accent);
+  color: var(--sw-color-white);
+  font: 700 1rem/1 var(--sw-font-display);
+  letter-spacing: -0.005em;
+  cursor: pointer;
+  box-shadow: 0 8px 20px -8px rgba(255, 106, 61, 0.6);
+  transition: background-color var(--transition-fast), transform var(--transition-fast);
+}
+
+.search-submit-btn-mmt:hover {
+  background: var(--sw-color-bg-accent-hover);
+}
+
+.search-submit-btn-mmt:active {
+  transform: scale(0.98);
+}
+
+/* ---------- Mobile: popovers become bottom sheets ---------- */
+@media (max-width: 768px) {
+  .autocomplete-dropdown,
+  .travellers-dropdown,
+  .hsf-guests-dropdown {
+    left: 0;
+    right: 0;
+    width: auto;
+    top: calc(100% + 10px);
+  }
+
+  .calendar-dropdown {
+    position: fixed;
+    top: auto;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    max-height: 86vh;
+    overflow-y: auto;
+    padding: var(--sw-space-5) var(--sw-space-4) var(--sw-space-8);
+    border-radius: var(--sw-radius-xl) var(--sw-radius-xl) 0 0;
+    z-index: 9999;
+    animation: sw-sheet var(--sw-duration-base) var(--sw-ease);
+  }
+
+  @keyframes sw-sheet {
+    from { transform: translateY(24px); opacity: 0; }
+    to { transform: none; opacity: 1; }
+  }
+
+  .date-picker-mmt.mobile-open::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: rgba(11, 22, 48, 0.5);
+    z-index: 9998;
+  }
+
+  .dual-calendar {
+    grid-template-columns: 1fr;
+    gap: var(--sw-space-5);
+  }
+
+  .months-display {
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+  }
+
+  .traveller-counter {
+    gap: 6px;
+  }
+
+  /* Field triggers are full-cell targets already */
+  .travellers-selector,
+  .sw-cell--ghost {
+    min-height: 0;
+  }
+}

@@ -6,12 +6,17 @@ import Header from '../components/Header/Header';
 import Footer from '../components/Footer/Footer';
 import apiClient from '@/lib/api/client';
 import { useAuth } from '@/app/contexts/AuthContext';
+import Link from 'next/link';
+import Icon from '../components/Icon/Icon';
+import CheckoutSteps, { CheckoutSection } from '../components/CheckoutSteps/CheckoutSteps';
+import { PageSkeleton } from '../components/Skeleton/Skeleton';
+import '../hotels/hotels.css';
 import './booking.css';
 
 const PASSENGER_TYPE_LABELS = {
   ADULT: 'Adult',
   CHILD: 'Child',
-  INFANT: 'Infant (on lap)'
+  INFANT: 'Infant on lap'
 };
 
 // One empty traveler form for a passenger slot on the fare
@@ -200,270 +205,125 @@ export default function BookingPage() {
   };
 
   if (!flight) {
-    return null;
+    return <><Header /><PageSkeleton label="Loading your flight…" /></>;
   }
 
   const segment = flight.segments?.[0] || {};
-  const price = flight.price || {};
+  const total = flight.validatedOffer?.price?.total || flight.price?.total || 0;
+  const base = flight.validatedOffer?.price?.base || flight.price?.base || 0;
+  const inr = (n) => `₹${Math.round(n).toLocaleString('en-IN')}`;
+  const time = (t) => (t ? new Date(t).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false }) : '--:--');
+  const day = (t) => (t ? new Date(t).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' }) : '');
+
+  const field = (index, key, label, props = {}) => (
+    <label className="hb-field">
+      <span className="form-label">{label}</span>
+      <input className="form-input" value={travelers[index][key]} onChange={(e) => handleTravelerChange(index, key, e.target.value)} {...props} />
+    </label>
+  );
 
   return (
     <>
       <Header />
-      <main className="booking-page">
+      <main className="hotels-page checkout-page">
         <div className="container">
-          {/* Back Button */}
-          <button 
-            className="back-btn"
-            onClick={() => router.back()}
-            type="button"
-          >
-            <i className="fas fa-arrow-left"></i> Back to Search Results
+          <button type="button" className="sw-link co-back" onClick={() => router.back()}>
+            <Icon name="chevron-left" size={16} /> Back to flights
           </button>
+          <CheckoutSteps steps={['Flight', 'Travellers', 'Payment', 'Confirmed']} current={1} />
+          <h1 className="co-title">Who’s flying?</h1>
+          <p className="co-sub">Enter names exactly as on the passport or government ID.</p>
 
-          <div className="booking-layout">
-            {/* Booking Form */}
-            <section className="booking-form-section">
-              <h1>Complete Your Booking</h1>
+          <div className="hb-layout">
+            <form onSubmit={handleSubmit} className="hb-form" noValidate>
+              {error && <div className="hb-error" role="alert"><Icon name="alert" size={18} /> {error}</div>}
 
-              {error && (
-                <div className="error-banner">
-                  <p>⚠️ {error}</p>
+              {travelers.map((traveler, index) => (
+                <CheckoutSection key={traveler.supplierPassengerId || index} number={index + 1}
+                  title={`Traveller ${index + 1} · ${PASSENGER_TYPE_LABELS[traveler.type] || 'Adult'}`}
+                  subtitle={index === 0 ? 'Lead traveller — we’ll contact them about this trip' : undefined}>
+                  <div className="title-chips" role="radiogroup" aria-label="Gender as on passport">
+                    {[['MALE', 'Male'], ['FEMALE', 'Female']].map(([v, l]) => (
+                      <button key={v} type="button" role="radio" aria-checked={traveler.gender === v}
+                        className={`sw-chip-outline ${traveler.gender === v ? 'active' : ''}`} onClick={() => handleTravelerChange(index, 'gender', v)}>{l}</button>
+                    ))}
+                  </div>
+                  <div className="hb-grid two">
+                    {field(index, 'firstName', 'First name', { required: true, autoComplete: index === 0 ? 'given-name' : 'off' })}
+                    {field(index, 'lastName', 'Last name', { required: true, autoComplete: index === 0 ? 'family-name' : 'off' })}
+                    {field(index, 'dateOfBirth', 'Date of birth', { type: 'date', required: true })}
+                    {field(index, 'nationality', 'Nationality', { placeholder: 'IN', maxLength: 2, required: true })}
+                    {index === 0 && field(index, 'email', 'Email', { type: 'email', required: true, autoComplete: 'email' })}
+                    {index === 0 && field(index, 'phone', 'Mobile number', { type: 'tel', required: true, placeholder: '+91 98765 43210', autoComplete: 'tel' })}
+                  </div>
+
+                  <details className="bk-docs" open={documentsRequired}>
+                    <summary>
+                      <Icon name="shield-check" size={16} /> Passport / ID {documentsRequired ? <span className="sw-badge sw-badge--warning">Required for this flight</span> : <span className="hb-optional">optional</span>}
+                    </summary>
+                    <div className="hb-grid">
+                      <label className="hb-field">
+                        <span className="form-label">Document</span>
+                        <select className="form-select" value={traveler.documentType} onChange={(e) => handleTravelerChange(index, 'documentType', e.target.value)}>
+                          <option value="PASSPORT">Passport</option>
+                          <option value="ID_CARD">ID card</option>
+                        </select>
+                      </label>
+                      {field(index, 'documentNumber', 'Number', { required: documentsRequired })}
+                      {field(index, 'documentExpiry', 'Expiry', { type: 'date', required: documentsRequired })}
+                    </div>
+                  </details>
+                </CheckoutSection>
+              ))}
+
+              <CheckoutSection number={travelers.length + 1} title="Contact details" subtitle="Your e-ticket and updates go here">
+                <div className="hb-grid two">
+                  <label className="hb-field">
+                    <span className="form-label">Email</span>
+                    <input type="email" className="form-input" value={contactDetails.email} onChange={(e) => handleContactChange('email', e.target.value)} required autoComplete="email" />
+                  </label>
+                  <label className="hb-field">
+                    <span className="form-label">Mobile number</span>
+                    <input type="tel" className="form-input" value={contactDetails.phone} onChange={(e) => handleContactChange('phone', e.target.value)} placeholder="+91 98765 43210" required autoComplete="tel" />
+                  </label>
                 </div>
-              )}
+                <label className="hb-field">
+                  <span className="form-label">Special requests <span className="hb-optional">optional</span></span>
+                  <textarea className="form-textarea" rows="3" value={specialRequests} onChange={(e) => setSpecialRequests(e.target.value)}
+                    placeholder="e.g. wheelchair assistance, vegetarian meal" />
+                </label>
+              </CheckoutSection>
 
-              <form onSubmit={handleSubmit} className="booking-form">
-                {/* Passenger Details - one card per passenger on the fare */}
-                {travelers.map((traveler, index) => (
-                <div className="form-card" key={traveler.supplierPassengerId || index}>
-                  <h2 className="form-card-title">
-                    Passenger {index + 1} · {PASSENGER_TYPE_LABELS[traveler.type] || 'Adult'}
-                  </h2>
-                  <p className="form-card-subtitle">Enter names exactly as they appear on the passport / government ID</p>
-
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label className="form-label">First Name *</label>
-                      <input
-                        type="text"
-                        className="form-input"
-                        value={traveler.firstName}
-                        onChange={(e) => handleTravelerChange(index, 'firstName', e.target.value)}
-                        required
-                      />
-                    </div>
-
-                    <div className="form-group">
-                      <label className="form-label">Last Name *</label>
-                      <input
-                        type="text"
-                        className="form-input"
-                        value={traveler.lastName}
-                        onChange={(e) => handleTravelerChange(index, 'lastName', e.target.value)}
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label className="form-label">Date of Birth *</label>
-                      <input
-                        type="date"
-                        className="form-input"
-                        value={traveler.dateOfBirth}
-                        onChange={(e) => handleTravelerChange(index, 'dateOfBirth', e.target.value)}
-                        required
-                      />
-                    </div>
-
-                    <div className="form-group">
-                      <label className="form-label">Gender (as on passport) *</label>
-                      <select
-                        className="form-select"
-                        value={traveler.gender}
-                        onChange={(e) => handleTravelerChange(index, 'gender', e.target.value)}
-                        required
-                      >
-                        <option value="MALE">Male</option>
-                        <option value="FEMALE">Female</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label className="form-label">Nationality *</label>
-                      <input
-                        type="text"
-                        className="form-input"
-                        value={traveler.nationality}
-                        onChange={(e) => handleTravelerChange(index, 'nationality', e.target.value)}
-                        placeholder="e.g., IN"
-                        maxLength="2"
-                        required
-                      />
-                    </div>
-
-                    <div className="form-group">
-                      <label className="form-label">Document Type{documentsRequired ? ' *' : ''}</label>
-                      <select
-                        className="form-select"
-                        value={traveler.documentType}
-                        onChange={(e) => handleTravelerChange(index, 'documentType', e.target.value)}
-                      >
-                        <option value="PASSPORT">Passport</option>
-                        <option value="ID_CARD">ID Card</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label className="form-label">Document Number{documentsRequired ? ' *' : ''}</label>
-                      <input
-                        type="text"
-                        className="form-input"
-                        value={traveler.documentNumber}
-                        onChange={(e) => handleTravelerChange(index, 'documentNumber', e.target.value)}
-                        placeholder="Passport/ID number"
-                        required={documentsRequired}
-                      />
-                    </div>
-
-                    <div className="form-group">
-                      <label className="form-label">Document Expiry{documentsRequired ? ' *' : ''}</label>
-                      <input
-                        type="date"
-                        className="form-input"
-                        value={traveler.documentExpiry}
-                        onChange={(e) => handleTravelerChange(index, 'documentExpiry', e.target.value)}
-                        required={documentsRequired}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label className="form-label">Email{index === 0 ? ' *' : ' (optional)'}</label>
-                      <input
-                        type="email"
-                        className="form-input"
-                        value={traveler.email}
-                        onChange={(e) => handleTravelerChange(index, 'email', e.target.value)}
-                        required={index === 0}
-                      />
-                    </div>
-
-                    <div className="form-group">
-                      <label className="form-label">Phone{index === 0 ? ' *' : ' (optional)'}</label>
-                      <input
-                        type="tel"
-                        className="form-input"
-                        value={traveler.phone}
-                        onChange={(e) => handleTravelerChange(index, 'phone', e.target.value)}
-                        placeholder="+919876543210"
-                        required={index === 0}
-                      />
-                    </div>
-                  </div>
-                </div>
-                ))}
-
-                {/* Contact Details */}
-                <div className="form-card">
-                  <h2 className="form-card-title">Contact Details</h2>
-                  <p className="form-card-subtitle">Booking confirmation will be sent to these details</p>
-                  
-                  <div className="form-group">
-                    <label className="form-label">Contact Email *</label>
-                    <input
-                      type="email"
-                      className="form-input"
-                      value={contactDetails.email}
-                      onChange={(e) => handleContactChange('email', e.target.value)}
-                      required
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label">Contact Phone *</label>
-                    <input
-                      type="tel"
-                      className="form-input"
-                      value={contactDetails.phone}
-                      onChange={(e) => handleContactChange('phone', e.target.value)}
-                      placeholder="+919876543210"
-                      required
-                    />
-                  </div>
-                </div>
-
-                {/* Special Requests */}
-                <div className="form-card">
-                  <h2 className="form-card-title">Special Requests</h2>
-                  <div className="form-group">
-                    <label className="form-label">Any special requirements? (Optional)</label>
-                    <textarea
-                      className="form-input"
-                      rows="3"
-                      value={specialRequests}
-                      onChange={(e) => setSpecialRequests(e.target.value)}
-                      placeholder="E.g., Wheelchair assistance, Vegetarian meal, etc."
-                    />
-                  </div>
-                </div>
-
-                <button 
-                  type="submit" 
-                  className="btn btn-primary btn-lg submit-booking-btn"
-                  disabled={loading}
-                >
-                  {loading ? 'Processing...' : 'Continue to Payment'}
+              <div className="hb-actions">
+                <p className="hb-fineprint">By continuing you agree to the airline’s fare rules and our <Link href="/terms-and-conditions">terms</Link>.</p>
+                <button type="submit" className="btn btn-accent btn-lg hb-submit" disabled={loading}>
+                  {loading ? 'Creating booking…' : `Pay ${inr(total)}`}
                 </button>
-              </form>
-            </section>
+              </div>
+            </form>
 
-            {/* Booking Summary */}
-            <aside className="booking-summary">
-              <div className="summary-card">
-                <h3>Booking Summary</h3>
-                
-                {/* Price Validation Badge */}
-                {flight.validatedOffer && (
-                  <div className="price-validated-badge">
-                    <i className="fas fa-shield-check"></i>
-                    <span>Price Validated & Confirmed</span>
+            <aside className="hb-summary">
+              <div className="hb-card">
+                <div className="bk-flight">
+                  <div className="bk-flight__head">
+                    <span className="airline-logo">{segment.airlineLogo ? <img src={segment.airlineLogo} alt="" /> : segment.airlineCode}</span>
+                    <span><strong>{segment.airlineName}</strong><small>{segment.flightNumber} · {day(segment.departure?.time)}</small></span>
                   </div>
-                )}
-                
-                <div className="summary-flight">
-                  <div className="summary-route">
-                    <span>{segment.departure?.airport}</span>
-                    <span>→</span>
-                    <span>{segment.arrival?.airport}</span>
-                  </div>
-                  <div className="summary-airline">
-                    {segment.airlineName}
+                  <div className="bk-flight__route">
+                    <div><strong>{time(segment.departure?.time)}</strong><small>{segment.departure?.airport}</small></div>
+                    <div className="bk-flight__line"><small>{segment.durationFormatted || ''}</small><span /><small>{segment.stops === 0 ? 'Non-stop' : `${segment.stops} stop${segment.stops > 1 ? 's' : ''}`}</small></div>
+                    <div><strong>{time(segment.arrival?.time)}</strong><small>{segment.arrival?.airport}</small></div>
                   </div>
                 </div>
+              </div>
 
-                <div className="summary-divider"></div>
-
-                <div className="summary-row">
-                  <span>Base Fare</span>
-                  <span>₹{(flight.validatedOffer?.price?.base || flight.price?.base || 0).toLocaleString()}</span>
-                </div>
-                <div className="summary-row">
-                  <span>Taxes & Fees</span>
-                  <span>₹{((flight.validatedOffer?.price?.total || flight.price?.total || 0) - (flight.validatedOffer?.price?.base || flight.price?.base || 0)).toLocaleString()}</span>
-                </div>
-
-                <div className="summary-divider"></div>
-
-                <div className="summary-total">
-                  <span>Total Amount</span>
-                  <span>₹{(flight.validatedOffer?.price?.total || flight.price?.total || 0).toLocaleString()}</span>
-                </div>
+              <div className="hb-card hb-price">
+                <h3>Price details</h3>
+                <div className="hb-row"><span>Base fare · {travelers.length} traveller{travelers.length > 1 ? 's' : ''}</span><span>{inr(base)}</span></div>
+                <div className="hb-row"><span>Taxes &amp; fees</span><span>{inr(total - base)}</span></div>
+                <div className="hb-row total"><span>Total</span><span>{inr(total)}</span></div>
+                {flight.validatedOffer && <div className="hb-confirmed"><Icon name="shield-check" size={16} /> Fare confirmed with the airline</div>}
+                {flight.source?.supplierName && <span className="sw-supplier"><Icon name="shield-check" size={12} /> via <strong>{flight.source.supplierName}</strong></span>}
               </div>
             </aside>
           </div>

@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import AuthPromo from '../AuthPromo';
 import apiClient from '@/lib/api/client';
 import { useAuth } from '@/app/contexts/AuthContext';
 import '../auth.css';
@@ -67,61 +68,17 @@ function LoginForm() {
     }
   };
 
-  const handleSocialLogin = (provider) => {
-    alert(`${provider} login coming soon!`);
-  };
 
   return (
     <div className="auth-page-container">
-      {/* Left Side - Promotional Banner */}
-      <div className="auth-promo-side">
-        <div className="promo-content">
-          <div className="promo-logo">
-            <i className="fas fa-plane"></i>
-            <h1>SkyWings</h1>
-          </div>
-          <h2>Welcome Back!</h2>
-          <p className="promo-subtitle">Sign in to unlock amazing benefits</p>
-          
-          <div className="promo-benefits">
-            <div className="benefit-item">
-              <div className="benefit-icon"><i className="fas fa-bolt"></i></div>
-              <div>
-                <h3>Lightning Fast Bookings</h3>
-                <p>Book flights in under 60 seconds</p>
-              </div>
-            </div>
-            <div className="benefit-item">
-              <div className="benefit-icon"><i className="fas fa-gift"></i></div>
-              <div>
-                <h3>Exclusive Deals & Offers</h3>
-                <p>Save up to 40% on your bookings</p>
-              </div>
-            </div>
-            <div className="benefit-item">
-              <div className="benefit-icon"><i className="fas fa-history"></i></div>
-              <div>
-                <h3>Easy Booking Management</h3>
-                <p>Track and manage all your trips</p>
-              </div>
-            </div>
-            <div className="benefit-item">
-              <div className="benefit-icon"><i className="fas fa-headset"></i></div>
-              <div>
-                <h3>24/7 Customer Support</h3>
-                <p>We're here to help anytime</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <AuthPromo mode="login" />
 
       {/* Right Side - Login Form */}
       <div className="auth-form-side">
         <div className="auth-card-modern">
           <div className="auth-header-modern">
-            <h2>Sign In</h2>
-            <p>Continue your journey with us</p>
+            <h2>Sign in</h2>
+            <p>Use your email or mobile number.</p>
           </div>
 
           {sessionExpiredMsg && (
@@ -163,7 +120,7 @@ function LoginForm() {
               <div className="form-group-modern">
                 <label htmlFor="email">
                   <i className="fas fa-envelope"></i>
-                  Email Address
+                  Email
                 </label>
                 <input
                   type="email"
@@ -180,7 +137,7 @@ function LoginForm() {
               <div className="form-group-modern">
                 <label htmlFor="phone">
                   <i className="fas fa-mobile-alt"></i>
-                  Mobile Number
+                  Mobile number
                 </label>
                 <div className="phone-input-group">
                   <select 
@@ -229,7 +186,7 @@ function LoginForm() {
                 <input type="checkbox" />
                 <span>Remember me</span>
               </label>
-              <a href="#" className="forgot-password">Forgot Password?</a>
+              <Link href="/contact" className="forgot-password">Forgot password?</Link>
             </div>
 
             <button 
@@ -240,50 +197,16 @@ function LoginForm() {
               {loading ? (
                 <>
                   <i className="fas fa-spinner fa-spin"></i>
-                  Signing In...
+                  Signing in…
                 </>
               ) : (
                 <>
                   <i className="fas fa-sign-in-alt"></i>
-                  Sign In
+                  Sign in
                 </>
               )}
             </button>
           </form>
-
-          {/* Social Login */}
-          <div className="social-login-section">
-            <div className="divider">
-              <span>Or continue with</span>
-            </div>
-            
-            <div className="social-buttons">
-              <button 
-                type="button" 
-                className="social-btn google-btn"
-                onClick={() => handleSocialLogin('Google')}
-              >
-                <i className="fab fa-google"></i>
-                Google
-              </button>
-              <button 
-                type="button" 
-                className="social-btn facebook-btn"
-                onClick={() => handleSocialLogin('Facebook')}
-              >
-                <i className="fab fa-facebook-f"></i>
-                Facebook
-              </button>
-              <button 
-                type="button" 
-                className="social-btn apple-btn"
-                onClick={() => handleSocialLogin('Apple')}
-              >
-                <i className="fab fa-apple"></i>
-                Apple
-              </button>
-            </div>
-          </div>
 
           <div className="auth-footer-modern">
             <p>
@@ -292,10 +215,10 @@ function LoginForm() {
           </div>
         </div>
 
-        {/* Back to Home */}
+        {/* Back to home */}
         <Link href="/" className="back-home-link">
           <i className="fas fa-arrow-left"></i>
-          Back to Home
+          Back to home
         </Link>
       </div>
     </div>

@@ -7,6 +7,7 @@ const bookingService = require('../services/booking.service');
 const paymentService = require('../payments/payment.service');
 const emailService = require('../services/email.service');
 const ticketService = require('../services/ticket.service');
+const itineraryService = require('../services/itinerary.service');
 const AsyncHandler = require('../core/AsyncHandler');
 const ApiResponse = require('../core/ApiResponse');
 const ApiError = require('../core/ApiError');
@@ -148,6 +149,11 @@ const getBookingByReference = AsyncHandler(async (req, res) => {
 
   const result = await bookingService.getBookingByReference(bookingReference, getBookingAccess(req));
 
+  // Full itinerary for the confirmation page (supplier order once ticketed, cached)
+  if (result.booking && ['confirmed', 'completed'].includes(result.booking.status)) {
+    result.booking.itinerary = await itineraryService.getTicketItinerary(result.booking);
+  }
+
   return ApiResponse.success(
     res,
     result,
@@ -197,6 +203,19 @@ const cancelBooking = AsyncHandler(async (req, res) => {
   );
 });
 
+/** camelCase booking (booking.service) -> fields the ticket PDF reads */
+const toTicketBooking = (booking) => ({
+  booking_reference: booking.bookingReference,
+  travelers: booking.travelers,
+  total_price: booking.totalPrice,
+  currency: booking.currency,
+  pnr: booking.pnr,
+  ticket_number: booking.ticketNumber,
+  status: booking.status,
+  created_at: booking.createdAt,
+  payments: booking.payments
+});
+
 /**
  * Download E-Ticket
  * GET /api/bookings/:bookingReference/ticket
@@ -218,19 +237,8 @@ const downloadTicket = AsyncHandler(async (req, res) => {
     throw ApiError.badRequest('E-ticket is only available for confirmed bookings');
   }
 
-  // Map to snake_case format expected by ticket service
-  const ticketData = {
-    booking_reference: booking.bookingReference,
-    flight_data: booking.flightData,
-    travelers: booking.travelers,
-    total_price: booking.totalPrice,
-    currency: booking.currency,
-    pnr: booking.pnr,
-    status: booking.status
-  };
-
-  // Generate PDF ticket
-  const pdfBuffer = await ticketService.generateTicketPDF(ticketData);
+  const itinerary = await itineraryService.getTicketItinerary(booking);
+  const pdfBuffer = await ticketService.generateTicketPDF(toTicketBooking(booking), itinerary);
 
   // Set response headers for PDF download
   res.set({
@@ -260,22 +268,11 @@ const sendConfirmationEmail = AsyncHandler(async (req, res) => {
 
   const booking = result.booking;
 
-  // Map to snake_case format expected by email service
-  const emailBooking = {
-    booking_reference: booking.bookingReference,
-    flight_data: booking.flightData,
-    total_price: booking.totalPrice,
-    currency: booking.currency,
-    pnr: booking.pnr,
-    travelers: booking.travelers,
-    status: booking.status
-  };
+  if (booking.status !== 'confirmed') {
+    throw ApiError.badRequest('The confirmation email is available once the booking is confirmed');
+  }
 
-  // Send confirmation email
-  const emailResult = await emailService.sendBookingConfirmation(
-    emailBooking, 
-    booking.contactEmail
-  );
+  const emailResult = await emailService.sendFlightTicketEmail(booking);
 
   if (emailResult.success) {
     logger.info(`[Booking] Confirmation email sent for ${bookingReference}`);
@@ -286,7 +283,9 @@ const sendConfirmationEmail = AsyncHandler(async (req, res) => {
       StatusCodes.OK
     );
   } else {
-    throw ApiError.internal('Failed to send confirmation email');
+    throw ApiError.internal(emailResult.error === 'not_configured'
+      ? 'Email sending is not configured on the server'
+      : 'Failed to send confirmation email');
   }
 });
 
@@ -313,6 +312,7 @@ const retryTicketing = AsyncHandler(async (req, res) => {
 });
 
 module.exports = {
+  toTicketBooking,
   retryTicketing,
   createBooking,
   createBookingAndInitiatePayment,

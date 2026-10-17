@@ -5,6 +5,12 @@ import { useRouter, useParams } from 'next/navigation';
 import Header from '../../../components/Header/Header';
 import Footer from '../../../components/Footer/Footer';
 import apiClient from '@/lib/api/client';
+import Icon from '../../../components/Icon/Icon';
+import { PageSkeleton, StateMessage } from '../../../components/Skeleton/Skeleton';
+import { CheckoutSection } from '../../../components/CheckoutSteps/CheckoutSteps';
+import '../../../hotels/hotels.css';
+import '../../booking.css';
+import '../../../payment-success/payment-success.css';
 import './booking-details.css';
 
 export default function BookingDetailsPage() {
@@ -19,6 +25,7 @@ export default function BookingDetailsPage() {
   const [cancelReason, setCancelReason] = useState('');
   const [cancelling, setCancelling] = useState(false);
   const [paymentLoading, setPaymentLoading] = useState(false);
+  const [downloading, setDownloading] = useState(false);
 
   useEffect(() => {
     if (bookingId) {
@@ -157,18 +164,7 @@ export default function BookingDetailsPage() {
     return (
       <>
         <Header />
-        <main className="booking-details-page">
-          <div className="container">
-            <div className="state-container">
-              <div className="state-icon">
-                <i className="fas fa-spinner fa-spin"></i>
-              </div>
-              <h3>Loading booking details...</h3>
-              <p>Please wait while we fetch your booking information</p>
-            </div>
-          </div>
-        </main>
-        <Footer />
+        <PageSkeleton label="Loading booking details…" />
       </>
     );
   }
@@ -177,18 +173,12 @@ export default function BookingDetailsPage() {
     return (
       <>
         <Header />
-        <main className="booking-details-page">
+        <main className="bd-page">
           <div className="container">
-            <div className="state-container error">
-              <div className="state-icon error">
-                <i className="fas fa-exclamation-triangle"></i>
-              </div>
-              <h3>Booking Not Found</h3>
-              <p>{error || 'Unable to load booking details'}</p>
-              <button className="btn btn-primary" onClick={() => router.push('/my-bookings')}>
-                <i className="fas fa-arrow-left"></i> Back to My Bookings
-              </button>
-            </div>
+            <StateMessage icon="alert" tone="danger" title="Booking not found"
+              action={<button className="btn btn-primary" onClick={() => router.push('/my-bookings')}>Back to My trips</button>}>
+              {error || 'Unable to load booking details.'}
+            </StateMessage>
           </div>
         </main>
         <Footer />
@@ -200,399 +190,150 @@ export default function BookingDetailsPage() {
   const flightData = booking.flightData || {};
   const canPay = ['pending', 'payment_initiated'].includes(booking.status) && !booking.isExpired && booking.status !== 'expired';
   const isExpired = booking.isExpired || booking.status === 'expired';
+  const tone = (cls) => ({ 'status-confirmed': 'success', 'status-payment': 'warning', 'status-cancelled': 'danger', 'payment-success': 'success', 'payment-pending': 'warning', 'payment-failed': 'danger', 'payment-refunded': 'brand' }[cls] || 'neutral');
+
+  const handleDownloadTicket = async () => {
+    setDownloading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000/api';
+      const res = await fetch(`${baseUrl}/bookings/${booking.bookingReference}/ticket`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+      if (!res.ok) throw new Error('Ticket not available yet');
+      const url = window.URL.createObjectURL(await res.blob());
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `SkyWings-Ticket-${booking.bookingReference}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      alert(err.message || 'Could not download the ticket. Please try again.');
+    } finally {
+      setDownloading(false);
+    }
+  };
 
   return (
     <>
       <Header />
-      <main className="booking-details-page">
+      <main className="bd-page">
         <div className="container">
-          {/* Back Button */}
-          <button className="back-btn" onClick={() => router.push('/my-bookings')}>
-            <i className="fas fa-arrow-left"></i> Back to My Bookings
+          <button className="sw-link co-back" onClick={() => router.push('/my-bookings')}>
+            <Icon name="chevron-left" size={16} /> My trips
           </button>
 
-          {/* Page Header */}
-          <div className="details-header">
-            <div className="header-left">
-              <h1><i className="fas fa-ticket"></i> Booking Details</h1>
-              <div className="booking-ref-large">
-                <span className="ref-label"><i className="fas fa-hashtag"></i> Booking Reference</span>
-                <span className="ref-value">{booking.bookingReference}</span>
-              </div>
+          <header className="bd-head">
+            <div>
+              <span className="sw-overline">Booking reference</span>
+              <h1>{booking.bookingReference}</h1>
+              <p>Booked {formatDate(booking.createdAt)}{booking.pnr ? ` · PNR ${booking.pnr}` : ''}</p>
             </div>
-            <div className="header-right">
-              <span className={`status-badge-large ${statusInfo.class}`}>
-                <i className={`fas ${statusInfo.icon}`}></i>
-                {statusInfo.label}
-              </span>
-            </div>
-          </div>
+            <span className={`sw-badge sw-badge--${tone(statusInfo.class)} bd-status`}>{statusInfo.label}</span>
+          </header>
 
-          <div className="details-grid">
-            {/* Flight Information Card */}
-            <div className="details-card flight-card">
-              <div className="card-header">
-                <h2><i className="fas fa-plane"></i> Flight Information</h2>
-              </div>
-              <div className="card-body">
-                <div className="flight-visual">
-                  <div className="airline-info-large">
-                    <div className="airline-logo-large">
-                      <i className="fas fa-plane"></i>
-                    </div>
-                    <div className="airline-text">
-                      <span className="airline-name">{flightData.airline || 'Airline'}</span>
-                      <span className="flight-number">
-                        <i className="fas fa-hashtag"></i> Flight {flightData.flightNumber || '--'}
-                      </span>
-                    </div>
+          {isExpired && (
+            <div className="hb-price-change bd-banner"><Icon name="info" size={16} /> This booking expired — seats are held for 30 minutes while payment is pending.</div>
+          )}
+
+          <div className="bd-layout">
+            <div className="bd-main">
+              <section className="co-section">
+                <div className="bd-flight">
+                  <div className="bd-flight__airline">
+                    <span className="bd-logo"><Icon name="plane" size={20} /></span>
+                    <span><strong>{flightData.airline || 'Airline'}</strong><small>Flight {flightData.flightNumber || '--'} · {flightData.cabin || 'Economy'}</small></span>
                   </div>
-
-                  <div className="route-display">
-                    <div className="route-city">
-                      <span className="city-code">{flightData.origin || 'N/A'}</span>
-                      <span className="city-time">{formatTime(flightData.departureTime)}</span>
-                      <span className="city-date">{formatDate(flightData.departureDate)}</span>
-                    </div>
-
-                    <div className="route-line-container">
-                      <div className="route-stops-info">
-                        <i className="fas fa-clock"></i>
-                        {flightData.stops === 0 ? 'Non-stop' : `${flightData.stops} Stop(s)`}
-                      </div>
-                      <div className="route-line-visual">
-                        <div className="route-dot start"></div>
-                        <div className="route-line"></div>
-                        <div className="plane-on-route"><i className="fas fa-plane"></i></div>
-                        <div className="route-line"></div>
-                        <div className="route-dot end"></div>
-                      </div>
-                    </div>
-
-                    <div className="route-city">
-                      <span className="city-code">{flightData.destination || 'N/A'}</span>
-                      <span className="city-time">{formatTime(flightData.arrivalTime)}</span>
-                      <span className="city-date">{formatDate(flightData.arrivalDate)}</span>
-                    </div>
-                  </div>
-
-                  <div className="flight-meta">
-                    <div className="meta-item">
-                      <i className="fas fa-couch"></i>
-                      <span className="meta-label">Cabin Class</span>
-                      <span className="meta-value">{flightData.cabin || 'Economy'}</span>
-                    </div>
-                    <div className="meta-item">
-                      <i className="fas fa-barcode"></i>
-                      <span className="meta-label">Flight ID</span>
-                      <span className="meta-value">{flightData.flightId || '--'}</span>
-                    </div>
+                  <div className="bk-flight__route bd-route">
+                    <div><strong>{formatTime(flightData.departureTime)}</strong><small>{flightData.origin || '—'} · {formatDate(flightData.departureDate)}</small></div>
+                    <div className="bk-flight__line"><small>{flightData.stops === 0 ? 'Non-stop' : flightData.stops ? `${flightData.stops} stop(s)` : ''}</small><span /></div>
+                    <div><strong>{formatTime(flightData.arrivalTime)}</strong><small>{flightData.destination || '—'}{flightData.arrivalDate ? ` · ${formatDate(flightData.arrivalDate)}` : ''}</small></div>
                   </div>
                 </div>
-              </div>
-            </div>
+              </section>
 
-            {/* Traveler Information Card */}
-            <div className="details-card travelers-card">
-              <div className="card-header">
-                <h2><i className="fas fa-users"></i> Traveler Information</h2>
-                <span className="traveler-count">
-                  <i className="fas fa-user"></i> {booking.travelers?.length || 0} Traveler(s)
-                </span>
-              </div>
-              <div className="card-body">
-                {booking.travelers?.map((traveler, index) => (
-                  <div key={traveler.id || index} className="traveler-item">
-                    <div className="traveler-header">
-                      <span className="traveler-number">
-                        <i className="fas fa-user-circle"></i> Traveler {index + 1}
-                      </span>
-                      <span className="traveler-type">{traveler.traveler_type || 'Adult'}</span>
-                    </div>
-                    <div className="traveler-details">
-                      <div className="traveler-name">
-                        {traveler.title && `${traveler.title} `}
-                        {traveler.first_name} {traveler.last_name}
-                      </div>
-                      <div className="traveler-info-grid">
-                        <div className="info-item">
-                          <i className="fas fa-calendar"></i>
-                          <span className="info-label">Date of Birth</span>
-                          <span className="info-value">{formatDate(traveler.date_of_birth)}</span>
-                        </div>
-                        <div className="info-item">
-                          <i className="fas fa-venus-mars"></i>
-                          <span className="info-label">Gender</span>
-                          <span className="info-value capitalize">{traveler.gender || '--'}</span>
-                        </div>
-                        <div className="info-item">
-                          <i className="fas fa-globe"></i>
-                          <span className="info-label">Nationality</span>
-                          <span className="info-value">{traveler.nationality || '--'}</span>
-                        </div>
-                        <div className="info-item">
-                          <i className="fas fa-passport"></i>
-                          <span className="info-label">Passport No.</span>
-                          <span className="info-value">{traveler.passport_number || '--'}</span>
-                        </div>
-                        <div className="info-item">
-                          <i className="fas fa-calendar-xmark"></i>
-                          <span className="info-label">Passport Expiry</span>
-                          <span className="info-value">{formatDate(traveler.passport_expiry)}</span>
-                        </div>
-                        <div className="info-item">
-                          <i className="fas fa-envelope"></i>
-                          <span className="info-label">Email</span>
-                          <span className="info-value email">{traveler.email || '--'}</span>
-                        </div>
+              <CheckoutSection title="Travellers" subtitle={`${booking.travelers?.length || 0} on this booking`}>
+                <div className="bd-travellers">
+                  {booking.travelers?.map((t, i) => (
+                    <div key={t.id || i} className="bd-traveller">
+                      <span className="cf-avatar">{(t.first_name || '?')[0]}{(t.last_name || '')[0]}</span>
+                      <div>
+                        <strong>{t.title ? `${t.title} ` : ''}{t.first_name} {t.last_name}</strong>
+                        <dl>
+                          <div><dt>Type</dt><dd>{t.traveler_type || 'Adult'}</dd></div>
+                          <div><dt>Born</dt><dd>{formatDate(t.date_of_birth)}</dd></div>
+                          <div><dt>Nationality</dt><dd>{t.nationality || '—'}</dd></div>
+                          {t.passport_number && <div><dt>Passport</dt><dd>{t.passport_number}</dd></div>}
+                        </dl>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Payment Information Card */}
-            <div className="details-card payment-card">
-              <div className="card-header">
-                <h2><i className="fas fa-credit-card"></i> Payment Information</h2>
-              </div>
-              <div className="card-body">
-                <div className="payment-summary">
-                  <div className="total-amount">
-                    <span className="amount-label"><i className="fas fa-indian-rupee-sign"></i> Total Amount</span>
-                    <span className="amount-value">{formatCurrency(booking.totalPrice, booking.currency)}</span>
-                  </div>
+                  ))}
                 </div>
+              </CheckoutSection>
 
-                {booking.payments && booking.payments.length > 0 ? (
-                  <div className="payments-list">
-                    <h3><i className="fas fa-history"></i> Payment History</h3>
-                    {booking.payments.map((payment, index) => {
-                      const paymentStatus = getPaymentStatusInfo(payment.status);
-                      return (
-                        <div key={index} className="payment-item">
-                          <div className="payment-item-header">
-                            <span className="payment-ref">
-                              <i className="fas fa-receipt"></i> {payment.payment_reference}
-                            </span>
-                            <span className={`payment-status ${paymentStatus.class}`}>
-                              <i className={`fas ${paymentStatus.icon}`}></i> {paymentStatus.label}
-                            </span>
-                          </div>
-                          <div className="payment-item-details">
-                            <span className="payment-amount">
-                              {formatCurrency(payment.amount, payment.currency)}
-                            </span>
-                            <span className="payment-date">
-                              <i className="fas fa-calendar"></i> {formatDate(payment.created_at)}
-                            </span>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="no-payments">
-                    <i className="fas fa-credit-card"></i>
-                    <p>No payment records found</p>
-                    {canPay && (
-                      <button 
-                        className="btn btn-primary"
-                        onClick={handleCompletePayment}
-                        disabled={paymentLoading}
-                      >
-                        {paymentLoading ? (
-                          <><i className="fas fa-spinner fa-spin"></i> Processing...</>
-                        ) : (
-                          <><i className="fas fa-lock"></i> Complete Payment</>
-                        )}
-                      </button>
-                    )}
-                  </div>
+              <CheckoutSection title="Contact">
+                <dl className="bd-facts">
+                  <div><dt>Email</dt><dd>{booking.contactEmail}</dd></div>
+                  <div><dt>Phone</dt><dd>{booking.contactPhone || '—'}</dd></div>
+                  <div><dt>Ticket number</dt><dd>{booking.ticketNumber || 'Pending'}</dd></div>
+                  <div><dt>Last updated</dt><dd>{formatDate(booking.updatedAt)}</dd></div>
+                </dl>
+                {booking.specialRequests && <p className="bd-requests"><strong>Special requests:</strong> {booking.specialRequests}</p>}
+              </CheckoutSection>
+            </div>
+
+            <aside className="hb-summary">
+              <div className="hb-card hb-price">
+                <h3>Payment</h3>
+                <div className="hb-row total"><span>Total</span><span>{formatCurrency(booking.totalPrice, booking.currency)}</span></div>
+                {booking.payments?.length > 0 ? booking.payments.map((p, i) => {
+                  const ps = getPaymentStatusInfo(p.status);
+                  return (
+                    <div key={i} className="bd-payment">
+                      <span><strong>{formatCurrency(p.amount, p.currency)}</strong><small>{p.payment_reference} · {formatDate(p.created_at)}</small></span>
+                      <span className={`sw-badge sw-badge--${tone(ps.class)}`}>{ps.label}</span>
+                    </div>
+                  );
+                }) : <p className="hd-muted">No payment recorded yet.</p>}
+              </div>
+
+              <div className="hb-card bd-actions">
+                {booking.status === 'confirmed' && (
+                  <button className="btn btn-primary btn-block" onClick={handleDownloadTicket} disabled={downloading}>
+                    <Icon name="download" size={16} /> {downloading ? 'Downloading…' : 'Download e-ticket'}
+                  </button>
+                )}
+                {canPay && (
+                  <button className="btn btn-accent btn-block" onClick={handleCompletePayment} disabled={paymentLoading}>
+                    {paymentLoading ? 'Opening payment…' : 'Complete payment'}
+                  </button>
+                )}
+                {isExpired && <button className="btn btn-primary btn-block" onClick={() => router.push('/')}>Book again</button>}
+                <button className="btn btn-secondary btn-block" onClick={() => window.print()}>Print details</button>
+                {(booking.status === 'confirmed' || canPay) && (
+                  <button className="btn btn-ghost btn-block bd-cancel" onClick={() => setShowCancelModal(true)}>Cancel booking</button>
                 )}
               </div>
-            </div>
-
-            {/* Contact & Booking Info Card */}
-            <div className="details-card contact-card">
-              <div className="card-header">
-                <h2><i className="fas fa-info-circle"></i> Booking Information</h2>
-              </div>
-              <div className="card-body">
-                <div className="info-grid">
-                  <div className="info-item">
-                    <i className="fas fa-envelope"></i>
-                    <span className="info-label">Contact Email</span>
-                    <span className="info-value">{booking.contactEmail}</span>
-                  </div>
-                  <div className="info-item">
-                    <i className="fas fa-phone"></i>
-                    <span className="info-label">Contact Phone</span>
-                    <span className="info-value">{booking.contactPhone}</span>
-                  </div>
-                  <div className="info-item">
-                    <i className="fas fa-barcode"></i>
-                    <span className="info-label">PNR</span>
-                    <span className="info-value pnr">{booking.pnr || 'Pending'}</span>
-                  </div>
-                  <div className="info-item">
-                    <i className="fas fa-ticket"></i>
-                    <span className="info-label">Ticket Number</span>
-                    <span className="info-value">{booking.ticketNumber || 'Pending'}</span>
-                  </div>
-                  <div className="info-item">
-                    <i className="fas fa-calendar-plus"></i>
-                    <span className="info-label">Booked On</span>
-                    <span className="info-value">{formatDate(booking.createdAt)}</span>
-                  </div>
-                  <div className="info-item">
-                    <i className="fas fa-calendar-check"></i>
-                    <span className="info-label">Last Updated</span>
-                    <span className="info-value">{formatDate(booking.updatedAt)}</span>
-                  </div>
-                </div>
-
-                {booking.specialRequests && (
-                  <div className="special-requests">
-                    <span className="info-label"><i className="fas fa-comment"></i> Special Requests</span>
-                    <p className="requests-text">{booking.specialRequests}</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="details-actions">
-            {booking.status === 'confirmed' && (
-              <>
-                <button className="btn btn-primary btn-action">
-                  <i className="fas fa-download"></i> Download E-Ticket
-                </button>
-                <button className="btn btn-outline btn-action">
-                  <i className="fas fa-envelope"></i> Email Ticket
-                </button>
-                <button 
-                  className="btn btn-danger btn-action"
-                  onClick={() => setShowCancelModal(true)}
-                >
-                  <i className="fas fa-times-circle"></i> Cancel Booking
-                </button>
-              </>
-            )}
-            {canPay && (
-              <>
-                <button 
-                  className="btn btn-primary btn-action"
-                  onClick={handleCompletePayment}
-                  disabled={paymentLoading}
-                >
-                  {paymentLoading ? (
-                    <><i className="fas fa-spinner fa-spin"></i> Processing...</>
-                  ) : (
-                    <><i className="fas fa-lock"></i> Complete Payment</>
-                  )}
-                </button>
-                <button 
-                  className="btn btn-danger btn-action"
-                  onClick={() => setShowCancelModal(true)}
-                >
-                  <i className="fas fa-times-circle"></i> Cancel Booking
-                </button>
-              </>
-            )}
-            {isExpired && (
-              <>
-                <div className="expired-notice">
-                  <i className="fas fa-exclamation-triangle"></i>
-                  <span>This booking has expired. Flight seats are only held for 30 minutes.</span>
-                </div>
-                <button 
-                  className="btn btn-primary btn-action"
-                  onClick={() => router.push('/')}
-                >
-                  <i className="fas fa-redo"></i> Book Again
-                </button>
-              </>
-            )}
-            <button className="btn btn-ghost btn-action" onClick={() => window.print()}>
-              <i className="fas fa-print"></i> Print Details
-            </button>
-          </div>
-
-          {/* Trust Indicators */}
-          <div className="trust-section">
-            <div className="trust-item">
-              <i className="fas fa-shield-halved"></i>
-              <span>Secure Booking</span>
-            </div>
-            <div className="trust-item">
-              <i className="fas fa-headset"></i>
-              <span>24/7 Support</span>
-            </div>
-            <div className="trust-item">
-              <i className="fas fa-certificate"></i>
-              <span>IATA Accredited</span>
-            </div>
-            <div className="trust-item">
-              <i className="fas fa-rotate-left"></i>
-              <span>Easy Cancellation</span>
-            </div>
+            </aside>
           </div>
         </div>
 
-        {/* Cancel Booking Modal */}
         {showCancelModal && (
-          <div className="modal-overlay" onClick={() => setShowCancelModal(false)}>
-            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-              <div className="modal-header">
-                <h3><i className="fas fa-exclamation-triangle"></i> Cancel Booking</h3>
-                <button 
-                  className="modal-close"
-                  onClick={() => setShowCancelModal(false)}
-                >
-                  <i className="fas fa-times"></i>
-                </button>
+          <div className="sw-modal-backdrop" onClick={() => setShowCancelModal(false)}>
+            <div className="sw-modal" role="dialog" aria-modal="true" aria-labelledby="cancel-title" onClick={(e) => e.stopPropagation()}>
+              <div className="sw-modal__head">
+                <h3 id="cancel-title">Cancel this booking?</h3>
+                <button className="header-icon-btn" onClick={() => setShowCancelModal(false)} aria-label="Close"><Icon name="x" size={20} /></button>
               </div>
-              <div className="modal-body">
-                <p className="cancel-warning">
-                  Are you sure you want to cancel this booking? This action cannot be undone.
-                </p>
-                <div className="form-group">
-                  <label className="form-label">Reason for Cancellation *</label>
-                  <textarea
-                    className="form-input"
-                    rows="4"
-                    value={cancelReason}
-                    onChange={(e) => setCancelReason(e.target.value)}
-                    placeholder="Please tell us why you're cancelling..."
-                    required
-                  />
-                </div>
-                <div className="cancel-info">
-                  <i className="fas fa-info-circle"></i>
-                  Refunds will be processed according to the airline's cancellation policy
-                </div>
-              </div>
-              <div className="modal-footer">
-                <button 
-                  className="btn btn-ghost"
-                  onClick={() => setShowCancelModal(false)}
-                  disabled={cancelling}
-                >
-                  Keep Booking
-                </button>
-                <button 
-                  className="btn btn-danger"
-                  onClick={handleCancelBooking}
-                  disabled={cancelling || !cancelReason.trim()}
-                >
-                  {cancelling ? (
-                    <><i className="fas fa-spinner fa-spin"></i> Cancelling...</>
-                  ) : (
-                    <><i className="fas fa-times-circle"></i> Yes, Cancel Booking</>
-                  )}
+              <p className="hd-muted">This can’t be undone. Refunds follow the airline’s fare rules and go back to your original payment method.</p>
+              <label className="hb-field">
+                <span className="form-label">Reason for cancelling</span>
+                <textarea className="form-textarea" rows="3" value={cancelReason} onChange={(e) => setCancelReason(e.target.value)} placeholder="Tell us what changed" required />
+              </label>
+              <div className="sw-modal__foot">
+                <button className="btn btn-secondary" onClick={() => setShowCancelModal(false)} disabled={cancelling}>Keep booking</button>
+                <button className="btn btn-danger" onClick={handleCancelBooking} disabled={cancelling || !cancelReason.trim()}>
+                  {cancelling ? 'Cancelling…' : 'Yes, cancel'}
                 </button>
               </div>
             </div>

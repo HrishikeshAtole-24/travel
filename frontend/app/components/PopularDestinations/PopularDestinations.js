@@ -2,162 +2,78 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Icon from '../Icon/Icon';
 import './PopularDestinations.css';
+
+// Figma "Route Card" — photo, route, trip length; opens a live fare search
+const ROUTES = {
+  domestic: [
+    { from: 'BOM', fromCity: 'Mumbai', to: 'DEL', toCity: 'New Delhi', days: 2, image: 'https://images.unsplash.com/photo-1587474260584-136574528ed5?w=600&h=440&fit=crop' },
+    { from: 'DEL', fromCity: 'Delhi', to: 'GOI', toCity: 'Goa', days: 4, image: 'https://images.unsplash.com/photo-1512343879784-a960bf40e7f2?w=600&h=440&fit=crop' },
+    { from: 'BOM', fromCity: 'Mumbai', to: 'BLR', toCity: 'Bengaluru', days: 3, image: 'https://images.unsplash.com/photo-1596176530529-78163a4f7af2?w=600&h=440&fit=crop' },
+    { from: 'DEL', fromCity: 'Delhi', to: 'MAA', toCity: 'Chennai', days: 3, image: 'https://images.unsplash.com/photo-1582510003544-4d00b7f74220?w=600&h=440&fit=crop' }
+  ],
+  international: [
+    { from: 'BOM', fromCity: 'Mumbai', to: 'DXB', toCity: 'Dubai', days: 5, image: 'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=600&h=440&fit=crop' },
+    { from: 'DEL', fromCity: 'Delhi', to: 'BKK', toCity: 'Bangkok', days: 6, image: 'https://images.unsplash.com/photo-1508009603885-50cf7c579365?w=600&h=440&fit=crop' },
+    { from: 'BOM', fromCity: 'Mumbai', to: 'SIN', toCity: 'Singapore', days: 5, image: 'https://images.unsplash.com/photo-1525625293386-3f8f99389edd?w=600&h=440&fit=crop' },
+    { from: 'DEL', fromCity: 'Delhi', to: 'LHR', toCity: 'London', days: 10, image: 'https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?w=600&h=440&fit=crop' }
+  ]
+};
+
+const toIso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
 export default function PopularDestinations() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState('international');
+  const [region, setRegion] = useState('domestic');
 
-  // Get dates for the flights
-  const getFlightDates = (daysFromNow, duration) => {
-    const departDate = new Date();
-    departDate.setDate(departDate.getDate() + daysFromNow);
-    const returnDate = new Date(departDate);
-    returnDate.setDate(returnDate.getDate() + duration);
-    
-    const formatDate = (date) => {
-      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-    };
-    
-    const formatDisplay = (date) => {
-      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-    };
-    
-    return {
-      depart: formatDate(departDate),
-      return: formatDate(returnDate),
-      displayDepart: formatDisplay(departDate),
-      displayReturn: formatDisplay(returnDate)
-    };
-  };
-
-  const internationalFlights = [
-    {
-      from: 'DEL',
-      fromCity: 'Delhi',
-      to: 'LHR',
-      toCity: 'London',
-      image: 'https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?w=400&h=300&fit=crop',
-      ...getFlightDates(3, 18)
-    },
-    {
-      from: 'BOM',
-      fromCity: 'Mumbai',
-      to: 'DXB',
-      toCity: 'Dubai',
-      image: 'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=400&h=300&fit=crop',
-      ...getFlightDates(4, 7)
-    },
-    {
-      from: 'DEL',
-      fromCity: 'Delhi',
-      to: 'BKK',
-      toCity: 'Bangkok',
-      image: 'https://images.unsplash.com/photo-1508009603885-50cf7c579365?w=400&h=300&fit=crop',
-      ...getFlightDates(3, 7)
-    },
-    {
-      from: 'BOM',
-      fromCity: 'Mumbai',
-      to: 'SIN',
-      toCity: 'Singapore',
-      image: 'https://images.unsplash.com/photo-1525625293386-3f8f99389edd?w=400&h=300&fit=crop',
-      ...getFlightDates(6, 8)
-    }
-  ];
-
-  const domesticFlights = [
-    {
-      from: 'BOM',
-      fromCity: 'Mumbai',
-      to: 'DEL',
-      toCity: 'New Delhi',
-      image: 'https://images.unsplash.com/photo-1587474260584-136574528ed5?w=400&h=300&fit=crop',
-      ...getFlightDates(3, 2)
-    },
-    {
-      from: 'DEL',
-      fromCity: 'Delhi',
-      to: 'GOI',
-      toCity: 'Goa',
-      image: 'https://images.unsplash.com/photo-1512343879784-a960bf40e7f2?w=400&h=300&fit=crop',
-      ...getFlightDates(6, 4)
-    },
-    {
-      from: 'BOM',
-      fromCity: 'Mumbai',
-      to: 'BLR',
-      toCity: 'Bangalore',
-      image: 'https://images.unsplash.com/photo-1596176530529-78163a4f7af2?w=400&h=300&fit=crop',
-      ...getFlightDates(3, 6)
-    },
-    {
-      from: 'DEL',
-      fromCity: 'Delhi',
-      to: 'MAA',
-      toCity: 'Chennai',
-      image: 'https://images.unsplash.com/photo-1582510003544-4d00b7f74220?w=400&h=300&fit=crop',
-      ...getFlightDates(3, 3)
-    }
-  ];
-
-  const handleFlightClick = (flight) => {
+  // Dates are picked at click time: two weeks out, for the route's typical stay
+  const openRoute = (route) => {
+    const depart = new Date();
+    depart.setDate(depart.getDate() + 14);
+    const ret = new Date(depart);
+    ret.setDate(ret.getDate() + route.days);
     const params = new URLSearchParams({
-      from: flight.from,
-      to: flight.to,
-      departDate: flight.depart,
-      returnDate: flight.return,
+      from: route.from,
+      to: route.to,
+      departDate: toIso(depart),
+      returnDate: toIso(ret),
       passengers: 1,
       cabinClass: 'economy',
       tripType: 'roundtrip'
     });
-    
     router.push(`/search?${params.toString()}`);
   };
 
-  const flights = activeTab === 'international' ? internationalFlights : domesticFlights;
-
   return (
-    <section className="popular-flights-section">
+    <section className="sw-section">
       <div className="container">
-        {/* Header */}
-        <div className="popular-flights-header">
-          <h2>Popular flights near you</h2>
-          <p>Find deals on domestic and international flights</p>
+        <div className="sw-section__head">
+          <div>
+            <h2 className="sw-section__title">Popular routes</h2>
+            <p className="sw-section__sub">Round trips two weeks out — tap to see live fares.</p>
+          </div>
+          <div className="sw-segment" role="group" aria-label="Region">
+            {[['domestic', 'Within India'], ['international', 'International']].map(([id, label]) => (
+              <button key={id} type="button" aria-pressed={region === id} onClick={() => setRegion(id)}>{label}</button>
+            ))}
+          </div>
         </div>
 
-        {/* Tabs */}
-        <div className="flights-tabs">
-          <button 
-            className={`flights-tab ${activeTab === 'international' ? 'active' : ''}`}
-            onClick={() => setActiveTab('international')}
-          >
-            International
-          </button>
-          <button 
-            className={`flights-tab ${activeTab === 'domestic' ? 'active' : ''}`}
-            onClick={() => setActiveTab('domestic')}
-          >
-            Domestic
-          </button>
-        </div>
-
-        {/* Flight Cards */}
-        <div className="popular-flights-grid">
-          {flights.map((flight, index) => (
-            <div 
-              key={index} 
-              className="popular-flight-card"
-              onClick={() => handleFlightClick(flight)}
-            >
-              <div className="popular-flight-image">
-                <img src={flight.image} alt={flight.toCity} />
-              </div>
-              <div className="popular-flight-info">
-                <h3>{flight.fromCity} to {flight.toCity}</h3>
-                <p>{flight.displayDepart} - {flight.displayReturn} · Round-trip</p>
-              </div>
-            </div>
+        <div className="route-grid">
+          {ROUTES[region].map(route => (
+            <button key={`${route.from}-${route.to}`} type="button" className="route-card" onClick={() => openRoute(route)}>
+              <span className="route-card__photo" style={{ backgroundImage: `url(${route.image})` }} />
+              <span className="route-card__body">
+                <span className="route-card__route">
+                  <span>{route.fromCity}</span>
+                  <Icon name="arrow-right" size={16} />
+                  <span>{route.toCity}</span>
+                </span>
+                <span className="route-card__meta">{route.from} – {route.to} · Round trip · {route.days} nights</span>
+                <span className="route-card__cta">See fares <Icon name="chevron-right" size={16} /></span>
+              </span>
+            </button>
           ))}
         </div>
       </div>

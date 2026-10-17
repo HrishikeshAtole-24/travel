@@ -7,6 +7,9 @@ import Footer from '../components/Footer/Footer';
 import SearchFilters from '../components/SearchFilters/SearchFilters';
 import FlightCard from '../components/FlightCard/FlightCard';
 import SearchWidgetCompact from '../components/SearchWidgetCompact/SearchWidgetCompact';
+import Link from 'next/link';
+import Icon from '../components/Icon/Icon';
+import { FlightListSkeleton, StateMessage } from '../components/Skeleton/Skeleton';
 import apiClient from '@/lib/api/client';
 import './search.css';
 
@@ -328,118 +331,138 @@ function SearchContent() {
     setMobileFilterOpen(!mobileFilterOpen);
   };
 
+  // Sort tabs show the best value for each mode (Figma "Best / Cheapest / Fastest")
+  const pick = (fn) => filteredFlights.reduce((best, f) => (best === null || fn(f) < fn(best) ? f : best), null);
+  const cheapest = pick(f => f.price?.total || Infinity);
+  const fastest = pick(f => f.computed?.totalDurationMinutes || Infinity);
+  const earliest = pick(f => new Date(f.segments?.[0]?.departure?.time || 0).getTime() || Infinity);
+  const money = (f) => f ? `₹${Math.round(f.price?.total || 0).toLocaleString('en-IN')}` : '—';
+  const mins = (m) => m ? `${Math.floor(m / 60)}h ${m % 60}m` : '—';
+  const hhmm = (f) => f?.segments?.[0]?.departure?.time ? new Date(f.segments[0].departure.time).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false }) : '—';
+  const SORTS = [
+    ['price', 'Cheapest', money(cheapest)],
+    ['duration', 'Fastest', mins(fastest?.computed?.totalDurationMinutes)],
+    ['departure', 'Earliest', hhmm(earliest)]
+  ];
+
+  // Fare-calendar strip: the searched day ±3, each a new search
+  const departDate = searchParams.get('departDate');
+  const dayStrip = departDate ? Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(`${departDate}T00:00:00`);
+    d.setDate(d.getDate() + i - 3);
+    return d;
+  }) : [];
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const dayHref = (d) => {
+    const p = new URLSearchParams(searchParams.toString());
+    p.set('departDate', iso(d));
+    const ret = searchParams.get('returnDate');
+    if (ret && ret <= iso(d)) p.delete('returnDate');
+    return `/search?${p.toString()}`;
+  };
+
+  const activeFilters = (filters.stops !== 'any' ? 1 : 0) + (filters.departureTime !== 'any' ? 1 : 0) + (filters.priceRange[1] < priceRange.max ? 1 : 0);
+
   return (
     <>
       <Header />
       <main className="search-page">
+        <div className="search-top">
+          <div className="container">
+            <SearchWidgetCompact onSearch={() => setLoading(true)} />
+          </div>
+        </div>
+
         <div className="container">
-          {/* Compact Search Widget */}
-          <SearchWidgetCompact onSearch={() => setLoading(true)} />
-          
+          {dayStrip.length > 0 && (
+            <nav className="fare-strip" aria-label="Nearby dates">
+              {dayStrip.map(d => {
+                const isActive = iso(d) === departDate;
+                const past = d < today;
+                return past ? (
+                  <span key={iso(d)} className="fare-day is-past">
+                    <span>{d.toLocaleDateString('en-IN', { weekday: 'short' })}</span>
+                    <strong>{d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</strong>
+                  </span>
+                ) : (
+                  <Link key={iso(d)} href={dayHref(d)} className={`fare-day ${isActive ? 'active' : ''}`} aria-current={isActive ? 'date' : undefined}>
+                    <span>{d.toLocaleDateString('en-IN', { weekday: 'short' })}</span>
+                    <strong>{d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</strong>
+                    {isActive && cheapest && <em>from {money(cheapest)}</em>}
+                  </Link>
+                );
+              })}
+            </nav>
+          )}
+
           <div className="search-layout">
-            {/* Mobile Overlay */}
-            {mobileFilterOpen && (
-              <div className="mobile-filter-overlay" onClick={toggleMobileFilter}></div>
-            )}
+            {mobileFilterOpen && <div className="mobile-filter-overlay" onClick={toggleMobileFilter} />}
 
-            {/* Mobile Filter Wrapper (contains tab + sidebar) */}
-            <div className={`mobile-filter-wrapper ${mobileFilterOpen ? 'open' : ''}`}>
-              {/* Pull Tab */}
-              <div className="mobile-filter-tab" onClick={toggleMobileFilter}>
-                <span>›</span>
+            <aside className={`search-sidebar ${mobileFilterOpen ? 'open' : ''}`}>
+              <div className="sheet-head">
+                <strong>Filters</strong>
+                <button type="button" className="header-icon-btn" onClick={toggleMobileFilter} aria-label="Close filters"><Icon name="x" size={20} /></button>
               </div>
-              
-              {/* Filters Sidebar */}
-              <aside className="search-sidebar">
-                <SearchFilters 
-                  filters={filters}
-                  priceRange={priceRange}
-                  onApplyFilters={applyFilters}
-                  onResetFilters={handleResetFilters}
-                />
-              </aside>
-            </div>
+              <SearchFilters filters={filters} priceRange={priceRange} onApplyFilters={applyFilters} onResetFilters={handleResetFilters} />
+              <div className="sheet-foot">
+                <button type="button" className="btn btn-primary btn-lg btn-block" onClick={toggleMobileFilter}>
+                  Show {sortedFlights.length} flights
+                </button>
+              </div>
+            </aside>
 
-            {/* Results Section */}
             <section className="search-results">
-              {/* Compact Results Header */}
-              <div className="results-header-compact">
-                <div className="route-summary">
-                  <div className="route-city">
-                    <span className="city-code">{searchParams.get('from')}</span>
-                    <span className="city-name">{airportInfo.from?.city_name || searchParams.get('from')}</span>
-                  </div>
-                  <div className="route-arrow">
-                    <i className="fas fa-arrow-right"></i>
-                  </div>
-                  <div className="route-city">
-                    <span className="city-code">{searchParams.get('to')}</span>
-                    <span className="city-name">{airportInfo.to?.city_name || searchParams.get('to')}</span>
-                  </div>
+              <div className="results-head">
+                <div>
+                  <h1 className="results-title">
+                    {airportInfo.from?.city_name || searchParams.get('from')}
+                    <Icon name="arrow-right" size={22} />
+                    {airportInfo.to?.city_name || searchParams.get('to')}
+                  </h1>
+                  <p className="results-sub">
+                    {loading ? 'Searching live fares…' : error ? 'Live fares are temporarily unavailable' : `${sortedFlights.length} flights · prices include taxes & fees`}
+                  </p>
                 </div>
-                <div className="trip-meta">
-                  <span className="meta-item">
-                    <i className="fas fa-calendar-alt"></i>
-                    {new Date(searchParams.get('departDate')).toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
-                  </span>
-                  {searchParams.get('returnDate') && (
-                    <span className="meta-item">
-                      <i className="fas fa-exchange-alt"></i>
-                      {new Date(searchParams.get('returnDate')).toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
-                    </span>
-                  )}
-                  <span className="meta-item">
-                    <i className="fas fa-user"></i>
-                    {searchParams.get('passengers')} Traveller{parseInt(searchParams.get('passengers')) > 1 ? 's' : ''}
-                  </span>
-                  <span className="meta-item cabin-class">
-                    {searchParams.get('cabinClass')?.replace('_', ' ') || 'Economy'}
-                  </span>
-                </div>
+                <button type="button" className="btn btn-secondary btn-sm mobile-filter-btn" onClick={toggleMobileFilter}>
+                  <Icon name="sliders" size={16} /> Filters{activeFilters > 0 && <span className="filter-count">{activeFilters}</span>}
+                </button>
               </div>
 
-              {loading && (
-                <div className="loading-state">
-                  <div className="spinner"></div>
-                  <p>Searching for the best flights...</p>
+              {!loading && !error && sortedFlights.length > 0 && (
+                <div className="sort-tabs" role="tablist" aria-label="Sort flights">
+                  {SORTS.map(([value, label, hint]) => (
+                    <button key={value} type="button" role="tab" aria-selected={sortBy === value}
+                      className={`sort-tab ${sortBy === value ? 'active' : ''}`} onClick={() => setSortBy(value)}>
+                      <strong>{label}</strong>
+                      <span>{hint}</span>
+                    </button>
+                  ))}
                 </div>
               )}
 
-              {error && (
-                <div className="error-state">
-                  <p>⚠️ {error}</p>
-                  <button className="btn btn-primary" onClick={searchFlights}>
-                    Try Again
-                  </button>
-                </div>
+              {loading && <FlightListSkeleton />}
+
+              {!loading && error && (
+                <StateMessage icon="alert" tone="danger" title="We couldn’t load fares"
+                  action={<button className="btn btn-primary" onClick={searchFlights}>Try again</button>}>
+                  {error}
+                </StateMessage>
               )}
 
               {!loading && !error && filteredFlights.length === 0 && (
-                <div className="empty-state">
-                  <p>No flights found matching your criteria</p>
-                </div>
+                <StateMessage icon="plane" tone="brand" title={flights.length ? 'No flights match these filters' : 'No flights on this date'}
+                  action={flights.length
+                    ? <button className="btn btn-primary" onClick={() => handleResetFilters({ stops: 'any', priceRange: [priceRange.min, priceRange.max], departureTime: 'any', airlines: [] })}>Clear filters</button>
+                    : <Link href="/" className="btn btn-secondary">Change search</Link>}>
+                  {flights.length ? 'Try removing a filter or raising the price limit.' : 'Try a nearby date from the strip above.'}
+                </StateMessage>
               )}
 
               {!loading && !error && sortedFlights.length > 0 && (
                 <div className="flights-list">
-                  <div className="results-info-bar">
-                    <span className="results-count">{sortedFlights.length} flights found</span>
-                    <div className="sort-options">
-                      <span className="sort-label">Sort by:</span>
-                      <select 
-                        className="sort-select"
-                        value={sortBy}
-                        onChange={handleSortChange}
-                      >
-                        <option value="price">Price - Low to High</option>
-                        <option value="price-desc">Price - High to Low</option>
-                        <option value="duration">Duration - Shortest</option>
-                        <option value="departure">Departure - Earliest</option>
-                      </select>
-                    </div>
-                  </div>
                   {sortedFlights.map((flight, index) => (
-                    <FlightCard key={index} flight={flight} />
+                    <FlightCard key={flight.id || index} flight={flight} />
                   ))}
                 </div>
               )}
@@ -454,7 +477,7 @@ function SearchContent() {
 
 export default function SearchPage() {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense fallback={<><Header /><main className="search-page"><div className="container" style={{ paddingTop: 32 }}><FlightListSkeleton /></div></main></>}>
       <SearchContent />
     </Suspense>
   );

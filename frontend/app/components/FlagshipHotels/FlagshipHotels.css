@@ -1,7 +1,7 @@
 /* Flagship Hotels Section */
 .flagship-hotels {
   padding: var(--spacing-2xl) 0;
-  background: #ffffff;
+  background: var(--sw-color-white);
 }
 
 .flagship-hotels-header {
