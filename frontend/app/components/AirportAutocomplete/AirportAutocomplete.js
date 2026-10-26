@@ -113,9 +113,9 @@ export default function AirportAutocomplete({
           </div>
         )}
         
-        {!selectedAirport && inputValue && (
+        {!selectedAirport && (
           <div className="field-subtext">
-            Enter at least 2 characters to search
+            {inputValue ? 'Type 2+ letters to search' : 'City or airport'}
           </div>
         )}
 

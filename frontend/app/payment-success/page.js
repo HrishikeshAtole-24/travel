@@ -4,6 +4,9 @@ import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Header from '../components/Header/Header';
 import Footer from '../components/Footer/Footer';
+import Icon from '../components/Icon/Icon';
+import { PageSkeleton } from '../components/Skeleton/Skeleton';
+import '../styles/confirmation.css';
 import './payment-success.css';
 import HotelConfirmation from './HotelConfirmation';
 
@@ -178,327 +181,116 @@ function PaymentSuccessContent() {
     return (
       <>
         <Header />
-        <main className="payment-success-page">
-          <div className="container">
-            <div className="loading-state">
-              <div className="loader-spinner"></div>
-              <p>Loading your booking details...</p>
-            </div>
-          </div>
-        </main>
-        <Footer />
+        <PageSkeleton label="Loading your booking…" />
       </>
     );
   }
 
   const flightData = bookingDetails?.flightData;
   const outboundFlight = flightData?.itineraries?.[0]?.segments?.[0];
+  const segs = flightData?.itineraries?.[0]?.segments || [];
+  const lastSeg = segs[segs.length - 1] || outboundFlight;
+  const from = outboundFlight?.departure?.iataCode || flightData?.origin;
+  const to = lastSeg?.arrival?.iataCode || flightData?.destination;
+  const ticketPending = bookingDetails && !bookingDetails.pnr && bookingDetails.ticketingStatus && bookingDetails.ticketingStatus !== 'ISSUED';
+  const ticketFailed = bookingDetails?.ticketingStatus === 'FAILED';
 
   return (
     <>
-      <link 
-        rel="stylesheet" 
-        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" 
-      />
       <Header />
-      <main className="payment-success-page">
-        <div className="container">
-          {/* Notification Toast */}
-          {notification && (
-            <div className={`notification-toast ${notification.type}`}>
-              <i className={`fas ${notification.type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}`}></i>
-              <span>{notification.message}</span>
+      <main className="cf-page">
+        {notification && (
+          <div className={`sw-toast is-${notification.type}`} role="status">
+            <Icon name={notification.type === 'success' ? 'check' : 'alert'} size={18} />
+            <span>{notification.message}</span>
+          </div>
+        )}
+
+        <section className={`cf-hero ${ticketPending && !ticketFailed ? 'is-pending' : ''}`}>
+          <div className="container">
+            <span className="cf-tick"><Icon name="check" size={36} strokeWidth={2.5} /></span>
+            <h1 className="cf-title">
+              {to ? <>You’re flying to <em className="sw-editorial">{to}</em></> : <>Payment <em className="sw-editorial">successful</em></>}
+            </h1>
+            <p className="cf-sub">
+              {ticketFailed
+                ? 'Payment received — our team is confirming your ticket with the airline and will email you shortly.'
+                : ticketPending ? 'Payment received — we’re issuing your ticket now.' : 'Your flight is booked. Your e-ticket is ready below.'}
+            </p>
+          </div>
+        </section>
+
+        <div className="cf-body">
+          <article className="cf-voucher">
+            <div className="cf-ref">
+              <div>
+                <span className="sw-overline">Booking reference</span>
+                <strong className="cf-ref__code">{bookingReference || 'N/A'}</strong>
+              </div>
+              <div className="cf-ref__tags">
+                <span className={`sw-badge ${ticketFailed ? 'sw-badge--warning' : ticketPending ? '' : 'sw-badge--success'}`}>
+                  {ticketFailed ? 'Being confirmed' : ticketPending ? 'Issuing ticket' : 'Confirmed'}
+                </span>
+                {bookingDetails?.pnr && <span className="sw-supplier">PNR <strong>{bookingDetails.pnr}</strong></span>}
+              </div>
             </div>
+
+            {outboundFlight && (
+              <div className="cf-main">
+                <div className="cf-main__art">
+                  <span className="cf-codes">{from} <Icon name="plane" size={20} /> {to}</span>
+                  <small>{outboundFlight.carrierCode} {outboundFlight.number}</small>
+                </div>
+                <div className="cf-main__info">
+                  <h2>{from} → {to}</h2>
+                  <p>{formatDate(outboundFlight.departure?.at)} · departs {formatTime(outboundFlight.departure?.at)}, arrives {formatTime(lastSeg?.arrival?.at)}</p>
+                  <strong>{segs.length > 1 ? `${segs.length - 1} stop${segs.length > 2 ? 's' : ''}` : 'Non-stop'}{outboundFlight.duration ? ` · ${formatDuration(outboundFlight.duration)}` : ''}{outboundFlight.cabin ? ` · ${outboundFlight.cabin}` : ''}</strong>
+                </div>
+              </div>
+            )}
+
+            <div className="cf-perf" />
+
+            <div className="cf-facts">
+              <div><span className="sw-overline">Departure</span><strong>{outboundFlight ? formatTime(outboundFlight.departure?.at) : '—'}</strong><small>{outboundFlight ? formatDate(outboundFlight.departure?.at) : ''}</small></div>
+              <div><span className="sw-overline">Travellers</span><strong>{bookingDetails?.travelers?.length || 1}</strong>
+                <small>{bookingDetails?.travelers?.[0] ? `${bookingDetails.travelers[0].first_name} ${bookingDetails.travelers[0].last_name}${bookingDetails.travelers.length > 1 ? ` +${bookingDetails.travelers.length - 1}` : ''}` : ''}</small></div>
+              <div><span className="sw-overline">Paid</span><strong>{bookingDetails ? `${bookingDetails.currency === 'INR' ? '₹' : `${bookingDetails.currency} `}${Number(bookingDetails.totalPrice || 0).toLocaleString('en-IN')}` : '—'}</strong><small>Razorpay</small></div>
+              <div><span className="sw-overline">Payment ID</span><strong>{paymentId || '—'}</strong></div>
+            </div>
+
+            <div className="cf-actions">
+              <button className="btn btn-primary" onClick={handleDownloadTicket} disabled={downloadingTicket}>
+                <Icon name="download" size={16} /> {downloadingTicket ? 'Downloading…' : 'Download e-ticket'}
+              </button>
+              <button className="btn btn-secondary" onClick={handleSendEmail} disabled={sendingEmail || emailSent}>
+                <Icon name={emailSent ? 'check' : 'mail'} size={16} /> {sendingEmail ? 'Sending…' : emailSent ? 'Email sent' : 'Email confirmation'}
+              </button>
+              <span className="spacer" />
+              <button className="btn btn-ghost" onClick={() => router.push('/my-bookings')}>View in My trips</button>
+            </div>
+          </article>
+
+          {bookingDetails?.travelers?.length > 0 && (
+            <>
+              <h2 className="cf-next-title">Travellers</h2>
+              <div className="cf-travellers">
+                {bookingDetails.travelers.map((t, i) => (
+                  <div key={i}>
+                    <span className="cf-avatar">{(t.first_name || '?')[0]}{(t.last_name || '')[0]}</span>
+                    <span><strong>{t.title} {t.first_name} {t.last_name}</strong><small>{t.traveler_type || 'Adult'}</small></span>
+                  </div>
+                ))}
+              </div>
+            </>
           )}
 
-          {/* Success Hero */}
-          <div className="success-hero">
-            <div className="success-animation">
-              <div className="success-circle">
-                <i className="fas fa-check"></i>
-              </div>
-              <div className="success-pulse"></div>
-            </div>
-            <h1>Payment Successful!</h1>
-            <p>Your flight booking has been confirmed</p>
+          <h2 className="cf-next-title">What happens next</h2>
+          <div className="cf-next">
+            <div><Icon name="mail" size={20} /><strong>E-ticket by email</strong><p>{emailSent ? 'Sent to your inbox.' : 'We’ll email it — or send it again from above.'}</p></div>
+            <div><Icon name="clock" size={20} /><strong>Web check-in</strong><p>Opens 48 hours before departure on the airline’s site.</p></div>
+            <div><Icon name="headset" size={20} /><strong>Need to change plans?</strong><p>Manage or cancel from My trips, or <a href="/contact">talk to support</a>.</p></div>
           </div>
-
-          {/* Main Content */}
-          <div className="success-grid">
-            {/* Left Column - Booking Info */}
-            <div className="booking-column">
-              {/* Booking Reference Card */}
-              <div className="booking-card reference-card">
-                <div className="card-header">
-                  <div className="brand-mark">
-                    <svg width="28" height="28" viewBox="0 0 32 32" fill="none">
-                      <path d="M16 2L3 9L16 16L29 9L16 2Z" fill="#2563eb"/>
-                      <path d="M3 23L16 30L29 23V9L16 16L3 9V23Z" fill="#2563eb" opacity="0.6"/>
-                    </svg>
-                    <span>SkyWings</span>
-                  </div>
-                  <div className="confirmed-badge">
-                    <i className="fas fa-check"></i>
-                    <span>Confirmed</span>
-                  </div>
-                </div>
-                
-                <div className="reference-content">
-                  <span className="ref-label">BOOKING REFERENCE</span>
-                  <span className="ref-number">{bookingReference || 'N/A'}</span>
-                  <span className="ref-hint">
-                    <i className="fas fa-info-circle"></i>
-                    Save this for check-in & support
-                  </span>
-                </div>
-
-                {paymentId && (
-                  <div className="payment-info">
-                    <span className="payment-label">Payment ID</span>
-                    <span className="payment-id">{paymentId}</span>
-                  </div>
-                )}
-
-                {/* Airline PNR (issued by the airline after payment) */}
-                {bookingDetails?.pnr ? (
-                  <div className="payment-info">
-                    <span className="payment-label">Airline PNR</span>
-                    <span className="payment-id">{bookingDetails.pnr}</span>
-                  </div>
-                ) : bookingDetails?.ticketingStatus === 'FAILED' ? (
-                  <div className="payment-info">
-                    <span className="payment-label">Ticket status</span>
-                    <span className="payment-id">Our team is confirming your ticket with the airline and will email you shortly</span>
-                  </div>
-                ) : bookingDetails?.ticketingStatus && bookingDetails.ticketingStatus !== 'ISSUED' ? (
-                  <div className="payment-info">
-                    <span className="payment-label">Ticket status</span>
-                    <span className="payment-id">Issuing your ticket…</span>
-                  </div>
-                ) : null}
-              </div>
-
-              {/* Flight Details */}
-              {bookingDetails && flightData && outboundFlight && (
-                <div className="booking-card flight-card">
-                  <div className="card-title">
-                    <i className="fas fa-plane"></i>
-                    <span>Flight Details</span>
-                  </div>
-
-                  <div className="flight-route">
-                    <div className="route-point departure">
-                      <span className="iata">{outboundFlight.departure?.iataCode || flightData.origin}</span>
-                      <span className="time">{formatTime(outboundFlight.departure?.at)}</span>
-                      <span className="date">{formatDate(outboundFlight.departure?.at)}</span>
-                    </div>
-
-                    <div className="route-line">
-                      <div className="line-progress">
-                        <span className="dot start"></span>
-                        <span className="dash"></span>
-                        <i className="fas fa-plane"></i>
-                        <span className="dash"></span>
-                        <span className="dot end"></span>
-                      </div>
-                      <span className="duration">{formatDuration(outboundFlight.duration) || 'Direct'}</span>
-                    </div>
-
-                    <div className="route-point arrival">
-                      <span className="iata">{outboundFlight.arrival?.iataCode || flightData.destination}</span>
-                      <span className="time">{formatTime(outboundFlight.arrival?.at)}</span>
-                      <span className="date">{formatDate(outboundFlight.arrival?.at)}</span>
-                    </div>
-                  </div>
-
-                  <div className="flight-meta">
-                    {outboundFlight.carrierCode && (
-                      <div className="meta-item">
-                        <i className="fas fa-plane-departure"></i>
-                        <span>{outboundFlight.carrierCode} {outboundFlight.number}</span>
-                      </div>
-                    )}
-                    <div className="meta-item">
-                      <i className="fas fa-users"></i>
-                      <span>{bookingDetails.travelers?.length || 1} Passenger(s)</span>
-                    </div>
-                    {outboundFlight.cabin && (
-                      <div className="meta-item">
-                        <i className="fas fa-couch"></i>
-                        <span>{outboundFlight.cabin}</span>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="price-summary">
-                    <span className="price-label">Total Amount Paid</span>
-                    <span className="price-value">
-                      {bookingDetails.currency} {bookingDetails.totalPrice?.toLocaleString()}
-                    </span>
-                  </div>
-                </div>
-              )}
-
-              {/* Passengers */}
-              {bookingDetails?.travelers && bookingDetails.travelers.length > 0 && (
-                <div className="booking-card passengers-card">
-                  <div className="card-title">
-                    <i className="fas fa-user-friends"></i>
-                    <span>Passengers ({bookingDetails.travelers.length})</span>
-                  </div>
-                  <div className="passengers-list">
-                    {bookingDetails.travelers.map((traveler, index) => (
-                      <div key={index} className="passenger-row">
-                        <div className="passenger-avatar">
-                          <i className="fas fa-user"></i>
-                        </div>
-                        <div className="passenger-info">
-                          <span className="passenger-name">
-                            {traveler.title} {traveler.first_name} {traveler.last_name}
-                          </span>
-                          <span className="passenger-type">
-                            <i className="fas fa-tag"></i>
-                            {traveler.traveler_type || 'Adult'}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Right Column - Actions */}
-            <div className="actions-column">
-              {/* Quick Actions */}
-              <div className="actions-card">
-                <h3>
-                  <i className="fas fa-bolt"></i>
-                  Quick Actions
-                </h3>
-
-                <button 
-                  className="action-btn primary"
-                  onClick={handleDownloadTicket}
-                  disabled={downloadingTicket}
-                >
-                  {downloadingTicket ? (
-                    <>
-                      <i className="fas fa-spinner fa-spin"></i>
-                      <span>Downloading...</span>
-                    </>
-                  ) : (
-                    <>
-                      <i className="fas fa-download"></i>
-                      <span>Download E-Ticket</span>
-                    </>
-                  )}
-                </button>
-
-                <button 
-                  className={`action-btn ${emailSent ? 'completed' : 'secondary'}`}
-                  onClick={handleSendEmail}
-                  disabled={sendingEmail || emailSent}
-                >
-                  {sendingEmail ? (
-                    <>
-                      <i className="fas fa-spinner fa-spin"></i>
-                      <span>Sending...</span>
-                    </>
-                  ) : emailSent ? (
-                    <>
-                      <i className="fas fa-check"></i>
-                      <span>Email Sent</span>
-                    </>
-                  ) : (
-                    <>
-                      <i className="fas fa-envelope"></i>
-                      <span>Send Confirmation Email</span>
-                    </>
-                  )}
-                </button>
-
-                <button 
-                  className="action-btn outline"
-                  onClick={() => router.push('/my-bookings')}
-                >
-                  <i className="fas fa-list-alt"></i>
-                  <span>View My Bookings</span>
-                </button>
-              </div>
-
-              {/* What's Next */}
-              <div className="whats-next-card">
-                <h3>
-                  <i className="fas fa-clipboard-list"></i>
-                  What's Next?
-                </h3>
-
-                <div className="steps-list">
-                  <div className={`step-item ${emailSent ? 'done' : ''}`}>
-                    <div className="step-icon">
-                      <i className={emailSent ? 'fas fa-check' : 'fas fa-envelope'}></i>
-                    </div>
-                    <div className="step-content">
-                      <span className="step-title">Confirmation Email</span>
-                      <span className="step-desc">
-                        {emailSent ? 'Sent to your email' : 'Get booking details via email'}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="step-item">
-                    <div className="step-icon">
-                      <i className="fas fa-ticket-alt"></i>
-                    </div>
-                    <div className="step-content">
-                      <span className="step-title">E-Ticket</span>
-                      <span className="step-desc">Download your boarding pass</span>
-                    </div>
-                  </div>
-
-                  <div className="step-item">
-                    <div className="step-icon">
-                      <i className="fas fa-desktop"></i>
-                    </div>
-                    <div className="step-content">
-                      <span className="step-title">Web Check-in</span>
-                      <span className="step-desc">Opens 48h before departure</span>
-                    </div>
-                  </div>
-
-                  <div className="step-item">
-                    <div className="step-icon">
-                      <i className="fas fa-suitcase-rolling"></i>
-                    </div>
-                    <div className="step-content">
-                      <span className="step-title">Pack & Travel</span>
-                      <span className="step-desc">Have a great flight!</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Support */}
-              <div className="support-card">
-                <i className="fas fa-headset"></i>
-                <div className="support-content">
-                  <span className="support-title">Need Help?</span>
-                  <span className="support-desc">Our support team is available 24/7</span>
-                </div>
-                <a href="/contact" className="support-link">
-                  Contact Us
-                  <i className="fas fa-arrow-right"></i>
-                </a>
-              </div>
-            </div>
-          </div>
-
-          {/* Back to Home */}
-          <a href="/" className="back-link">
-            <i className="fas fa-arrow-left"></i>
-            <span>Back to Home</span>
-          </a>
         </div>
       </main>
       <Footer />
@@ -525,16 +317,7 @@ function PaymentSuccessRouter() {
 
 export default function PaymentSuccessPage() {
   return (
-    <Suspense fallback={
-      <div className="payment-success-page">
-        <div className="container">
-          <div className="loading-state">
-            <div className="loader-spinner"></div>
-            <p>Loading...</p>
-          </div>
-        </div>
-      </div>
-    }>
+    <Suspense fallback={<><Header /><PageSkeleton label="Loading your booking…" /></>}>
       <PaymentSuccessRouter />
     </Suspense>
   );

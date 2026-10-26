@@ -1,0 +1,108 @@
+/* Figma "Stay Tile" grid */
+
+.stay-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--sw-space-5);
+}
+
+.stay-tile {
+  position: relative;
+  display: block;
+  aspect-ratio: 4 / 5;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: var(--sw-radius-xl);
+  background: var(--sw-color-bg-inverse);
+  text-align: left;
+  cursor: pointer;
+  isolation: isolate;
+}
+
+.stay-tile__photo,
+.stay-tile__shade {
+  position: absolute;
+  inset: 0;
+}
+
+.stay-tile__photo {
+  z-index: -2;
+  background: center / cover no-repeat;
+  transition: transform 700ms var(--sw-ease);
+}
+
+.stay-tile:hover .stay-tile__photo {
+  transform: scale(1.05);
+}
+
+.stay-tile__shade {
+  z-index: -1;
+  background: linear-gradient(180deg, rgba(11, 22, 48, 0) 40%, rgba(11, 22, 48, 0.88) 100%);
+}
+
+.stay-tile__body {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: var(--sw-space-5);
+}
+
+.stay-tile__city {
+  font: 800 1.5rem/1.2 var(--sw-font-display);
+  letter-spacing: -0.02em;
+  color: var(--sw-color-white);
+}
+
+.stay-tile__note {
+  font: 500 0.875rem/1.4 var(--sw-font-ui);
+  color: var(--sw-color-slate-200);
+}
+
+.stay-tile__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  align-self: flex-start;
+  margin-top: var(--sw-space-3);
+  height: 32px;
+  padding: 0 var(--sw-space-3);
+  border-radius: var(--sw-radius-full);
+  background: rgba(255, 255, 255, 0.16);
+  backdrop-filter: blur(8px);
+  font: 600 0.8125rem/1 var(--sw-font-ui);
+  color: var(--sw-color-white);
+  transition: background-color var(--transition-fast);
+}
+
+.stay-tile:hover .stay-tile__cta {
+  background: var(--sw-color-white);
+  color: var(--sw-color-text-primary);
+}
+
+@media (max-width: 1024px) {
+  .stay-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .stay-grid {
+    display: flex;
+    gap: var(--sw-space-3);
+    margin: 0 calc(-1 * var(--sw-space-4));
+    padding: 0 var(--sw-space-4) var(--sw-space-2);
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+  }
+
+  .stay-tile {
+    flex: 0 0 64%;
+    scroll-snap-align: start;
+  }
+}

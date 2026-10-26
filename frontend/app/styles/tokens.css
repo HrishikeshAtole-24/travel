@@ -1,0 +1,178 @@
+/* ============================================
+   HORIZON — SkyWings design tokens
+   Generated from the Figma variables (file l6LIS909UVzK77NhkEUHyi).
+   Names match each variable's code syntax, so a token in Figma
+   is the same token here. Edit in Figma first, then regenerate.
+   ============================================ */
+
+:root {
+  /* ---------- Primitives ---------- */
+  --sw-color-white: #ffffff;
+  --sw-color-slate-25: #fbfcfe;
+  --sw-color-slate-50: #f6f7fb;
+  --sw-color-slate-100: #eef0f6;
+  --sw-color-slate-200: #e2e6ef;
+  --sw-color-slate-300: #cbd2df;
+  --sw-color-slate-400: #98a2b8;
+  --sw-color-slate-500: #6b7590;
+  --sw-color-slate-600: #4e5872;
+  --sw-color-slate-700: #384159;
+  --sw-color-slate-800: #242c42;
+  --sw-color-slate-900: #151b2e;
+  --sw-color-slate-950: #0b1020;
+  --sw-color-ink-700: #1c2c4f;
+  --sw-color-ink-800: #13213f;
+  --sw-color-ink-900: #0b1630;
+  --sw-color-blue-50: #eef3ff;
+  --sw-color-blue-100: #dce6ff;
+  --sw-color-blue-200: #bacdff;
+  --sw-color-blue-300: #8eabff;
+  --sw-color-blue-400: #5e84ff;
+  --sw-color-blue-500: #3a6bff;
+  --sw-color-blue-600: #1f5eff;
+  --sw-color-blue-700: #1849d6;
+  --sw-color-blue-800: #1638a8;
+  --sw-color-blue-900: #142e80;
+  --sw-color-blue-950: #0e1e52;
+  --sw-color-sunrise-50: #fff3ee;
+  --sw-color-sunrise-100: #ffe4d8;
+  --sw-color-sunrise-300: #ffac8c;
+  --sw-color-sunrise-500: #ff6a3d;
+  --sw-color-sunrise-600: #f04e1f;
+  --sw-color-sunrise-700: #c93c14;
+  --sw-color-sunrise-950: #3a1a10;
+  --sw-color-green-50: #e9f8ef;
+  --sw-color-green-300: #6fdb9c;
+  --sw-color-green-500: #12a150;
+  --sw-color-green-700: #0b7a3b;
+  --sw-color-green-950: #0b2a19;
+  --sw-color-amber-50: #fff7e6;
+  --sw-color-amber-300: #ffd27a;
+  --sw-color-amber-500: #f5a524;
+  --sw-color-amber-700: #b4740b;
+  --sw-color-amber-950: #2e2006;
+  --sw-color-red-50: #fdecec;
+  --sw-color-red-300: #ff8a8e;
+  --sw-color-red-500: #e5484d;
+  --sw-color-red-700: #b4262b;
+  --sw-color-red-950: #330f11;
+  --sw-color-gold-500: #f5b400;
+
+  /* ---------- Semantic colour (light) ---------- */
+  --sw-color-bg-canvas: var(--sw-color-slate-50);
+  --sw-color-bg-surface: var(--sw-color-white);
+  --sw-color-bg-surface-raised: var(--sw-color-white);
+  --sw-color-bg-subtle: var(--sw-color-slate-100);
+  --sw-color-bg-inverse: var(--sw-color-ink-900);
+  --sw-color-bg-inverse-raised: var(--sw-color-ink-800);
+  --sw-color-bg-brand: var(--sw-color-blue-600);
+  --sw-color-bg-brand-hover: var(--sw-color-blue-700);
+  --sw-color-bg-brand-subtle: var(--sw-color-blue-50);
+  --sw-color-bg-accent: var(--sw-color-sunrise-500);
+  --sw-color-bg-accent-hover: var(--sw-color-sunrise-600);
+  --sw-color-bg-accent-subtle: var(--sw-color-sunrise-50);
+  --sw-color-bg-success-subtle: var(--sw-color-green-50);
+  --sw-color-bg-warning-subtle: var(--sw-color-amber-50);
+  --sw-color-bg-danger-subtle: var(--sw-color-red-50);
+  --sw-color-bg-success: var(--sw-color-green-500);
+  --sw-color-bg-disabled: var(--sw-color-slate-100);
+  --sw-color-text-primary: var(--sw-color-slate-900);
+  --sw-color-text-secondary: var(--sw-color-slate-600);
+  --sw-color-text-tertiary: var(--sw-color-slate-500);
+  --sw-color-text-disabled: var(--sw-color-slate-400);
+  --sw-color-text-inverse: var(--sw-color-white);
+  --sw-color-text-on-inverse-muted: var(--sw-color-slate-300);
+  --sw-color-text-on-inverse-accent: var(--sw-color-sunrise-300);
+  --sw-color-text-brand: var(--sw-color-blue-600);
+  --sw-color-text-accent: var(--sw-color-sunrise-700);
+  --sw-color-text-success: var(--sw-color-green-700);
+  --sw-color-text-warning: var(--sw-color-amber-700);
+  --sw-color-text-danger: var(--sw-color-red-700);
+  --sw-color-text-on-brand: var(--sw-color-white);
+  --sw-color-text-rating: var(--sw-color-gold-500);
+  --sw-color-border-default: var(--sw-color-slate-200);
+  --sw-color-border-strong: var(--sw-color-slate-300);
+  --sw-color-border-brand: var(--sw-color-blue-600);
+  --sw-color-border-focus: var(--sw-color-blue-500);
+  --sw-color-border-danger: var(--sw-color-red-500);
+  --sw-color-border-inverse: var(--sw-color-ink-700);
+
+  /* ---------- Spacing (4px grid) ---------- */
+  --sw-space-0: 0px;
+  --sw-space-0-5: 2px;
+  --sw-space-1: 4px;
+  --sw-space-2: 8px;
+  --sw-space-3: 12px;
+  --sw-space-4: 16px;
+  --sw-space-5: 20px;
+  --sw-space-6: 24px;
+  --sw-space-8: 32px;
+  --sw-space-10: 40px;
+  --sw-space-12: 48px;
+  --sw-space-16: 64px;
+  --sw-space-20: 80px;
+
+  /* ---------- Radius ---------- */
+  --sw-radius-xs: 6px;
+  --sw-radius-sm: 8px;
+  --sw-radius-md: 12px;
+  --sw-radius-lg: 16px;
+  --sw-radius-xl: 24px;
+  --sw-radius-full: 999px;
+
+  /* ---------- Elevation (ink-tinted) ---------- */
+  --sw-shadow-1: 0 1px 2px 0 #0b16300f, 0 1px 3px 0 #0b163014;
+  --sw-shadow-2: 0 4px 12px -2px #0b163014, 0 2px 4px -1px #0b16300f;
+  --sw-shadow-3: 0 12px 32px -6px #0b163024, 0 4px 8px -2px #0b16300f;
+  --sw-shadow-4: 0 24px 64px -12px #0b16303d;
+  --sw-focus-ring: 0 0 0 4px #3a6bff59;
+
+  /* ---------- Typography ---------- */
+  /* Families come from next/font in app/layout.js */
+  --sw-font-display: var(--font-jakarta), 'Plus Jakarta Sans', system-ui, sans-serif;
+  --sw-font-ui: var(--font-inter), 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --sw-font-editorial: var(--font-instrument), 'Instrument Serif', Georgia, serif;
+
+  /* ---------- Layout & motion ---------- */
+  --sw-container: 1280px;
+  --sw-gutter: 80px;
+  --sw-header-height: 72px;
+  --sw-ease: cubic-bezier(0.2, 0, 0, 1);
+  --sw-duration-fast: 120ms;
+  --sw-duration-base: 200ms;
+}
+
+/* ---------- Semantic colour (dark, opt-in) ---------- */
+[data-theme='dark'] {
+  --sw-color-bg-canvas: var(--sw-color-slate-950);
+  --sw-color-bg-surface: var(--sw-color-slate-900);
+  --sw-color-bg-surface-raised: var(--sw-color-slate-800);
+  --sw-color-bg-subtle: var(--sw-color-slate-800);
+  --sw-color-bg-inverse: var(--sw-color-slate-950);
+  --sw-color-bg-inverse-raised: var(--sw-color-slate-900);
+  --sw-color-bg-brand: var(--sw-color-blue-500);
+  --sw-color-bg-brand-hover: var(--sw-color-blue-400);
+  --sw-color-bg-brand-subtle: var(--sw-color-blue-950);
+  --sw-color-bg-accent-subtle: var(--sw-color-sunrise-950);
+  --sw-color-bg-success-subtle: var(--sw-color-green-950);
+  --sw-color-bg-warning-subtle: var(--sw-color-amber-950);
+  --sw-color-bg-danger-subtle: var(--sw-color-red-950);
+  --sw-color-bg-disabled: var(--sw-color-slate-800);
+  --sw-color-text-primary: var(--sw-color-slate-50);
+  --sw-color-text-secondary: var(--sw-color-slate-300);
+  --sw-color-text-tertiary: var(--sw-color-slate-400);
+  --sw-color-text-disabled: var(--sw-color-slate-600);
+  --sw-color-text-inverse: var(--sw-color-slate-950);
+  --sw-color-text-on-inverse-muted: var(--sw-color-slate-400);
+  --sw-color-text-brand: var(--sw-color-blue-300);
+  --sw-color-text-accent: var(--sw-color-sunrise-300);
+  --sw-color-text-success: var(--sw-color-green-300);
+  --sw-color-text-warning: var(--sw-color-amber-300);
+  --sw-color-text-danger: var(--sw-color-red-300);
+  --sw-color-border-default: var(--sw-color-slate-700);
+  --sw-color-border-strong: var(--sw-color-slate-600);
+  --sw-color-border-brand: var(--sw-color-blue-400);
+  --sw-color-border-focus: var(--sw-color-blue-400);
+  --sw-color-border-danger: var(--sw-color-red-300);
+  --sw-color-border-inverse: var(--sw-color-slate-800);
+}

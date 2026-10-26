@@ -1,14 +1,29 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import AirportAutocomplete from '../AirportAutocomplete/AirportAutocomplete';
 import DatePicker from '../DatePicker/DatePicker';
 import HotelSearchForm from '../HotelSearchForm/HotelSearchForm';
+import Icon from '../Icon/Icon';
 import './FlightSearchWidget.css';
+
+const CABIN_CLASSES = [
+  ['economy', 'Economy'],
+  ['premium_economy', 'Premium economy'],
+  ['business', 'Business'],
+  ['first', 'First']
+];
+
+const TRAVELLER_ROWS = [
+  { key: 'adults', label: 'Adults', hint: '12+ years', options: [1, 2, 3, 4, 5, 6, 7, 8, 9] },
+  { key: 'children', label: 'Children', hint: '2–12 years', options: [0, 1, 2, 3, 4, 5, 6] },
+  { key: 'infants', label: 'Infants', hint: 'Under 2, on lap', options: [0, 1, 2, 3, 4, 5, 6] }
+];
 
 export default function FlightSearchWidget() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState('flights');
   const [calendarOpen, setCalendarOpen] = useState(null); // null, 'departure', or 'return'
   const [travellersOpen, setTravellersOpen] = useState(false);
@@ -60,24 +75,33 @@ export default function FlightSearchWidget() {
   }, []);
 
   const tabs = [
-    { id: 'flights', label: 'Flights', icon: 'fa-plane' },
-    { id: 'hotels', label: 'Hotels', icon: 'fa-hotel' },
-    { id: 'homestays', label: 'Homestays & Villas', icon: 'fa-house' },
-    { id: 'holiday', label: 'Holiday Packages', icon: 'fa-umbrella-beach' },
-    { id: 'trains', label: 'Trains', icon: 'fa-train' },
-    { id: 'buses', label: 'Buses', icon: 'fa-bus' },
-    { id: 'cabs', label: 'Cabs', icon: 'fa-car' },
-    { id: 'forex', label: 'Forex Card & Currency', icon: 'fa-credit-card' },
+    { id: 'flights', label: 'Flights', icon: 'plane' },
+    { id: 'hotels', label: 'Hotels', icon: 'hotel' }
   ];
+
+  // The tab lives in the URL (?tab=hotels) so the header's Hotels link lands here
+  useEffect(() => {
+    setActiveTab(searchParams?.get('tab') === 'hotels' ? 'hotels' : 'flights');
+  }, [searchParams]);
+
+  const selectTab = (id) => {
+    setActiveTab(id);
+    router.replace(id === 'hotels' ? '/?tab=hotels' : '/', { scroll: false });
+  };
+
+  const setTravellerCount = (type, num) => {
+    setSearchData(prev => {
+      const next = { ...prev, [type]: num };
+      // Infants travel on an adult's lap
+      if (type === 'adults') next.infants = Math.min(prev.infants, num);
+      const total = next.adults + next.children + next.infants;
+      if (total > 9) return prev;
+      return { ...next, passengers: total };
+    });
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    
-    if (activeTab !== 'flights') {
-      alert(`${activeTab} booking coming soon!`);
-      return;
-    }
-
     // Validate required fields
     if (!searchData.fromCode || !searchData.toCode) {
       alert('Please select departure and destination airports');
@@ -179,49 +203,6 @@ export default function FlightSearchWidget() {
     }));
   };
 
-  // Traveller count handlers
-  const updateTravellerCount = (type, increment) => {
-    setSearchData(prev => {
-      let newValue = prev[type] + (increment ? 1 : -1);
-      
-      // Validation rules
-      if (type === 'adults') {
-        newValue = Math.max(1, Math.min(9, newValue)); // Min 1, Max 9
-        // Infants can't exceed adults
-        const newInfants = Math.min(prev.infants, newValue);
-        const totalPassengers = newValue + prev.children + newInfants;
-        return {
-          ...prev,
-          adults: newValue,
-          infants: newInfants,
-          passengers: totalPassengers
-        };
-      }
-      
-      if (type === 'children') {
-        newValue = Math.max(0, Math.min(6, newValue)); // Min 0, Max 6
-      }
-      
-      if (type === 'infants') {
-        newValue = Math.max(0, Math.min(prev.adults, newValue)); // Min 0, Max = adults count
-      }
-      
-      const totalPassengers = 
-        (type === 'adults' ? newValue : prev.adults) + 
-        (type === 'children' ? newValue : prev.children) + 
-        (type === 'infants' ? newValue : prev.infants);
-      
-      // Max 9 total passengers
-      if (totalPassengers > 9) return prev;
-      
-      return {
-        ...prev,
-        [type]: newValue,
-        passengers: totalPassengers
-      };
-    });
-  };
-
   const handleCabinClassChange = (cabinClass) => {
     setSearchData(prev => ({
       ...prev,
@@ -236,7 +217,7 @@ export default function FlightSearchWidget() {
 
   const getCabinClassDisplay = () => {
     const classMap = {
-      'economy': 'Economy/Premium Economy',
+      'economy': 'Economy',
       'premium_economy': 'Premium Economy',
       'business': 'Business',
       'first': 'First Class'
@@ -245,339 +226,177 @@ export default function FlightSearchWidget() {
   };
 
   return (
-    <div className="flight-search-widget-mmt">
-      {/* Tab Navigation */}
-      <div className="search-tabs">
-        {tabs.map(tab => (
-          <button
-            key={tab.id}
-            className={`tab-item ${activeTab === tab.id ? 'active' : ''}`}
-            onClick={() => setActiveTab(tab.id)}
-          >
-            <i className={`fas ${tab.icon}`}></i>
-            <span>{tab.label}</span>
-          </button>
-        ))}
-      </div>
-
-      {/* Search Widget Card */}
-      <div className="search-widget-card-mmt">
-        {activeTab === 'flights' && (
-          <form onSubmit={handleSubmit} className="search-form-mmt">
-            {/* Trip Type Selector */}
-            <div className="trip-type-selector-mmt">
-              <label className="trip-type-radio">
-                <input
-                  type="radio"
-                  name="tripType"
-                  value="roundtrip"
-                  checked={searchData.tripType === 'roundtrip'}
-                  onChange={(e) => handleChange('tripType', e.target.value)}
-                />
-                <span>Round Trip</span>
-              </label>
-              <label className="trip-type-radio">
-                <input
-                  type="radio"
-                  name="tripType"
-                  value="oneway"
-                  checked={searchData.tripType === 'oneway'}
-                  onChange={(e) => handleChange('tripType', e.target.value)}
-                />
-                <span>One Way</span>
-              </label>
-              <label className="trip-type-radio">
-                <input
-                  type="radio"
-                  name="tripType"
-                  value="multicity"
-                  disabled
-                />
-                <span>Multi City</span>
-              </label>
-            </div>
-
-            {/* Search Fields */}
-            <div className="search-fields-row">
-              {/* From */}
-              <div className="search-field-mmt from-field">
-                <AirportAutocomplete
-                  label="FROM"
-                  icon="fa-plane-departure"
-                  placeholder="Delhi"
-                  value={searchData.fromAirport?.displayText || ''}
-                  onChange={handleFromChange}
-                  required
-                />
-              </div>
-
-              {/* Swap Button */}
-              <button 
-                type="button" 
-                className="swap-button-mmt" 
-                onClick={swapLocations}
-                title="Swap locations"
-              >
-                <i className="fas fa-exchange-alt"></i>
-              </button>
-
-              {/* To */}
-              <div className="search-field-mmt to-field">
-                <AirportAutocomplete
-                  label="TO"
-                  icon="fa-plane-arrival"
-                  placeholder="Mumbai"
-                  value={searchData.toAirport?.displayText || ''}
-                  onChange={handleToChange}
-                  required
-                />
-              </div>
-
-              {/* Departure Date */}
-              <div className="search-field-mmt date-field">
-                <DatePicker
-                  label="DEPARTURE"
-                  icon="fa-calendar-alt"
-                  value={searchData.departDate}
-                  onChange={(date) => handleDateSelection('departDate', date)}
-                  isOpen={calendarOpen === 'departure'}
-                  onToggle={() => handleCalendarToggle('departure')}
-                  onClose={handleCalendarClose}
-                  departureDate={searchData.departDate}
-                  returnDate={searchData.returnDate}
-                  placeholder="Select Date"
-                  isReturn={false}
-                  required
-                />
-              </div>
-
-              {/* Return Date */}
-              {searchData.tripType === 'roundtrip' && (
-                <div className="search-field-mmt date-field">
-                  <DatePicker
-                    label="RETURN"
-                    icon="fa-calendar-alt"
-                    value={searchData.returnDate}
-                    onChange={(date) => handleDateSelection('returnDate', date)}
-                    isOpen={calendarOpen === 'return'}
-                    onToggle={() => handleCalendarToggle('return')}
-                    onClose={handleCalendarClose}
-                    isReturn={true}
-                    departureDate={searchData.departDate}
-                    returnDate={searchData.returnDate}
-                    placeholder={searchData.returnDate ? "Select Date" : "Select Return Date"}
-                    required
-                  />
-                </div>
-              )}
-
-              {/* Travelers & Class - MMT Style */}
-              <div className="search-field-mmt travelers-field" ref={travellersRef}>
-                <label className="field-label">
-                  <i className="fas fa-user"></i> TRAVELLERS & CLASS
-                </label>
-                <div 
-                  className="travellers-selector"
-                  onClick={() => setTravellersOpen(!travellersOpen)}
-                >
-                  <span className="travellers-count">{getTravellerSummary()}</span>
-                  <i className={`fas fa-chevron-down ${travellersOpen ? 'rotated' : ''}`}></i>
-                </div>
-                <div className="field-subtext">{getCabinClassDisplay()}</div>
-
-                {/* MMT Style Dropdown */}
-                {travellersOpen && (
-                  <div className="travellers-dropdown">
-                    {/* Adults */}
-                    <div className="traveller-type-row">
-                      <div className="traveller-type-info">
-                        <span className="traveller-type-label">ADULTS (12y +)</span>
-                        <span className="traveller-type-hint">on the day of travel</span>
-                      </div>
-                      <div className="traveller-counter">
-                        {[1,2,3,4,5,6,7,8,9].map(num => (
-                          <button
-                            key={num}
-                            type="button"
-                            className={`counter-btn ${searchData.adults === num ? 'active' : ''}`}
-                            onClick={() => setSearchData(prev => {
-                              const newInfants = Math.min(prev.infants, num);
-                              return {
-                                ...prev,
-                                adults: num,
-                                infants: newInfants,
-                                passengers: num + prev.children + newInfants
-                              };
-                            })}
-                          >
-                            {num}
-                          </button>
-                        ))}
-                        <button type="button" className="counter-btn more">&gt;9</button>
-                      </div>
-                    </div>
-
-                    {/* Children */}
-                    <div className="traveller-type-row">
-                      <div className="traveller-type-info">
-                        <span className="traveller-type-label">CHILDREN (2y - 12y)</span>
-                        <span className="traveller-type-hint">on the day of travel</span>
-                      </div>
-                      <div className="traveller-counter">
-                        {[0,1,2,3,4,5,6].map(num => (
-                          <button
-                            key={num}
-                            type="button"
-                            className={`counter-btn ${searchData.children === num ? 'active' : ''}`}
-                            onClick={() => {
-                              const total = searchData.adults + num + searchData.infants;
-                              if (total <= 9) {
-                                setSearchData(prev => ({
-                                  ...prev,
-                                  children: num,
-                                  passengers: prev.adults + num + prev.infants
-                                }));
-                              }
-                            }}
-                          >
-                            {num}
-                          </button>
-                        ))}
-                        <button type="button" className="counter-btn more">&gt;6</button>
-                      </div>
-                    </div>
-
-                    {/* Infants */}
-                    <div className="traveller-type-row">
-                      <div className="traveller-type-info">
-                        <span className="traveller-type-label">INFANTS (below 2y)</span>
-                        <span className="traveller-type-hint">on the day of travel</span>
-                      </div>
-                      <div className="traveller-counter">
-                        {[0,1,2,3,4,5,6].map(num => (
-                          <button
-                            key={num}
-                            type="button"
-                            className={`counter-btn ${searchData.infants === num ? 'active' : ''} ${num > searchData.adults ? 'disabled' : ''}`}
-                            onClick={() => {
-                              if (num <= searchData.adults) {
-                                const total = searchData.adults + searchData.children + num;
-                                if (total <= 9) {
-                                  setSearchData(prev => ({
-                                    ...prev,
-                                    infants: num,
-                                    passengers: prev.adults + prev.children + num
-                                  }));
-                                }
-                              }
-                            }}
-                            disabled={num > searchData.adults}
-                          >
-                            {num}
-                          </button>
-                        ))}
-                        <button type="button" className="counter-btn more">&gt;6</button>
-                      </div>
-                    </div>
-
-                    {/* Travel Class */}
-                    <div className="travel-class-section">
-                      <span className="travel-class-label">CHOOSE TRAVEL CLASS</span>
-                      <div className="travel-class-options">
-                        <button
-                          type="button"
-                          className={`class-btn ${searchData.cabinClass === 'economy' ? 'active' : ''}`}
-                          onClick={() => handleCabinClassChange('economy')}
-                        >
-                          Economy/Premium Economy
-                        </button>
-                        <button
-                          type="button"
-                          className={`class-btn ${searchData.cabinClass === 'premium_economy' ? 'active' : ''}`}
-                          onClick={() => handleCabinClassChange('premium_economy')}
-                        >
-                          Premium Economy
-                        </button>
-                        <button
-                          type="button"
-                          className={`class-btn ${searchData.cabinClass === 'business' ? 'active' : ''}`}
-                          onClick={() => handleCabinClassChange('business')}
-                        >
-                          Business
-                        </button>
-                        <button
-                          type="button"
-                          className={`class-btn ${searchData.cabinClass === 'first' ? 'active' : ''}`}
-                          onClick={() => handleCabinClassChange('first')}
-                        >
-                          First Class
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Apply Button */}
-                    <button 
-                      type="button" 
-                      className="apply-btn"
-                      onClick={() => setTravellersOpen(false)}
-                    >
-                      APPLY
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Special Fares */}
-            <div className="special-fares">
-              <span className="special-fares-label">Select A Fare Type:</span>
-              <label className="fare-type">
-                <input type="radio" name="fareType" defaultChecked />
-                <span>Regular Fares</span>
-              </label>
-              <label className="fare-type">
-                <input type="radio" name="fareType" />
-                <span>
-                  <i className="fas fa-briefcase"></i> Corporate Fares
-                </span>
-              </label>
-              <label className="fare-type">
-                <input type="radio" name="fareType" />
-                <span>
-                  <i className="fas fa-graduation-cap"></i> Student Fares
-                </span>
-              </label>
-              <label className="fare-type">
-                <input type="radio" name="fareType" />
-                <span>
-                  <i className="fas fa-medal"></i> Senior Citizen
-                </span>
-              </label>
-              <label className="fare-type">
-                <input type="radio" name="fareType" />
-                <span>
-                  <i className="fas fa-user-md"></i> Armed Forces
-                </span>
-              </label>
-            </div>
-
-            {/* Search Button */}
-            <button type="submit" className="search-submit-btn-mmt">
-              <i className="fas fa-search"></i> SEARCH
+    <div className="sw-search">
+      <div className="sw-search__top">
+        <div className="sw-search__products" role="tablist" aria-label="What are you booking?">
+          {tabs.map(tab => (
+            <button
+              key={tab.id}
+              type="button"
+              role="tab"
+              aria-selected={activeTab === tab.id}
+              className={`sw-search__product ${activeTab === tab.id ? 'active' : ''}`}
+              onClick={() => selectTab(tab.id)}
+            >
+              <Icon name={tab.icon} size={18} />
+              <span>{tab.label}</span>
             </button>
-          </form>
-        )}
+          ))}
+        </div>
 
-        {activeTab === 'hotels' && <HotelSearchForm />}
-
-        {!['flights', 'hotels'].includes(activeTab) && (
-          <div className="coming-soon">
-            <i className={`fas ${tabs.find(t => t.id === activeTab)?.icon} fa-3x`}></i>
-            <h3>{tabs.find(t => t.id === activeTab)?.label}</h3>
-            <p>This feature is coming soon! Stay tuned.</p>
+        {activeTab === 'flights' && (
+          <div className="sw-search__trip" role="radiogroup" aria-label="Trip type">
+            {[['roundtrip', 'Round trip'], ['oneway', 'One way']].map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                role="radio"
+                aria-checked={searchData.tripType === value}
+                className={`sw-chip ${searchData.tripType === value ? 'active' : ''}`}
+                onClick={() => handleChange('tripType', value)}
+              >
+                {label}
+              </button>
+            ))}
           </div>
         )}
       </div>
+
+      {activeTab === 'flights' ? (
+        <form onSubmit={handleSubmit} className="sw-search__form">
+          <div className="sw-search__fields sw-search__fields--flight">
+            <div className="search-field-mmt sw-cell from-field">
+              <AirportAutocomplete
+                label="From"
+                icon="fa-plane-departure"
+                placeholder="Delhi"
+                value={searchData.fromAirport?.displayText || ''}
+                onChange={handleFromChange}
+                required
+              />
+            </div>
+
+            <button type="button" className="sw-swap" onClick={swapLocations} aria-label="Swap origin and destination">
+              <Icon name="swap" size={18} />
+            </button>
+
+            <div className="search-field-mmt sw-cell to-field">
+              <AirportAutocomplete
+                label="To"
+                icon="fa-plane-arrival"
+                placeholder="Mumbai"
+                value={searchData.toAirport?.displayText || ''}
+                onChange={handleToChange}
+                required
+              />
+            </div>
+
+            <div className="search-field-mmt sw-cell date-field">
+              <DatePicker
+                label="Depart"
+                icon="fa-calendar-alt"
+                value={searchData.departDate}
+                onChange={(date) => handleDateSelection('departDate', date)}
+                isOpen={calendarOpen === 'departure'}
+                onToggle={() => handleCalendarToggle('departure')}
+                onClose={handleCalendarClose}
+                departureDate={searchData.departDate}
+                returnDate={searchData.returnDate}
+                placeholder="Select date"
+                isReturn={false}
+                required
+              />
+            </div>
+
+            {searchData.tripType === 'roundtrip' ? (
+              <div className="search-field-mmt sw-cell date-field">
+                <DatePicker
+                  label="Return"
+                  icon="fa-calendar-alt"
+                  value={searchData.returnDate}
+                  onChange={(date) => handleDateSelection('returnDate', date)}
+                  isOpen={calendarOpen === 'return'}
+                  onToggle={() => handleCalendarToggle('return')}
+                  onClose={handleCalendarClose}
+                  isReturn={true}
+                  departureDate={searchData.departDate}
+                  returnDate={searchData.returnDate}
+                  placeholder="Add return"
+                  required
+                />
+              </div>
+            ) : (
+              <button type="button" className="search-field-mmt sw-cell sw-cell--ghost" onClick={() => handleChange('tripType', 'roundtrip')}>
+                <span className="field-label">Return</span>
+                <span className="sw-cell__add"><Icon name="plus" size={16} /> Add return</span>
+                <span className="field-subtext">Save more on round trips</span>
+              </button>
+            )}
+
+            <div className="search-field-mmt sw-cell travelers-field" ref={travellersRef}>
+              <span className="field-label">Travellers &amp; class</span>
+              <button type="button" className="travellers-selector" onClick={() => setTravellersOpen(!travellersOpen)} aria-expanded={travellersOpen}>
+                <span className="travellers-count">{getTravellerSummary()}</span>
+                <i className={`fas fa-chevron-down ${travellersOpen ? 'rotated' : ''}`}></i>
+              </button>
+              <div className="field-subtext">{getCabinClassDisplay()}</div>
+
+              {travellersOpen && (
+                <div className="travellers-dropdown">
+                  {TRAVELLER_ROWS.map(row => (
+                    <div className="traveller-type-row" key={row.key}>
+                      <div className="traveller-type-info">
+                        <span className="traveller-type-label">{row.label}</span>
+                        <span className="traveller-type-hint">{row.hint}</span>
+                      </div>
+                      <div className="traveller-counter">
+                        {row.options.map(num => (
+                          <button
+                            key={num}
+                            type="button"
+                            className={`counter-btn ${searchData[row.key] === num ? 'active' : ''}`}
+                            disabled={row.key === 'infants' && num > searchData.adults}
+                            onClick={() => setTravellerCount(row.key, num)}
+                          >
+                            {num}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+
+                  <div className="travel-class-section">
+                    <span className="travel-class-label">Cabin class</span>
+                    <div className="travel-class-options">
+                      {CABIN_CLASSES.map(([value, label]) => (
+                        <button
+                          key={value}
+                          type="button"
+                          className={`class-btn ${searchData.cabinClass === value ? 'active' : ''}`}
+                          onClick={() => handleCabinClassChange(value)}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <button type="button" className="apply-btn" onClick={() => setTravellersOpen(false)}>
+                    Done
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <button type="submit" className="search-submit-btn-mmt">
+            <Icon name="search" size={20} strokeWidth={2.5} />
+            <span>Search</span>
+          </button>
+        </form>
+      ) : (
+        <HotelSearchForm />
+      )}
     </div>
   );
 }

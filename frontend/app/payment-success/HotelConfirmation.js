@@ -5,7 +5,10 @@ import Link from 'next/link';
 import Header from '../components/Header/Header';
 import Footer from '../components/Footer/Footer';
 import { getHotelBookingByReference, formatMoney, formatStayDate } from '@/lib/api/hotels';
+import Icon from '../components/Icon/Icon';
+import { Skeleton, StateMessage } from '../components/Skeleton/Skeleton';
 import '../hotels/hotels.css';
+import '../styles/confirmation.css';
 
 // How long to keep checking while the hotel confirms the room with the supplier
 const POLL_INTERVAL_MS = 4000;
@@ -63,84 +66,108 @@ export default function HotelConfirmation({ bookingReference, paymentId }) {
 
   const status = FULFILLMENT_MESSAGES[booking?.fulfillmentStatus] || (booking?.status === 'confirmed' ? FULFILLMENT_MESSAGES.CONFIRMED : null);
   const hotelData = booking?.hotelData || {};
+  const pending = ['PENDING', 'IN_PROGRESS'].includes(booking?.fulfillmentStatus);
+  const city = hotelData.city || (hotelData.address || '').split(',').map(s => s.trim()).filter(Boolean).pop();
+  const lead = booking?.guests?.[0];
 
   return (
     <>
       <Header />
-      <main className="hotels-page">
-        <div className="container">
-          <div className="hd-card" style={{ textAlign: 'center' }}>
-            <div className="hotel-rating-score" style={{ display: 'inline-flex', fontSize: '2rem', borderRadius: '50%', width: 64, height: 64, alignItems: 'center', justifyContent: 'center', background: 'var(--secondary-color)' }}>
-              <i className="fas fa-check"></i>
-            </div>
-            <h1 style={{ marginBottom: 4 }}>Payment Successful!</h1>
-            <p className="hotels-results-sub">Your hotel booking reference is <strong>{bookingReference}</strong></p>
-            {paymentId && <p className="hotels-results-sub">Payment ID: {paymentId}</p>}
+      <main className="cf-page">
+        <section className={`cf-hero ${pending ? 'is-pending' : ''}`}>
+          <div className="container">
+            <span className="cf-tick"><Icon name={pending ? 'clock' : 'check'} size={36} strokeWidth={2.5} /></span>
+            <h1 className="cf-title">
+              {city ? <>Your stay in <em className="sw-editorial">{city}</em> is booked</> : <>Payment <em className="sw-editorial">received</em></>}
+            </h1>
+            <p className="cf-sub">
+              {booking?.contactEmail ? `We’ve sent the voucher to ${booking.contactEmail}.` : 'Your confirmation is on its way to your inbox.'}
+            </p>
           </div>
+        </section>
 
-          {loading && (
-            <div className="hotels-state"><i className="fas fa-spinner fa-spin"></i><p>Loading your booking…</p></div>
-          )}
+        <div className="cf-body">
+          {loading && <div className="cf-voucher cf-loading"><PageSkeletonBlock /></div>}
 
           {!loading && error && (
-            <div className="hotels-state">
-              <i className="fas fa-envelope"></i>
-              <p>Your payment was received. We couldn&apos;t load the booking details here ({error}). A confirmation will be emailed to you.</p>
-              <Link href="/my-bookings" className="btn btn-primary">Go to My Bookings</Link>
-            </div>
+            <StateMessage icon="mail" tone="brand" title="Payment received"
+              action={<Link href="/my-bookings" className="btn btn-primary">Go to My trips</Link>}>
+              We couldn’t load the booking here ({error}). Your confirmation will be emailed to you.
+            </StateMessage>
           )}
 
           {!loading && booking && (
-            <div className="hb-layout">
-              <div className="hd-card">
-                {status && (
-                  <div className={status.tone === 'success' ? 'hb-confirmed' : 'hb-price-change'}>
-                    {['PENDING', 'IN_PROGRESS'].includes(booking.fulfillmentStatus) && <i className="fas fa-spinner fa-spin"></i>} {status.text}
-                  </div>
-                )}
-
-                <div className="hb-summary-hotel">
-                  {hotelData.photo && <img src={hotelData.photo} alt={booking.hotelName} />}
+            <>
+              <article className="cf-voucher">
+                <div className="cf-ref">
                   <div>
-                    <h2 style={{ margin: 0 }}>{booking.hotelName}</h2>
-                    <small className="hotel-card-address">{hotelData.address}</small>
+                    <span className="sw-overline">Booking reference</span>
+                    <strong className="cf-ref__code">{bookingReference}</strong>
+                  </div>
+                  <div className="cf-ref__tags">
+                    <span className={`sw-badge ${status?.tone === 'success' ? 'sw-badge--success' : status?.tone === 'warn' ? 'sw-badge--warning' : ''}`}>
+                      {status?.tone === 'success' ? 'Confirmed' : pending ? 'Confirming' : 'Received'}
+                    </span>
+                    {hotelData.supplierName && <span className="sw-supplier">via <strong>{hotelData.supplierName}</strong></span>}
                   </div>
                 </div>
 
-                <div className="hb-stay">
-                  <div><span>Check-in</span>{formatStayDate(String(booking.checkInDate).slice(0, 10))}</div>
-                  <div><span>Check-out</span>{formatStayDate(String(booking.checkOutDate).slice(0, 10))}</div>
-                  <div><span>Rooms</span>{booking.roomQuantity}</div>
-                  <div><span>Adults</span>{booking.adults}</div>
+                {status && status.tone !== 'success' && (
+                  <div className={`cf-status is-${status.tone === 'warn' ? 'warn' : 'info'}`}>
+                    {pending ? <span className="spinner-dark" /> : <Icon name="info" size={16} />} {status.text}
+                  </div>
+                )}
+
+                <div className="cf-main">
+                  {hotelData.photo && <img className="cf-main__photo" src={hotelData.photo} alt="" />}
+                  <div className="cf-main__info">
+                    {hotelData.stars ? <span className="hotel-stars">{'★'.repeat(Math.round(hotelData.stars))}</span> : null}
+                    <h2>{booking.hotelName}</h2>
+                    {hotelData.address && <p>{hotelData.address}</p>}
+                    {(hotelData.roomName || hotelData.boardName) && <strong>{[hotelData.roomName, hotelData.boardName].filter(Boolean).join(' · ')}</strong>}
+                    {booking.providerConfirmationId && <p>Hotel confirmation no. <strong>{booking.providerConfirmationId}</strong></p>}
+                  </div>
                 </div>
 
-                {(hotelData.roomName || hotelData.boardName) && (
-                  <p><strong>{hotelData.roomName}</strong>{hotelData.boardName ? <><br /><small>{hotelData.boardName}</small></> : null}</p>
-                )}
+                <div className="cf-perf" />
 
-                {booking.providerConfirmationId && (
-                  <div className="hb-row"><span>Hotel confirmation no.</span><strong>{booking.providerConfirmationId}</strong></div>
-                )}
-                <div className="hb-row"><span>Lead guest</span><span>{booking.guests?.[0] ? `${booking.guests[0].firstName} ${booking.guests[0].lastName}` : '-'}</span></div>
-                <div className="hb-row"><span>Contact</span><span>{booking.contactEmail}</span></div>
-                <div className="hb-row total"><span>Total paid</span><span>{formatMoney(booking.totalPrice, booking.currency)}</span></div>
+                <div className="cf-facts">
+                  <div><span className="sw-overline">Check-in</span><strong>{formatStayDate(String(booking.checkInDate).slice(0, 10))}</strong></div>
+                  <div><span className="sw-overline">Check-out</span><strong>{formatStayDate(String(booking.checkOutDate).slice(0, 10))}</strong></div>
+                  <div><span className="sw-overline">Guests</span><strong>{booking.adults} adult{booking.adults > 1 ? 's' : ''} · {booking.roomQuantity} room{booking.roomQuantity > 1 ? 's' : ''}</strong>{lead && <small>{lead.firstName} {lead.lastName}</small>}</div>
+                  <div><span className="sw-overline">Paid</span><strong>{formatMoney(booking.totalPrice, booking.currency)}</strong>{paymentId && <small>Payment {paymentId}</small>}</div>
+                </div>
+
+                <div className="cf-actions">
+                  <Link href="/my-bookings" className="btn btn-primary"><Icon name="ticket" size={16} /> View in My trips</Link>
+                  <button type="button" className="btn btn-secondary" onClick={() => window.print()}><Icon name="download" size={16} /> Save voucher</button>
+                  <span className="spacer" />
+                  <Link href="/contact" className="btn btn-ghost">Need help?</Link>
+                </div>
+              </article>
+
+              <h2 className="cf-next-title">What happens next</h2>
+              <div className="cf-next">
+                <div><Icon name="mail" size={20} /><strong>Voucher in your inbox</strong><p>Show it on your phone at check-in — no printout needed.</p></div>
+                <div><Icon name="user" size={20} /><strong>Bring a photo ID</strong><p>Every guest needs a government ID matching the booking name.</p></div>
+                <div><Icon name="info" size={20} /><strong>Local taxes</strong><p>Any city or tourist tax is paid directly at the hotel.</p></div>
               </div>
-
-              <aside className="hd-card">
-                <h3>What&apos;s next</h3>
-                <ul className="hd-room-facts">
-                  <li><i className="fas fa-id-card"></i> Carry a government photo ID for every guest at check-in</li>
-                  <li><i className="fas fa-receipt"></i> Local taxes, if any, are payable at the hotel</li>
-                  <li><i className="fas fa-envelope"></i> Keep your booking reference handy for support</li>
-                </ul>
-                <Link href="/my-bookings" className="btn btn-primary hb-submit" style={{ marginTop: 16 }}>View My Bookings</Link>
-                <Link href="/" className="btn btn-outline hb-submit" style={{ marginTop: 8 }}>Book another stay</Link>
-              </aside>
-            </div>
+            </>
           )}
         </div>
       </main>
       <Footer />
     </>
+  );
+}
+
+function PageSkeletonBlock() {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+      <Skeleton w={160} h={12} /><Skeleton w={220} h={28} />
+      <div style={{ display: 'flex', gap: 16, marginTop: 12 }}><Skeleton w={180} h={120} r={12} />
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10 }}><Skeleton w="60%" h={20} /><Skeleton w="40%" h={12} /><Skeleton w="50%" h={12} /></div>
+      </div>
+    </div>
   );
 }

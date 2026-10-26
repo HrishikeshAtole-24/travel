@@ -1,119 +1,118 @@
-.policy-page {
-  min-height: 80vh;
-  padding: 60px 20px;
-  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-}
+/* Legal pages — privacy, terms, refunds (shared reading layout) */
 
-.policy-page .container {
-  max-width: 900px;
-  margin: 0 auto;
+.policy-page {
+  min-height: 100vh;
+  padding: calc(var(--sw-header-height) + var(--sw-space-12)) 0 var(--sw-space-16);
+  background: var(--sw-color-bg-canvas);
 }
 
 .policy-content {
-  background: white;
-  border-radius: 16px;
-  padding: 50px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+  max-width: 760px;
+  margin: 0 auto;
+  padding: var(--sw-space-10) var(--sw-space-12);
+  border: 1px solid var(--sw-color-border-default);
+  border-radius: var(--sw-radius-xl);
+  background: var(--sw-color-bg-surface);
 }
 
 .policy-content h1 {
-  font-size: 36px;
-  color: #1e293b;
-  margin-bottom: 10px;
-  font-weight: 700;
-  border-bottom: 4px solid #0066FF;
-  padding-bottom: 15px;
+  margin: 0 0 var(--sw-space-2);
+  font: 800 clamp(2rem, 4vw, 2.75rem)/1.15 var(--sw-font-display);
+  letter-spacing: -0.025em;
 }
 
 .last-updated {
-  color: #64748b;
-  font-size: 14px;
-  margin-bottom: 40px;
-  font-style: italic;
+  display: inline-flex;
+  margin: 0 0 var(--sw-space-8);
+  padding: 4px 10px;
+  border-radius: var(--sw-radius-full);
+  background: var(--sw-color-bg-subtle);
+  font: 600 0.75rem/1.4 var(--sw-font-ui);
+  color: var(--sw-color-text-secondary);
 }
 
 .policy-content section {
-  margin-bottom: 40px;
+  padding: var(--sw-space-6) 0;
+  border-top: 1px solid var(--sw-color-border-default);
 }
 
 .policy-content h2 {
-  font-size: 24px;
-  color: #0066FF;
-  margin-bottom: 15px;
-  margin-top: 30px;
-  font-weight: 600;
+  margin: 0 0 var(--sw-space-3);
+  font: 700 1.25rem/1.35 var(--sw-font-display);
+  letter-spacing: -0.01em;
 }
 
 .policy-content h3 {
-  font-size: 18px;
-  color: #334155;
-  margin-bottom: 10px;
-  margin-top: 20px;
-  font-weight: 600;
+  margin: var(--sw-space-5) 0 var(--sw-space-2);
+  font: 600 1rem/1.4 var(--sw-font-display);
+}
+
+.policy-content p,
+.policy-content li {
+  font: 400 1rem/1.7 var(--sw-font-ui);
+  color: var(--sw-color-text-secondary);
 }
 
 .policy-content p {
-  font-size: 15px;
-  line-height: 1.8;
-  color: #475569;
-  margin-bottom: 15px;
+  margin: 0 0 var(--sw-space-3);
 }
 
-.policy-content ul {
-  margin: 15px 0;
-  padding-left: 30px;
+.policy-content ul,
+.policy-content ol {
+  margin: 0 0 var(--sw-space-4);
+  padding-left: var(--sw-space-6);
 }
 
-.policy-content ul li {
-  font-size: 15px;
-  line-height: 1.8;
-  color: #475569;
-  margin-bottom: 8px;
+.policy-content li + li {
+  margin-top: 4px;
 }
 
-.policy-content ul li strong {
-  color: #1e293b;
+.policy-content strong {
+  color: var(--sw-color-text-primary);
+}
+
+.policy-content table {
+  width: 100%;
+  margin: var(--sw-space-3) 0 var(--sw-space-5);
+  border-collapse: collapse;
+  font: 400 0.875rem/1.5 var(--sw-font-ui);
+}
+
+.policy-content th,
+.policy-content td {
+  padding: var(--sw-space-3);
+  border-bottom: 1px solid var(--sw-color-border-default);
+  text-align: left;
+}
+
+.policy-content th {
+  background: var(--sw-color-bg-subtle);
   font-weight: 600;
+  color: var(--sw-color-text-primary);
 }
 
 .contact-info {
-  background: #f1f5f9;
-  border-left: 4px solid #0066FF;
-  padding: 20px;
-  border-radius: 8px;
-  margin-top: 15px;
+  padding: var(--sw-space-5);
+  border-radius: var(--sw-radius-md);
+  background: var(--sw-color-bg-brand-subtle);
 }
 
 .contact-info p {
-  margin-bottom: 10px;
-  color: #334155;
+  margin: 0 0 4px;
 }
 
-.contact-info strong {
-  color: #0066FF;
-  font-weight: 600;
-}
+@media (max-width: 760px) {
+  .policy-page {
+    padding-top: calc(64px + var(--sw-space-6));
+  }
 
-/* Responsive */
-@media (max-width: 768px) {
   .policy-content {
-    padding: 30px 20px;
+    padding: var(--sw-space-6) var(--sw-space-5);
+    border-radius: var(--sw-radius-lg);
   }
 
-  .policy-content h1 {
-    font-size: 28px;
-  }
-
-  .policy-content h2 {
-    font-size: 20px;
-  }
-
-  .policy-content h3 {
-    font-size: 16px;
-  }
-
-  .policy-content p,
-  .policy-content ul li {
-    font-size: 14px;
+  .policy-content table {
+    display: block;
+    overflow-x: auto;
   }
 }

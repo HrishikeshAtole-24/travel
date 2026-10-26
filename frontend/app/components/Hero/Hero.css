@@ -1,74 +1,102 @@
-/* Hero Section Styles */
+/* Home hero — Figma "Home · Desktop" hero */
 
-.hero-section {
+.hero {
   position: relative;
-  min-height: 700px;
-  background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
-  display: flex;
-  align-items: center;
-  padding: var(--spacing-3xl) 0;
-  overflow: hidden;
+  isolation: isolate;
+  padding: calc(var(--sw-header-height) + var(--sw-space-16)) 0 var(--sw-space-10);
+  background: var(--sw-color-bg-inverse);
+  color: var(--sw-color-text-inverse);
+  /* Leave room for popovers that open below the search panel */
+  overflow: visible;
 }
 
-.hero-overlay {
+.hero__media {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: 
-    radial-gradient(circle at 20% 50%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
-    radial-gradient(circle at 80% 80%, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
-  pointer-events: none;
+  inset: 0;
+  z-index: -1;
+  background:
+    linear-gradient(180deg, rgba(11, 22, 48, 0.55) 0%, rgba(11, 22, 48, 0.35) 40%, rgba(11, 22, 48, 0.92) 100%),
+    url('https://images.unsplash.com/photo-1436491865332-7a61a109cc05?w=2000&q=75&auto=format&fit=crop') center 40% / cover no-repeat;
 }
 
-.hero-content {
-  position: relative;
-  z-index: 1;
-  width: 100%;
+.hero__inner {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sw-space-8);
 }
 
-.hero-text {
-  text-align: center;
-  margin-bottom: var(--spacing-2xl);
-  padding: 0 var(--spacing-lg);
+.hero__copy {
+  max-width: 760px;
 }
 
-.hero-title {
-  font-size: clamp(2rem, 4vw, 3rem);
-  font-weight: 800;
-  color: var(--white);
-  margin-bottom: var(--spacing-md);
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  letter-spacing: -0.02em;
+.hero__eyebrow {
+  margin: 0 0 var(--sw-space-4);
+  color: var(--sw-color-text-on-inverse-accent);
 }
 
-.hero-subtitle {
-  font-size: clamp(1rem, 2vw, 1.25rem);
-  color: rgba(255, 255, 255, 0.95);
-  margin-bottom: 0;
-  font-weight: 400;
-  line-height: 1.5;
+.hero__title {
+  margin: 0;
+  color: var(--sw-color-white);
 }
 
-/* Responsive */
+.hero__title em {
+  font-size: 1.08em;
+  color: var(--sw-color-text-on-inverse-accent);
+}
+
+.hero__subtitle {
+  max-width: 560px;
+  margin: var(--sw-space-4) 0 0;
+  font: 400 1.125rem/1.56 var(--sw-font-ui);
+  color: var(--sw-color-text-on-inverse-muted);
+}
+
+.hero__search-placeholder {
+  height: 196px;
+  border-radius: var(--sw-radius-xl);
+  background: var(--sw-color-bg-surface);
+  opacity: 0.96;
+}
+
+.hero__trust {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sw-space-2) var(--sw-space-6);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.hero__trust li {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sw-space-2);
+  font: 500 0.875rem/1.4 var(--sw-font-ui);
+  color: var(--sw-color-slate-200);
+}
+
+.hero__trust svg {
+  color: var(--sw-color-green-300);
+}
+
 @media (max-width: 768px) {
-  .hero-section {
-    min-height: auto;
-    padding: var(--spacing-lg) 0 var(--spacing-xl) 0;
+  .hero {
+    padding: calc(var(--sw-header-height) + var(--sw-space-8)) 0 var(--sw-space-8);
   }
 
-  .hero-text {
-    margin-bottom: var(--spacing-md);
-    padding: 0 var(--spacing-sm);
+  .hero__inner {
+    gap: var(--sw-space-6);
   }
 
-  .hero-title {
-    font-size: 1.5rem;
-    margin-bottom: var(--spacing-sm);
+  .hero__subtitle {
+    font-size: 1rem;
   }
 
-  .hero-subtitle {
-    font-size: 0.875rem;
+  .hero__trust {
+    gap: var(--sw-space-2) var(--sw-space-4);
+  }
+
+  .hero__trust li {
+    font-size: 0.8125rem;
   }
 }

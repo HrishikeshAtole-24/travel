@@ -79,13 +79,9 @@ async function sendFlightConfirmationEmail(bookingReference) {
 
     // Trusted internal call: payment signature was verified before we got here
     const bookingDetails = await bookingService.getBookingByReference(bookingReference, null);
-    if (bookingDetails.success && bookingDetails.booking) {
-      const booking = bookingDetails.booking;
-      await emailService.sendBookingConfirmation({
-        ...booking,
-        flight_data: booking.flightData
-      }, booking.contactEmail);
-      logger.info(`[Payment] Confirmation email sent for ${bookingReference}`);
+    if (bookingDetails.success && bookingDetails.booking?.status === 'confirmed') {
+      // E-ticket email with the PDF attached (itinerary from the supplier order)
+      await emailService.sendFlightTicketEmail(bookingDetails.booking);
     }
   } catch (emailError) {
     // Don't fail the payment if email fails
@@ -188,8 +184,9 @@ const verifyRazorpayPayment = AsyncHandler(async (req, res) => {
     });
 
     // Confirmation emails are flight-specific today; send once per payment
+    // E-ticket email goes out after the response so the traveller isn't kept waiting on SMTP
     if (!alreadyProcessed && bookingType === 'flight') {
-      await sendFlightConfirmationEmail(payment.booking_reference);
+      setImmediate(() => sendFlightConfirmationEmail(payment.booking_reference));
     }
 
     return res.status(200).json({

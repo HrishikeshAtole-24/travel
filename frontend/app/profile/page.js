@@ -5,6 +5,12 @@ import Header from '../components/Header/Header';
 import Footer from '../components/Footer/Footer';
 import apiClient from '@/lib/api/client';
 import { useAuth } from '@/app/contexts/AuthContext';
+import Link from 'next/link';
+import Icon from '../components/Icon/Icon';
+import AccountNav from '../components/AccountNav/AccountNav';
+import { CheckoutSection } from '../components/CheckoutSteps/CheckoutSteps';
+import { PageSkeleton, StateMessage } from '../components/Skeleton/Skeleton';
+import '../hotels/hotels.css';
 import './profile.css';
 
 export default function ProfilePage() {
@@ -97,20 +103,7 @@ export default function ProfilePage() {
   };
 
   if (loading) {
-    return (
-      <>
-        <Header />
-        <main className="profile-page">
-          <div className="container">
-            <div className="loading-state">
-              <i className="fas fa-spinner fa-spin"></i>
-              <p>Loading profile...</p>
-            </div>
-          </div>
-        </main>
-        <Footer />
-      </>
-    );
+    return <><Header /><PageSkeleton label="Loading profile…" /></>;
   }
 
   if (error && !profile) {
@@ -119,14 +112,10 @@ export default function ProfilePage() {
         <Header />
         <main className="profile-page">
           <div className="container">
-            <div className="error-state">
-              <i className="fas fa-exclamation-triangle"></i>
-              <h3>Error Loading Profile</h3>
-              <p>{error}</p>
-              <button className="btn btn-primary" onClick={fetchProfile}>
-                Try Again
-              </button>
-            </div>
+            <StateMessage icon="alert" tone="danger" title="We couldn’t load your profile"
+              action={<button className="btn btn-primary" onClick={fetchProfile}>Try again</button>}>
+              {error}
+            </StateMessage>
           </div>
         </main>
         <Footer />
@@ -134,205 +123,81 @@ export default function ProfilePage() {
     );
   }
 
+  const field = (name, label, props = {}) => (
+    <label className="hb-field">
+      <span className="form-label">{label}</span>
+      <input className="form-input" id={name} name={name} value={formData[name]} onChange={handleChange} disabled={!isEditing} {...props} />
+    </label>
+  );
+
   return (
     <>
       <Header />
       <main className="profile-page">
-        <div className="container">
-          {/* Page Header */}
-          <div className="profile-header">
-            <div className="header-left">
-              <h1><i className="fas fa-user-circle"></i> My Profile</h1>
-              <p>Manage your account information and preferences</p>
-            </div>
-            <button 
-              className="btn btn-primary"
-              onClick={() => router.push('/my-bookings')}
-            >
-              <i className="fas fa-ticket"></i> My Bookings
-            </button>
-          </div>
+        <div className="container acct-layout">
+          <AccountNav active="profile" />
 
-          {/* Profile Content */}
-          <div className="profile-content">
-            {/* Profile Card */}
-            <div className="profile-card">
-              <div className="profile-avatar-section">
-                <div className="profile-avatar-large">
-                  {getInitials()}
-                </div>
-                <div className="profile-basic-info">
-                  <h2>{profile?.firstName} {profile?.lastName}</h2>
-                  <p className="profile-email">{profile?.email}</p>
-                  <div className="profile-badges">
-                    {profile?.emailVerified && (
-                      <span className="badge badge-success">
-                        <i className="fas fa-check-circle"></i> Email Verified
-                      </span>
-                    )}
-                    {profile?.phoneVerified && (
-                      <span className="badge badge-success">
-                        <i className="fas fa-check-circle"></i> Phone Verified
-                      </span>
-                    )}
-                    {profile?.status === 'active' && (
-                      <span className="badge badge-info">
-                        <i className="fas fa-circle-check"></i> Active
-                      </span>
-                    )}
-                  </div>
+          <div className="acct-main">
+            <header className="acct-head">
+              <h1>Profile</h1>
+              <p>Your details are used to pre-fill traveller and guest forms.</p>
+            </header>
+
+            <section className="acct-identity">
+              <span className="acct-avatar">{getInitials()}</span>
+              <div>
+                <h2>{profile?.firstName} {profile?.lastName}</h2>
+                <p>{profile?.email}</p>
+                <div className="acct-badges">
+                  {profile?.emailVerified && <span className="sw-badge sw-badge--success"><Icon name="check" size={12} /> Email verified</span>}
+                  {profile?.phoneVerified && <span className="sw-badge sw-badge--success"><Icon name="check" size={12} /> Phone verified</span>}
                 </div>
               </div>
+              <dl className="acct-meta">
+                <div><dt>Member since</dt><dd>{formatDate(profile?.createdAt)}</dd></div>
+                <div><dt>Last sign-in</dt><dd>{formatDate(profile?.lastLogin)}</dd></div>
+              </dl>
+            </section>
 
-              <div className="profile-stats">
-                <div className="stat-item">
-                  <i className="fas fa-calendar-plus"></i>
-                  <span className="stat-label">Member Since</span>
-                  <span className="stat-value">{formatDate(profile?.createdAt)}</span>
+            <CheckoutSection title="Personal information"
+              aside={!isEditing ? (
+                <button type="button" className="btn btn-secondary btn-sm" onClick={() => setIsEditing(true)}>Edit</button>
+              ) : (
+                <button type="button" className="btn btn-ghost btn-sm" onClick={() => {
+                  setIsEditing(false);
+                  setFormData({ firstName: profile?.firstName || '', lastName: profile?.lastName || '', phone: profile?.phone || '', email: profile?.email || '' });
+                }}>Cancel</button>
+              )}>
+              {error && <div className="hb-error" role="alert"><Icon name="alert" size={16} /> {error}</div>}
+              <form onSubmit={handleSubmit} className="acct-form">
+                <div className="hb-grid two">
+                  {field('firstName', 'First name', { required: true })}
+                  {field('lastName', 'Last name', { required: true })}
+                  <label className="hb-field">
+                    <span className="form-label">Email</span>
+                    <input className="form-input" id="email" name="email" type="email" value={formData.email} disabled />
+                    <span className="form-helper">Email can’t be changed</span>
+                  </label>
+                  {field('phone', 'Mobile number', { type: 'tel', placeholder: '+91 98765 43210' })}
                 </div>
-                <div className="stat-item">
-                  <i className="fas fa-clock"></i>
-                  <span className="stat-label">Last Login</span>
-                  <span className="stat-value">{formatDate(profile?.lastLogin)}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Profile Details Card */}
-            <div className="profile-details-card">
-              <div className="card-header">
-                <h3><i className="fas fa-id-card"></i> Personal Information</h3>
-                {!isEditing ? (
-                  <button className="btn btn-outline" onClick={() => setIsEditing(true)}>
-                    <i className="fas fa-pen"></i> Edit Profile
-                  </button>
-                ) : (
-                  <button className="btn btn-ghost" onClick={() => {
-                    setIsEditing(false);
-                    setFormData({
-                      firstName: profile?.firstName || '',
-                      lastName: profile?.lastName || '',
-                      phone: profile?.phone || '',
-                      email: profile?.email || ''
-                    });
-                  }}>
-                    <i className="fas fa-times"></i> Cancel
-                  </button>
-                )}
-              </div>
-
-              {error && (
-                <div className="error-message">
-                  <i className="fas fa-exclamation-circle"></i>
-                  {error}
-                </div>
-              )}
-
-              <form onSubmit={handleSubmit} className="profile-form">
-                <div className="form-grid">
-                  <div className="form-group">
-                    <label htmlFor="firstName">
-                      <i className="fas fa-user"></i> First Name
-                    </label>
-                    <input
-                      type="text"
-                      id="firstName"
-                      name="firstName"
-                      value={formData.firstName}
-                      onChange={handleChange}
-                      disabled={!isEditing}
-                      required
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label htmlFor="lastName">
-                      <i className="fas fa-user"></i> Last Name
-                    </label>
-                    <input
-                      type="text"
-                      id="lastName"
-                      name="lastName"
-                      value={formData.lastName}
-                      onChange={handleChange}
-                      disabled={!isEditing}
-                      required
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label htmlFor="email">
-                      <i className="fas fa-envelope"></i> Email Address
-                    </label>
-                    <input
-                      type="email"
-                      id="email"
-                      name="email"
-                      value={formData.email}
-                      onChange={handleChange}
-                      disabled={true}
-                    />
-                    <small className="form-hint">Email cannot be changed</small>
-                  </div>
-
-                  <div className="form-group">
-                    <label htmlFor="phone">
-                      <i className="fas fa-phone"></i> Phone Number
-                    </label>
-                    <input
-                      type="tel"
-                      id="phone"
-                      name="phone"
-                      value={formData.phone}
-                      onChange={handleChange}
-                      disabled={!isEditing}
-                      placeholder="+91 XXXXXXXXXX"
-                    />
-                  </div>
-                </div>
-
                 {isEditing && (
-                  <div className="form-actions">
-                    <button type="submit" className="btn btn-primary">
-                      <i className="fas fa-save"></i> Save Changes
-                    </button>
+                  <div className="acct-actions">
+                    <button type="submit" className="btn btn-primary">Save changes</button>
                   </div>
                 )}
               </form>
-            </div>
+            </CheckoutSection>
 
-            {/* Security Card */}
-            <div className="security-card">
-              <div className="card-header">
-                <h3><i className="fas fa-shield-halved"></i> Security</h3>
-              </div>
-              <div className="security-content">
-                <div className="security-item">
-                  <div className="security-info">
-                    <i className="fas fa-key"></i>
-                    <div>
-                      <h4>Password</h4>
-                      <p>Change your password to keep your account secure</p>
-                    </div>
-                  </div>
-                  <button className="btn btn-outline btn-sm">
-                    Change Password
-                  </button>
+            <CheckoutSection title="Sign-in & security">
+              <div className="acct-row">
+                <span className="acct-row__icon"><Icon name="shield-check" size={20} /></span>
+                <div>
+                  <strong>Password</strong>
+                  <p>Need to reset it? Our support team will verify you and help.</p>
                 </div>
-                <div className="security-item">
-                  <div className="security-info">
-                    <i className="fas fa-mobile-screen"></i>
-                    <div>
-                      <h4>Two-Factor Authentication</h4>
-                      <p>Add an extra layer of security to your account</p>
-                    </div>
-                  </div>
-                  <button className="btn btn-outline btn-sm">
-                    Enable 2FA
-                  </button>
-                </div>
+                <Link href="/contact" className="btn btn-secondary btn-sm">Contact support</Link>
               </div>
-            </div>
+            </CheckoutSection>
           </div>
         </div>
       </main>

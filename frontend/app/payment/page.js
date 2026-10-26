@@ -1,147 +1,61 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import Header from '../components/Header/Header';
 import Footer from '../components/Footer/Footer';
+import Icon from '../components/Icon/Icon';
+import { StateMessage } from '../components/Skeleton/Skeleton';
 import './payment.css';
 
-function PaymentContent() {
-  const searchParams = useSearchParams();
-  const router = useRouter();
-  const [bookingData, setBookingData] = useState(null);
-  const [paymentMethod, setPaymentMethod] = useState('razorpay');
+/**
+ * Payment hand-off. Payments run on Razorpay's hosted checkout; this page only
+ * forwards to a pending checkout link if one was saved, or explains where to pay.
+ */
+export default function PaymentPage() {
+  const [checkoutUrl, setCheckoutUrl] = useState(null);
+  const [checked, setChecked] = useState(false);
 
   useEffect(() => {
-    const data = sessionStorage.getItem('bookingData');
-    if (data) {
-      setBookingData(JSON.parse(data));
-    } else {
-      router.push('/');
+    try {
+      const saved = JSON.parse(sessionStorage.getItem('bookingData') || '{}');
+      const url = saved.checkoutUrl || saved.paymentUrl;
+      if (url && /^https:\/\//.test(url)) {
+        setCheckoutUrl(url);
+        window.location.href = url;
+      }
+    } catch {
+      // No saved checkout — fall through to the help state
     }
+    setChecked(true);
   }, []);
-
-  const handlePayment = () => {
-    // In real implementation, this would initiate Razorpay/Stripe payment
-    alert('Payment processing would happen here. Integration with Razorpay/Stripe required.');
-    // For now, redirect to confirmation
-    router.push(`/confirmation?bookingId=${bookingData?.bookingId}`);
-  };
-
-  if (!bookingData) {
-    return null;
-  }
 
   return (
     <>
       <Header />
-      <main className="payment-page">
-        <div className="container">
-          <div className="payment-layout">
-            <section className="payment-methods">
-              <h1>Payment</h1>
+      <main className="pay-page">
+        <div className="container pay-wrap">
+          {checkoutUrl ? (
+            <div className="pay-card" role="status" aria-live="polite">
+              <span className="pay-lock"><Icon name="shield-check" size={28} /></span>
+              <h1>Taking you to secure payment…</h1>
+              <p>You’ll pay on Razorpay’s checkout — UPI, cards and net banking. We never see your card details.</p>
+              <span className="skel-note__bar" style={{ width: 160 }}><span /></span>
+              <a href={checkoutUrl} className="btn btn-primary">Continue to Razorpay</a>
+            </div>
+          ) : checked ? (
+            <StateMessage icon="shield-check" tone="brand" title="No payment in progress"
+              action={<><Link href="/my-bookings" className="btn btn-primary">Go to My trips</Link><Link href="/" className="btn btn-secondary">Start a new search</Link></>}>
+              Bookings waiting for payment show a “Complete payment” button in My trips.
+            </StateMessage>
+          ) : null}
 
-              <div className="payment-card">
-                <h2>Select Payment Method</h2>
-
-                <div className="payment-options">
-                  <label className="payment-option">
-                    <input
-                      type="radio"
-                      name="payment"
-                      value="razorpay"
-                      checked={paymentMethod === 'razorpay'}
-                      onChange={(e) => setPaymentMethod(e.target.value)}
-                    />
-                    <div className="payment-option-content">
-                      <div className="payment-icon">💳</div>
-                      <div>
-                        <div className="payment-name">Credit/Debit Card</div>
-                        <div className="payment-desc">Pay with Razorpay</div>
-                      </div>
-                    </div>
-                  </label>
-
-                  <label className="payment-option">
-                    <input
-                      type="radio"
-                      name="payment"
-                      value="upi"
-                      checked={paymentMethod === 'upi'}
-                      onChange={(e) => setPaymentMethod(e.target.value)}
-                    />
-                    <div className="payment-option-content">
-                      <div className="payment-icon">📱</div>
-                      <div>
-                        <div className="payment-name">UPI</div>
-                        <div className="payment-desc">Google Pay, PhonePe, Paytm</div>
-                      </div>
-                    </div>
-                  </label>
-
-                  <label className="payment-option">
-                    <input
-                      type="radio"
-                      name="payment"
-                      value="netbanking"
-                      checked={paymentMethod === 'netbanking'}
-                      onChange={(e) => setPaymentMethod(e.target.value)}
-                    />
-                    <div className="payment-option-content">
-                      <div className="payment-icon">🏦</div>
-                      <div>
-                        <div className="payment-name">Net Banking</div>
-                        <div className="payment-desc">Pay via your bank</div>
-                      </div>
-                    </div>
-                  </label>
-                </div>
-
-                <button 
-                  className="btn btn-primary btn-lg payment-submit-btn"
-                  onClick={handlePayment}
-                >
-                  Proceed to Pay ₹{bookingData.totalAmount?.toLocaleString()}
-                </button>
-              </div>
-            </section>
-
-            <aside className="payment-summary">
-              <div className="summary-card">
-                <h3>Booking Details</h3>
-                
-                <div className="summary-item">
-                  <span>Booking ID</span>
-                  <span className="summary-value">{bookingData.bookingId}</span>
-                </div>
-
-                <div className="summary-divider"></div>
-
-                <div className="summary-item">
-                  <span>Total Amount</span>
-                  <span className="summary-total-amount">
-                    ₹{bookingData.totalAmount?.toLocaleString()}
-                  </span>
-                </div>
-
-                <div className="security-badge">
-                  <span>🔒</span>
-                  <span>Secure Payment</span>
-                </div>
-              </div>
-            </aside>
-          </div>
+          <ul className="pay-methods" aria-label="Accepted payment methods">
+            {['UPI', 'Visa', 'Mastercard', 'RuPay', 'Net banking'].map(m => <li key={m}>{m}</li>)}
+          </ul>
         </div>
       </main>
       <Footer />
     </>
-  );
-}
-
-export default function PaymentPage() {
-  return (
-    <Suspense fallback={<div>Loading...</div>}>
-      <PaymentContent />
-    </Suspense>
   );
 }

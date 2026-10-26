@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import AuthPromo from '../AuthPromo';
 import apiClient from '@/lib/api/client';
 import '../auth.css';
 
@@ -66,69 +67,17 @@ export default function SignupPage() {
     }
   };
 
-  const handleSocialSignup = (provider) => {
-    alert(`${provider} signup coming soon!`);
-  };
 
   return (
     <div className="auth-page-container">
-      {/* Left Side - Promotional Banner */}
-      <div className="auth-promo-side signup-promo">
-        <div className="promo-content">
-          <div className="promo-logo">
-            <i className="fas fa-plane"></i>
-            <h1>SkyWings</h1>
-          </div>
-          <h2>Join 10 Million+ Happy Travelers</h2>
-          <p className="promo-subtitle">Create your account and unlock exclusive benefits</p>
-          
-          <div className="signup-perks">
-            <div className="perk-item">
-              <div className="perk-number">1</div>
-              <div>
-                <h3>Create Free Account</h3>
-                <p>Quick signup in under 60 seconds</p>
-              </div>
-            </div>
-            <div className="perk-item">
-              <div className="perk-number">2</div>
-              <div>
-                <h3>Get ₹500 Welcome Bonus</h3>
-                <p>On your first booking</p>
-              </div>
-            </div>
-            <div className="perk-item">
-              <div className="perk-number">3</div>
-              <div>
-                <h3>Unlock Premium Deals</h3>
-                <p>Access to exclusive member-only prices</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="trust-badges">
-            <div className="trust-item">
-              <i className="fas fa-shield-alt"></i>
-              <span>Secure Payments</span>
-            </div>
-            <div className="trust-item">
-              <i className="fas fa-lock"></i>
-              <span>Data Protected</span>
-            </div>
-            <div className="trust-item">
-              <i className="fas fa-star"></i>
-              <span>4.8★ Rated</span>
-            </div>
-          </div>
-        </div>
-      </div>
+      <AuthPromo mode="signup" />
 
       {/* Right Side - Signup Form */}
       <div className="auth-form-side">
         <div className="auth-card-modern signup-card">
           <div className="auth-header-modern">
-            <h2>Create Your Account</h2>
-            <p>Start your journey in minutes</p>
+            <h2>Create your account</h2>
+            <p>It’s free and takes a minute.</p>
           </div>
 
           {error && (
@@ -138,36 +87,12 @@ export default function SignupPage() {
             </div>
           )}
 
-          {/* Social Signup First */}
-          <div className="social-signup-top">
-            <button 
-              type="button" 
-              className="social-btn-large google-btn"
-              onClick={() => handleSocialSignup('Google')}
-            >
-              <i className="fab fa-google"></i>
-              Continue with Google
-            </button>
-            <button 
-              type="button" 
-              className="social-btn-large facebook-btn"
-              onClick={() => handleSocialSignup('Facebook')}
-            >
-              <i className="fab fa-facebook-f"></i>
-              Continue with Facebook
-            </button>
-          </div>
-
-          <div className="divider">
-            <span>Or sign up with email</span>
-          </div>
-
           <form onSubmit={handleSubmit} className="auth-form-modern">
             <div className="form-row-modern">
               <div className="form-group-modern half">
                 <label htmlFor="firstName">
                   <i className="fas fa-user"></i>
-                  First Name
+                  First name
                 </label>
                 <input
                   type="text"
@@ -176,7 +101,7 @@ export default function SignupPage() {
                   value={formData.firstName}
                   onChange={handleChange}
                   required
-                  placeholder="John"
+                  placeholder="Rahul"
                   className="modern-input"
                 />
               </div>
@@ -184,7 +109,7 @@ export default function SignupPage() {
               <div className="form-group-modern half">
                 <label htmlFor="lastName">
                   <i className="fas fa-user"></i>
-                  Last Name
+                  Last name
                 </label>
                 <input
                   type="text"
@@ -193,7 +118,7 @@ export default function SignupPage() {
                   value={formData.lastName}
                   onChange={handleChange}
                   required
-                  placeholder="Doe"
+                  placeholder="Mehta"
                   className="modern-input"
                 />
               </div>
@@ -202,7 +127,7 @@ export default function SignupPage() {
             <div className="form-group-modern">
               <label htmlFor="email">
                 <i className="fas fa-envelope"></i>
-                Email Address
+                Email
               </label>
               <input
                 type="email"
@@ -211,7 +136,7 @@ export default function SignupPage() {
                 value={formData.email}
                 onChange={handleChange}
                 required
-                placeholder="john.doe@example.com"
+                placeholder="you@example.com"
                 className="modern-input"
               />
             </div>
@@ -219,7 +144,7 @@ export default function SignupPage() {
             <div className="form-group-modern">
               <label htmlFor="phone">
                 <i className="fas fa-mobile-alt"></i>
-                Mobile Number
+                Mobile number
               </label>
               <div className="phone-input-group">
                 <select 
@@ -269,7 +194,7 @@ export default function SignupPage() {
             <div className="form-group-modern">
               <label htmlFor="confirmPassword">
                 <i className="fas fa-lock"></i>
-                Confirm Password
+                Confirm password
               </label>
               <input
                 type="password"
@@ -290,7 +215,7 @@ export default function SignupPage() {
                 onChange={(e) => setAgreedToTerms(e.target.checked)}
               />
               <span>
-                I agree to <a href="#">Terms & Conditions</a> and <a href="#">Privacy Policy</a>
+                I agree to the <Link href="/terms-and-conditions">Terms</Link> and <Link href="/privacy-policy">Privacy policy</Link>
               </span>
             </label>
 
@@ -302,12 +227,12 @@ export default function SignupPage() {
               {loading ? (
                 <>
                   <i className="fas fa-spinner fa-spin"></i>
-                  Creating Account...
+                  Creating account…
                 </>
               ) : (
                 <>
                   <i className="fas fa-user-plus"></i>
-                  Create Account
+                  Create account
                 </>
               )}
             </button>
@@ -320,10 +245,10 @@ export default function SignupPage() {
           </div>
         </div>
 
-        {/* Back to Home */}
+        {/* Back to home */}
         <Link href="/" className="back-home-link">
           <i className="fas fa-arrow-left"></i>
-          Back to Home
+          Back to home
         </Link>
       </div>
     </div>

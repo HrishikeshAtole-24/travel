@@ -62,6 +62,7 @@ const createBookingTable = async () => {
     -- PENDING → IN_PROGRESS → ISSUED | FAILED (FAILED needs manual follow-up / refund)
     ALTER TABLE bookings ADD COLUMN IF NOT EXISTS ticketing_status VARCHAR(20);
     ALTER TABLE bookings ADD COLUMN IF NOT EXISTS ticketing_error TEXT;
+    ALTER TABLE bookings ADD COLUMN IF NOT EXISTS email_sent_at TIMESTAMP;
 
     -- Create indexes for faster lookups
     CREATE INDEX IF NOT EXISTS idx_bookings_user_id ON bookings(user_id);

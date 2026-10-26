@@ -1,168 +1,102 @@
-/* Why Choose Us Section - Professional Design */
+/* Value props + ink banner */
 
-.why-choose-section {
-  padding: 60px 0;
-  background-color: #ffffff;
-}
-
-/* Header */
-.why-header {
-  text-align: left;
-  margin-bottom: 32px;
-}
-
-.why-header h2 {
-  font-size: 28px;
-  font-weight: 700;
-  color: #1a1a2e;
-  margin: 0 0 8px 0;
-}
-
-.why-header p {
-  font-size: 14px;
-  color: #6b7280;
-  margin: 0;
-}
-
-/* Features Grid */
-.why-features {
+.why-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 24px;
-  margin-bottom: 60px;
+  gap: var(--sw-space-5);
 }
 
-.why-feature {
-  background: #ffffff;
-  padding: 32px 24px;
-  border-radius: 8px;
-  border: 1px solid #e5e7eb;
-  transition: all 0.2s ease;
+.why-card {
+  padding: var(--sw-space-6);
+  border: 1px solid var(--sw-color-border-default);
+  border-radius: var(--sw-radius-lg);
+  background: var(--sw-color-bg-surface);
 }
 
-.why-feature:hover {
-  border-color: #0066ff;
-  box-shadow: 0 4px 20px rgba(0, 102, 255, 0.08);
+.why-card__icon {
+  display: inline-grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin-bottom: var(--sw-space-4);
+  border-radius: var(--sw-radius-md);
+  background: var(--sw-color-bg-brand-subtle);
+  color: var(--sw-color-text-brand);
 }
 
-.why-feature-icon {
-  width: 48px;
-  height: 48px;
-  background: #0066ff;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 20px;
+.why-card__title {
+  margin: 0 0 var(--sw-space-2);
+  font: 600 1.0625rem/1.4 var(--sw-font-display);
+  color: var(--sw-color-text-primary);
 }
 
-.why-feature-icon i {
-  font-size: 20px;
-  color: #ffffff;
-}
-
-.why-feature-content h3 {
-  font-size: 18px;
-  font-weight: 600;
-  color: #1a1a2e;
-  margin-bottom: 8px;
-}
-
-.why-feature-content p {
-  font-size: 14px;
-  color: #6b7280;
-  line-height: 1.6;
+.why-card__text {
   margin: 0;
+  font: 400 0.875rem/1.55 var(--sw-font-ui);
+  color: var(--sw-color-text-secondary);
 }
 
-/* Stats Section */
-.why-stats {
-  display: flex;
-  justify-content: center;
-  gap: 80px;
-  padding: 40px 0;
-  margin-bottom: 40px;
-  border-top: 1px solid #e5e7eb;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.why-stat {
-  text-align: center;
-}
-
-.why-stat-number {
-  display: block;
-  font-size: 36px;
-  font-weight: 700;
-  color: #0066ff;
-  line-height: 1;
-  margin-bottom: 8px;
-}
-
-.why-stat-label {
-  font-size: 14px;
-  color: #6b7280;
-  font-weight: 500;
-}
-
-/* Trust Indicators */
-.trust-indicators {
-  display: flex;
-  justify-content: center;
-  gap: 48px;
-  flex-wrap: wrap;
-}
-
-.trust-item {
+.why-banner {
   display: flex;
   align-items: center;
-  gap: 10px;
-  color: #4b5563;
-  font-size: 14px;
-  font-weight: 500;
+  justify-content: space-between;
+  gap: var(--sw-space-6);
+  margin-top: var(--sw-space-10);
+  padding: var(--sw-space-8) var(--sw-space-10);
+  border-radius: var(--sw-radius-xl);
+  background:
+    radial-gradient(120% 140% at 100% 0%, rgba(31, 94, 255, 0.45) 0%, rgba(31, 94, 255, 0) 55%),
+    var(--sw-color-bg-inverse);
 }
 
-.trust-item i {
-  font-size: 18px;
-  color: #0066ff;
+.why-banner__eyebrow {
+  margin: 0 0 var(--sw-space-2);
+  color: var(--sw-color-text-on-inverse-accent);
 }
 
-/* Responsive */
+.why-banner__title {
+  max-width: 560px;
+  margin: 0;
+  font: 700 1.5rem/1.3 var(--sw-font-display);
+  letter-spacing: -0.015em;
+  color: var(--sw-color-white);
+}
+
 @media (max-width: 1024px) {
-  .why-features {
+  .why-grid {
     grid-template-columns: repeat(2, 1fr);
   }
-  
-  .why-stats {
-    gap: 40px;
-  }
 }
 
-@media (max-width: 768px) {
-  .why-choose-section {
-    padding: 60px 0;
-  }
-  
-  .why-features {
+@media (max-width: 640px) {
+  .why-grid {
     grid-template-columns: 1fr;
+    gap: var(--sw-space-3);
   }
-  
-  .why-stats {
-    flex-wrap: wrap;
-    gap: 32px;
+
+  .why-card {
+    display: grid;
+    grid-template-columns: 44px 1fr;
+    column-gap: var(--sw-space-4);
+    padding: var(--sw-space-4);
   }
-  
-  .why-stat {
-    flex: 1 1 40%;
+
+  .why-card__icon {
+    grid-row: span 2;
+    margin: 0;
   }
-  
-  .trust-indicators {
+
+  .why-banner {
     flex-direction: column;
-    align-items: center;
-    gap: 16px;
+    align-items: flex-start;
+    padding: var(--sw-space-6);
   }
-  
-  .why-header h2 {
-    font-size: 26px;
+
+  .why-banner__title {
+    font-size: 1.25rem;
+  }
+
+  .why-banner .btn {
+    width: 100%;
   }
 }
